@@ -436,7 +436,7 @@
             return (
                 <div>
                     <h2 className="text-3xl font-bold text-white mb-6">Tax Payers History</h2>
-                    {Object.keys(taxDailyData).length > 0 ? Object.keys(taxDailyData).map(player => (
+                    {taxDailyData && Object.keys(taxDailyData).length > 0 ? Object.keys(taxDailyData).map(player => (
                         <div key={player} className="bg-gray-800 p-4 rounded-lg shadow-lg mb-4">
                             <h3 className="text-xl font-bold text-amber-400 mb-2">{player}</h3>
                             {Object.keys(taxDailyData[player].sessions).map(session => (
