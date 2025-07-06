@@ -1,0 +1,7 @@
+Session=20250706A
+[2025-07-06 10:00:00] - player1 bought itemA for $100.00 with gold
+[2025-07-06 10:05:00] - player2 sold itemB for $50.00 with diamonds
+[2025-07-06 10:10:00] - player1 bought itemC for $200.00 with iron
+Session=20250706B
+[2025-07-06 11:00:00] - player3 bought itemD for $150.00 with emeralds
+[2025-07-06 11:05:00] - player1 sold itemE for $75.00 with lapis
