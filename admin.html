@@ -436,19 +436,29 @@
             return (
                 <div>
                     <h2 className="text-3xl font-bold text-white mb-6">Tax Payers History</h2>
-                    {taxDailyData && Object.keys(taxDailyData).length > 0 ? Object.keys(taxDailyData).map(player => (
-                        <div key={player} className="bg-gray-800 p-4 rounded-lg shadow-lg mb-4">
-                            <h3 className="text-xl font-bold text-amber-400 mb-2">{player}</h3>
-                            {Object.keys(taxDailyData[player].sessions).map(session => (
-                                <div key={session} className="ml-4 mb-2">
-                                    <h4 className="font-bold text-gray-400">Session: {session}</h4>
-                                    {taxDailyData[player].sessions[session].dailyCharges.map((charge, i) => (
-                                        <p key={i}>Date: {new Date(charge.date).toLocaleDateString()}, Amount: ${charge.amount.toFixed(2)}</p>
-                                    ))}
-                                </div>
-                            ))}
-                        </div>
-                    )) : <p>No tax history records.</p>}
+                    {taxDailyData && Object.keys(taxDailyData).length > 0 ? Object.keys(taxDailyData).map(player => {
+                        const playerData = taxDailyData[player];
+                        if (!playerData || !playerData.sessions) return null; // Defensive check
+
+                        return (
+                            <div key={player} className="bg-gray-800 p-4 rounded-lg shadow-lg mb-4">
+                                <h3 className="text-xl font-bold text-amber-400 mb-2">{player}</h3>
+                                {Object.keys(playerData.sessions).map(session => {
+                                    const sessionData = playerData.sessions[session];
+                                    if (!sessionData || !sessionData.dailyCharges) return null; // Defensive check
+
+                                    return (
+                                        <div key={session} className="ml-4 mb-2">
+                                            <h4 className="font-bold text-gray-400">Session: {session}</h4>
+                                            {sessionData.dailyCharges.map((charge, i) => (
+                                                <p key={i}>Date: {new Date(charge.date).toLocaleDateString()}, Amount: ${charge.amount.toFixed(2)}</p>
+                                            ))}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        );
+                    }) : <p>No tax history records.</p>}
                 </div>
             );
         };

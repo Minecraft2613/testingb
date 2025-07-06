@@ -292,10 +292,15 @@
 
             const totalTaxPaidTillYet = transactions.filter(tx => tx.description.includes('tax payment')).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
             
+            // Ensure taxData.players is an object, or default to an empty object
+            const playersData = taxData.players && typeof taxData.players === 'object' ? taxData.players : {};
+
             // Get the current session from taxData, or default to 'unknown'
             const currentSession = taxData.currentSession || 'unknown';
 
-            const sessionTaxData = taxData.players && taxData.players[accountId] && taxData.players[accountId].sessions[currentSession] ? taxData.players[accountId].sessions[currentSession] : { taxDue: 0, taxPaid: 0, advancePaid: 0, dailyCharges: [] };
+            const sessionTaxData = playersData[accountId] && playersData[accountId].sessions && playersData[accountId].sessions[currentSession]
+                ? playersData[accountId].sessions[currentSession]
+                : { taxDue: 0, taxPaid: 0, advancePaid: 0, dailyCharges: [] };
 
             // Ensure dailyTaxCharges is an array of objects with date and amount
             const dailyCharges = sessionTaxData.dailyCharges || [];
@@ -860,7 +865,7 @@
 
         // --- Main App Component ---
         const App = () => {
-            const [currentPage, setCurrentPage] = useState('loading'); // Start with loading page
+            const [currentPage, setCurrentPage] = useState('home'); // Start with home page for player view
             const [currentUserAccount, setCurrentUserAccount] = useState(null);
             const [session, setSession] = useState(null);
             const [loading, setLoading] = useState(true);
@@ -909,10 +914,9 @@
                         // await fetch(`${API_ENDPOINTS.ACCOUNTS}/create-account`, { method: 'POST', body: JSON.stringify(initialAccount) });
                     }
                     // Simulate initial loading time
-                    setTimeout(() => {
-                        setLoading(false);
-                        setCurrentPage('login');
-                    }, 2500);
+                    setLoading(false);
+                    setCurrentUserAccount(accounts[0]); // Set the first account as the current user for direct access
+                    setCurrentPage('home');
                 };
                 initializeApp();
             }, []);
