@@ -1,0 +1,582 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIP Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+        .vip-loader {
+            width: 100px; height: 100px; 
+            border: 5px solid transparent;
+            border-top-color: #f59e0b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            position: relative;
+        }
+        .vip-loader:before {
+            content: 'VIP';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #f59e0b;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .bg-gradient-to-br-custom { background-image: linear-gradient(to bottom right, var(--tw-gradient-stops)); }
+        .from-gray-800-custom { --tw-gradient-from: #1f2937; --tw-gradient-to: #1f2937; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+        .to-gray-900-custom { --tw-gradient-to: #111827; }
+        .shadow-lg-custom { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .rounded-xl-custom { border-radius: 0.75rem; }
+        .hover\:scale-105-custom:hover { transform: scale(1.05); }
+        .transition-transform-custom { transition-property: transform; transition-duration: 0.3s; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const API_URL = 'https://bank-data.1987sakshamsingh.workers.dev/admin';
+        const TAX_API_URL = 'https://bank-data.1987sakshamsingh.workers.dev';
+
+        const App = () => {
+            const [adminUser, setAdminUser] = useState(null);
+            const [loading, setLoading] = useState(false);
+
+            const handleLogin = async (username, password) => {
+                setLoading(true);
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'login', username, password })
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.success) {
+                        setAdminUser(username);
+                    } else {
+                        alert(data.message || 'Login failed');
+                    }
+                } catch (e) {
+                    alert('Connection error');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            if (loading) return <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"><div className="vip-loader"></div></div>;
+
+            return adminUser ? <AdminDashboard adminUser={adminUser} setAdminUser={setAdminUser} /> : <AdminLogin onLogin={handleLogin} />;
+        };
+
+        const AdminLogin = ({ onLogin }) => {
+            const [username, setUsername] = useState('');
+            const [password, setPassword] = useState('');
+
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-gray-900">
+                    <div className="bg-gray-800 p-8 rounded-xl-custom shadow-2xl w-full max-w-md bg-gradient-to-br-custom from-gray-800-custom to-gray-900-custom">
+                        <h2 className="text-3xl font-bold text-center text-amber-400 mb-6">VIP Admin Access</h2>
+                        <form onSubmit={e => { e.preventDefault(); onLogin(username, password); }} className="space-y-6">
+                            <input type="text" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                            <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                            <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-md transition-transform transform hover:scale-105">Enter Secure Area</button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const AdminDashboard = ({ adminUser, setAdminUser }) => {
+            const [view, setView] = useState('home');
+            const [data, setData] = useState({ accounts: [], taxData: { players: {} } });
+            const [loading, setLoading] = useState(true);
+
+            const fetchData = async () => {
+                try {
+                    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'get_all_data' }) });
+                    if(res.ok) {
+                        const allData = await res.json();
+                        // Filter loans relevant to the current user if needed, or pass all loans
+                        setData(allData);
+                    }
+                } catch (e) { console.error("Failed to fetch data", e); } 
+                finally { setLoading(false); }
+            };
+
+            useEffect(() => {
+                fetchData();
+                const interval = setInterval(fetchData, 5000);
+                return () => clearInterval(interval);
+            }, []);
+
+            const handleApproveLoan = async (accountId, loanId) => {
+                await fetch(API_URL, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ action: 'approve_loan', userAccountId: accountId, loanId })
+                });
+                fetchData(); // Refresh data after action
+            };
+
+            const handleCancelLoan = async (accountId, loanId) => {
+                await fetch(API_URL, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ action: 'cancel_loan', userAccountId: accountId, loanId })
+                });
+                fetchData(); // Refresh data after action
+            };
+
+            const renderView = () => {
+                if (loading) return <div className="text-center p-10"><div className="vip-loader mx-auto"></div></div>;
+                
+                const props = { data, adminUser, handleApproveLoan, setView };
+
+                switch(view) {
+                    case 'home': return <HomeView {...props} />;
+                    case 'loan_approved': return <LoanApprovedView {...props} />;
+                    case 'loan_history': return <LoanHistoryView {...props} />;
+                    case 'paid_tax': return <PaidTaxView {...props} />;
+                    case 'pending_tax': return <PendingTaxView {...props} />;
+                    case 'tax_history': return <TaxHistoryView {...props} />;
+                    case 'bank_info': return <BankInfoView {...props} />;
+                    case 'player_view': return <PlayerView {...props} />;
+                    case 'messages': return <MessagesView {...props} />;
+                    case 'theme_settings': return <ThemeSettingsView {...props} />;
+                    default: return <HomeView {...props} />;
+                }
+            };
+
+            return (
+                <div className="flex">
+                    <Sidebar setView={setView} adminUser={adminUser} handleLogout={() => setAdminUser(null)} />
+                    <main className="flex-1 p-10">
+                        {renderView()}
+                    </main>
+                </div>
+            );
+        };
+
+        const Sidebar = ({ setView, adminUser, handleLogout }) => {
+            const views = [
+                { name: 'Home', view: 'home', roles: ['admin', 'admin22'] },
+                { name: 'Loan Approved', view: 'loan_approved', roles: ['admin', 'admin22'] },
+                { name: 'Loan History', view: 'loan_history', roles: ['admin', 'admin22'] },
+                { name: 'Paid Tax', view: 'paid_tax', roles: ['admin', 'admin22'] },
+                { name: 'Pending Tax', view: 'pending_tax', roles: ['admin', 'admin22'] },
+                { name: 'Tax Payers History', view: 'tax_history', roles: ['admin', 'admin22'] },
+                { name: 'Bank Info', view: 'bank_info', roles: ['admin', 'admin22'] },
+                { name: 'Player View', view: 'player_view', roles: ['admin', 'admin22'] },
+                { name: 'Messages', view: 'messages', roles: ['admin', 'admin22'] },
+                { name: 'Theme Settings', view: 'theme_settings', roles: ['admin', 'admin22'] },
+            ];
+
+            const filteredViews = views.filter(v => v.roles.includes(adminUser));
+
+            return (
+                <div className="w-64 h-screen bg-gray-800 p-5 flex flex-col shadow-2xl">
+                    <h1 className="text-2xl font-bold text-amber-400 mb-10">VIP Panel</h1>
+                    <nav className="flex-grow">
+                        {filteredViews.map(v => 
+                            <button key={v.view} onClick={() => setView(v.view)} className="block w-full text-left p-3 mb-2 rounded-md hover:bg-gray-700 transition-colors">{v.name}</button>
+                        )}
+                    </nav>
+                    <button onClick={handleLogout} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-md">Logout</button>
+                </div>
+            );
+        };
+
+        const HomeView = ({ data, handleApproveLoan, handleCancelLoan, adminUser }) => {
+            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
+            const [selectedLoan, setSelectedLoan] = useState(null);
+
+            const pendingLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'pending').map(l => ({ ...l, accountId: acc.accountId })));
+            const activeLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'active').map(l => ({ ...l, accountId: acc.accountId })));
+            const cancelledLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'cancelled').map(l => ({ ...l, accountId: acc.accountId })));
+            const closedLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'closed' || (l.loanPaid >= l.loanAmountDue && l.loanStatus !== 'cancelled')).map(l => ({ ...l, accountId: acc.accountId })));
+
+            const pendingTaxes = data.accounts.filter(acc => data.taxData?.players?.[acc.accountId]?.sessions?.[data.taxData.currentSession]?.taxDue > 0);
+
+            const openLoanDetails = (loan) => {
+                setSelectedLoan(loan);
+                setShowLoanDetailModal(true);
+            };
+
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Dashboard</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            <h3 className="text-xl font-bold text-amber-400 mb-4">Pending Loan Applications</h3>
+                            <div className="space-y-4">
+                                {pendingLoans.length > 0 ? pendingLoans.map(loan => (
+                                    <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
+                                        <div>
+                                            <p><strong>Player:</strong> {loan.accountId}</p>
+                                            <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
+                                            <p><strong>Type:</strong> {loan.loanType}</p>
+                                            <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
+                                            <p><strong>Repayment:</strong> {loan.repayment}</p>
+                                            <p><strong>Purpose:</strong> {loan.purpose}</p>
+                                            {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
+                                            {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
+                                        </div>
+                                        <div className="flex flex-col space-y-2">
+                                            <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                                            {adminUser === 'admin22' && (
+                                                <>
+                                                    <button onClick={() => handleApproveLoan(loan.accountId, loan.id)} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md">Approve</button>
+                                                    <button onClick={() => handleCancelLoan(loan.accountId, loan.id)} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md">Cancel</button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                )) : <p>No pending loans.</p>}
+                            </div>
+                        </div>
+                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            <h3 className="text-xl font-bold text-amber-400 mb-4">Active Loans</h3>
+                            <div className="space-y-4">
+                                {activeLoans.length > 0 ? activeLoans.map(loan => (
+                                    <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
+                                        <div>
+                                            <p><strong>Player:</strong> {loan.accountId}</p>
+                                            <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
+                                            <p><strong>Type:</strong> {loan.loanType}</p>
+                                            <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
+                                            <p><strong>Repayment:</strong> {loan.repayment}</p>
+                                            <p><strong>Purpose:</strong> {loan.purpose}</p>
+                                            {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
+                                            {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
+                                        </div>
+                                        <div className="flex flex-col space-y-2">
+                                            <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                                        </div>
+                                    </div>
+                                )) : <p>No active loans.</p>}
+                            </div>
+                        </div>
+                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            <h3 className="text-xl font-bold text-amber-400 mb-4">Cancelled Loans</h3>
+                            <div className="space-y-4">
+                                {cancelledLoans.length > 0 ? cancelledLoans.map(loan => (
+                                    <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
+                                        <div>
+                                            <p><strong>Player:</strong> {loan.accountId}</p>
+                                            <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
+                                            <p><strong>Type:</strong> {loan.loanType}</p>
+                                            <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
+                                            <p><strong>Repayment:</strong> {loan.repayment}</p>
+                                            <p><strong>Purpose:</strong> {loan.purpose}</p>
+                                            {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
+                                            {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
+                                        </div>
+                                        <div className="flex flex-col space-y-2">
+                                            <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                                        </div>
+                                    </div>
+                                )) : <p>No cancelled loans.</p>}
+                            </div>
+                        </div>
+                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            <h3 className="text-xl font-bold text-amber-400 mb-4">Closed Loans</h3>
+                            <div className="space-y-4">
+                                {closedLoans.length > 0 ? closedLoans.map(loan => (
+                                    <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
+                                        <div>
+                                            <p><strong>Player:</strong> {loan.accountId}</p>
+                                            <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
+                                            <p><strong>Type:</strong> {loan.loanType}</p>
+                                            <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
+                                            <p><strong>Repayment:</strong> {loan.repayment}</p>
+                                            <p><strong>Purpose:</strong> {loan.purpose}</p>
+                                            {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
+                                            {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
+                                        </div>
+                                        <div className="flex flex-col space-y-2">
+                                            <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                                        </div>
+                                    </div>
+                                )) : <p>No closed loans.</p>}
+                            </div>
+                        </div>
+                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            <h3 className="text-xl font-bold text-amber-400 mb-4">Players with Pending Taxes</h3>
+                            <div className="space-y-4">
+                                {pendingTaxes.length > 0 ? pendingTaxes.map(acc => (
+                                    <div key={acc.accountId} className="bg-gray-700 p-4 rounded-md">
+                                        <p><strong>Player:</strong> {acc.accountId}</p>
+                                <p><strong>Tax Due:</strong> ${data.taxData?.players?.[acc.accountId]?.sessions?.[data.taxData.currentSession]?.taxDue?.toFixed(2) || '0.00'}</p>
+                                    </div>
+                                )) : <p>No pending taxes.</p>}
+                            </div>
+                        </div>
+                    </div>
+                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} />}
+                </div>
+            );
+        };
+
+        const LoanApprovedView = ({ data }) => {
+            const approvedLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'active').map(l => ({ ...l, accountId: acc.accountId })));
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Approved Loans</h2>
+                    <div className="space-y-4">
+                        {approvedLoans.length > 0 ? approvedLoans.map(loan => (
+                            <div key={loan.id} className="bg-gray-800 p-4 rounded-lg shadow-lg">
+                                <p><strong>Player:</strong> {loan.accountId}</p>
+                                <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
+                                <p><strong>Status:</strong> {loan.loanStatus}</p>
+                            </div>
+                        )) : <p>No approved loans.</p>}
+                    </div>
+                </div>
+            );
+        };
+
+        const LoanHistoryView = ({ data }) => {
+            const allLoans = data.accounts.flatMap(acc => (acc.loans || []).map(l => ({ ...l, accountId: acc.accountId })));
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Loan History</h2>
+                    <div className="space-y-4">
+                        {allLoans.length > 0 ? allLoans.map(loan => (
+                            <div key={loan.id} className="bg-gray-800 p-4 rounded-lg shadow-lg">
+                                <p><strong>Player:</strong> {loan.accountId}</p>
+                                <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
+                                <p><strong>Status:</strong> {loan.loanStatus}</p>
+                                <p><strong>Type:</strong> {loan.loanType}</p>
+                                <p><strong>Application Date:</strong> {new Date(loan.applicationDate).toLocaleDateString()}</p>
+                            </div>
+                        )) : <p>No loan history.</p>}
+                    </div>
+                </div>
+            );
+        };
+
+        const PaidTaxView = ({ data }) => {
+            const [paidTaxData, setPaidTaxData] = useState({});
+
+            useEffect(() => {
+                const fetchPaidTax = async () => {
+                    try {
+                        const response = await fetch(`${TAX_API_URL}/tax-pay-data`);
+                        if (response.ok) {
+                            const json = await response.json();
+                            setPaidTaxData(json);
+                        }
+                    } catch (e) {
+                        console.error("Failed to fetch paid tax data", e);
+                    }
+                };
+                fetchPaidTax();
+            }, []);
+
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Paid Tax</h2>
+                    {Object.keys(paidTaxData).length > 0 ? Object.keys(paidTaxData).map(player => (
+                        <div key={player} className="bg-gray-800 p-4 rounded-lg shadow-lg mb-4">
+                            <h3 className="text-xl font-bold text-amber-400 mb-2">{player}</h3>
+                            {paidTaxData[player].map((tx, i) => (
+                                <p key={i}>Amount: ${tx.amount.toFixed(2)} on {new Date(tx.date).toLocaleDateString()} (Session: {tx.session})</p>
+                            ))}
+                        </div>
+                    )) : <p>No paid tax records.</p>}
+                </div>
+            );
+        };
+
+        const PendingTaxView = ({ data }) => {
+            const pendingTaxes = data.accounts.filter(acc => data.taxData?.players?.[acc.accountId]?.sessions?.[data.taxData.currentSession]?.taxDue > 0);
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Pending Tax</h2>
+                    <div className="space-y-4">
+                        {pendingTaxes.length > 0 ? pendingTaxes.map(acc => (
+                            <div key={acc.accountId} className="bg-gray-800 p-4 rounded-lg shadow-lg">
+                                <p><strong>Player:</strong> {acc.accountId}</p>
+                                <p><strong>Tax Due:</strong> ${data.taxData?.players?.[acc.accountId]?.sessions?.[data.taxData.currentSession]?.taxDue?.toFixed(2) || '0.00'}</p>
+                            </div>
+                        )) : <p>No pending taxes.</p>}
+                    </div>
+                </div>
+            );
+        };
+
+        const TaxHistoryView = ({ data }) => {
+            const [taxDailyData, setTaxDailyData] = useState({});
+
+            useEffect(() => {
+                const fetchDailyTax = async () => {
+                    try {
+                        const response = await fetch(`${TAX_API_URL}/tax-daily-data`);
+                        if (response.ok) {
+                            const json = await response.json();
+                            setTaxDailyData(json);
+                        }
+                    } catch (e) {
+                        console.error("Failed to fetch daily tax data", e);
+                    }
+                };
+                fetchDailyTax();
+            }, []);
+
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Tax Payers History</h2>
+                    {Object.keys(taxDailyData).length > 0 ? Object.keys(taxDailyData).map(player => (
+                        <div key={player} className="bg-gray-800 p-4 rounded-lg shadow-lg mb-4">
+                            <h3 className="text-xl font-bold text-amber-400 mb-2">{player}</h3>
+                            {Object.keys(taxDailyData[player].sessions).map(session => (
+                                <div key={session} className="ml-4 mb-2">
+                                    <h4 className="font-bold text-gray-400">Session: {session}</h4>
+                                    {taxDailyData[player].sessions[session].dailyCharges.map((charge, i) => (
+                                        <p key={i}>Date: {new Date(charge.date).toLocaleDateString()}, Amount: ${charge.amount.toFixed(2)}</p>
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+                    )) : <p>No tax history records.</p>}
+                </div>
+            );
+        };
+
+        const BankInfoView = ({ data, adminUser }) => {
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Player Bank Information</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {data.accounts.map(acc => (
+                            <div key={acc.accountId} className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                                <h4 className="font-bold text-amber-400 text-lg mb-2">{acc.accountId}</h4>
+                                <p><strong>Bank ID:</strong> {acc.bankId}</p>
+                                <p><strong>Email:</strong> {acc.email}</p>
+                                <p><strong>Password:</strong> {acc.password}</p>
+                                {adminUser === 'admin22' && <button className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-md">Edit</button>}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+        
+        const PlayerView = ({ data }) => {
+             const [selectedPlayer, setSelectedPlayer] = useState(null);
+
+            return (
+                <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <h2 className="text-2xl font-bold text-amber-400 mb-4">View as Player</h2>
+                    <select onChange={(e) => setSelectedPlayer(data.accounts.find(acc => acc.accountId === e.target.value))} className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 mb-4">
+                        <option value="">Select a player</option>
+                        {data.accounts.map(acc => <option key={acc.accountId} value={acc.accountId}>{acc.accountId}</option>)}
+                    </select>
+
+                    {selectedPlayer && (
+                        <div className="border-t-4 border-gray-700 pt-4 mt-4">
+                            <h3 className="text-xl font-bold text-white mb-4">Viewing: {selectedPlayer.accountId}</h3>
+                            <div className="space-y-6">
+                                <div className="bg-gray-700 p-4 rounded-lg"><p><strong>Balance:</strong> ${selectedPlayer.balance.toFixed(2)}</p></div>
+                                <div className="bg-gray-700 p-4 rounded-lg">
+                                    <h4 className="font-bold mb-2">Loans</h4>
+                                    {(selectedPlayer.loans || []).map(loan => <div key={loan.id}>{loan.loanType}: ${loan.loanAmount.toFixed(2)} ({loan.loanStatus})</div>)}
+                                </div>
+                                <div className="bg-gray-700 p-4 rounded-lg">
+                                    <h4 className="font-bold mb-2">Transactions</h4>
+                                    {(selectedPlayer.transactions || []).slice(-5).map((tx, i) => <div key={i}>{tx.description}: ${tx.amount.toFixed(2)}</div>)}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const MessagesView = ({ data }) => {
+            // This would fetch messages from a separate endpoint or from data.messages if available
+            const [messages, setMessages] = useState([]);
+
+            useEffect(() => {
+                const fetchMessages = async () => {
+                    try {
+                        const response = await fetch(`${TAX_API_URL}/contact-messages`); // Assuming a new endpoint for messages
+                        if (response.ok) {
+                            const json = await response.json();
+                            setMessages(json);
+                        }
+                    } catch (e) {
+                        console.error("Failed to fetch messages", e);
+                    }
+                };
+                fetchMessages();
+            }, []);
+
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Messages</h2>
+                    {messages.length > 0 ? messages.map((msg, index) => (
+                        <div key={index} className="bg-gray-800 p-4 rounded-lg shadow-lg mb-4">
+                            <p><strong>From:</strong> {msg.username} ({msg.platform})</p>
+                            <p><strong>Language:</strong> {msg.language}</p>
+                            <p><strong>Problem:</strong> {msg.problem}</p>
+                            <button className="mt-2 bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded-md">Reply</button>
+                        </div>
+                    )) : <p>No new messages.</p>}
+                </div>
+            );
+        };
+
+        const ThemeSettingsView = () => {
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Theme Settings</h2>
+                    <p>Theme settings options will go here.</p>
+                </div>
+            );
+        };
+
+        const LoanDetailModal = ({ loan, onClose }) => {
+            if (!loan) return null;
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+                    <div className="bg-gray-800 rounded-lg shadow-2xl p-6 max-w-md w-full border-t-4 border-amber-500 relative">
+                        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-white text-2xl">&times;</button>
+                        <h3 className="text-2xl font-bold text-amber-400 mb-4">Loan Details for {loan.accountId}</h3>
+                        <div className="space-y-2 text-gray-300">
+                            <p><strong>Loan ID:</strong> {loan.id}</p>
+                            <p><strong>Amount:</strong> ${loan.loanAmount?.toFixed(2)}</p>
+                            <p><strong>Loan Type:</strong> {loan.loanType}</p>
+                            <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
+                            <p><strong>Repayment:</strong> {loan.repayment}</p>
+                            <p><strong>Purpose:</strong> {loan.purpose}</p>
+                            {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
+                            {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
+                            <p><strong>Status:</strong> <span className="capitalize">{loan.loanStatus}</span></p>
+                            <p><strong>Application Date:</strong> {new Date(loan.applicationDate).toLocaleDateString()}</p>
+                            <p><strong>Amount Due:</strong> ${loan.loanAmountDue?.toFixed(2)}</p>
+                            <p><strong>Amount Paid:</strong> ${loan.loanPaid?.toFixed(2)}</p>
+                        </div>
+                        <div className="flex justify-end mt-6">
+                            <button onClick={onClose} className="px-5 py-2 bg-amber-600 text-white font-semibold rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-opacity-75 transition duration-200">Close</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
