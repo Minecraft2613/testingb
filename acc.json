@@ -6,7 +6,7 @@
     "password": "26",
     "edition": "java",
     "bankId": "BANK622688",
-    "balance": 34273,
+    "balance": 45364,
     "transactions": [
       {
         "type": "credit",
@@ -30,6 +30,12 @@
         "type": "credit",
         "amount": 11091,
         "date": "2025-07-06T14:07:52.341Z",
+        "description": "Loan LOAN1751810837106 approved by admin"
+      },
+      {
+        "type": "credit",
+        "amount": 11091,
+        "date": "2025-07-06T14:08:05.869Z",
         "description": "Loan LOAN1751810837106 approved by admin"
       }
     ],
