@@ -1,5 +1,5 @@
 {
-  "currentSession": "unknown",
+  "currentSession": "S2025",
   "players": {
     "tester": {
       "sessions": {
@@ -7,15 +7,6 @@
           "taxDue": 390,
           "taxPaid": 0,
           "advancePaid": 0
-        }
-      }
-    },
-    "Ansh": {
-      "sessions": {
-        "undefined": {
-          "taxDue": 0,
-          "taxPaid": 0,
-          "advancePaid": 22
         }
       }
     }
