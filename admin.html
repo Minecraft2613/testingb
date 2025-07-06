@@ -119,20 +119,20 @@
                 return () => clearInterval(interval);
             }, []);
 
-            const handleApproveLoan = async (accountId, loanId) => {
-                await fetch(API_URL, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ action: 'approve_loan', userAccountId: accountId, loanId })
+            const handleApproveLoan = async (accountId, loanId, adminReply) => {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'approve_loan', userAccountId: accountId, loanId, adminReply })
                 });
                 fetchData(); // Refresh data after action
             };
 
-            const handleCancelLoan = async (accountId, loanId) => {
-                await fetch(API_URL, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ action: 'cancel_loan', userAccountId: accountId, loanId })
+            const handleCancelLoan = async (accountId, loanId, adminReply) => {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'cancel_loan', userAccountId: accountId, loanId, adminReply })
                 });
                 fetchData(); // Refresh data after action
             };
@@ -201,6 +201,10 @@
             const [selectedLoan, setSelectedLoan] = useState(null);
 
             const pendingLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'pending').map(l => ({ ...l, accountId: acc.accountId })));
+            const waitingForEmployeeApprovalLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'waitingForEmployeeApproval').map(l => ({ ...l, accountId: acc.accountId })));
+            const waitingForAdminApprovalLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'waitingForAdminApproval').map(l => ({ ...l, accountId: acc.accountId })));
+            const approvedLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'approved').map(l => ({ ...l, accountId: acc.accountId })));
+            const rejectedLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'rejected').map(l => ({ ...l, accountId: acc.accountId })));
             const activeLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'active').map(l => ({ ...l, accountId: acc.accountId })));
             const cancelledLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'cancelled').map(l => ({ ...l, accountId: acc.accountId })));
             const closedLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'closed' || (l.loanPaid >= l.loanAmountDue && l.loanStatus !== 'cancelled')).map(l => ({ ...l, accountId: acc.accountId })));
@@ -242,6 +246,106 @@
                                         </div>
                                     </div>
                                 )) : <p>No pending loans.</p>}
+                            </div>
+                        </div>
+                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            <h3 className="text-xl font-bold text-amber-400 mb-4">Loans Waiting for Employee Approval</h3>
+                            <div className="space-y-4">
+                                {waitingForEmployeeApprovalLoans.length > 0 ? waitingForEmployeeApprovalLoans.map(loan => (
+                                    <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
+                                        <div>
+                                            <p><strong>Player:</strong> {loan.accountId}</p>
+                                            <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
+                                            <p><strong>Type:</strong> {loan.loanType}</p>
+                                            <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
+                                            <p><strong>Repayment:</strong> {loan.repayment}</p>
+                                            <p><strong>Purpose:</strong> {loan.purpose}</p>
+                                            {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
+                                            {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
+                                            {loan.employeeVisitTime && <p><strong>Employee Visit Time:</strong> {loan.employeeVisitTime}</p>}
+                                            {loan.employeeMessage && <p><strong>Employee Message:</strong> {loan.employeeMessage}</p>}
+                                        </div>
+                                        <div className="flex flex-col space-y-2">
+                                            <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                                        </div>
+                                    </div>
+                                )) : <p>No loans waiting for employee approval.</p>}
+                            </div>
+                        </div>
+                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            <h3 className="text-xl font-bold text-amber-400 mb-4">Loans Waiting for Admin Approval</h3>
+                            <div className="space-y-4">
+                                {waitingForAdminApprovalLoans.length > 0 ? waitingForAdminApprovalLoans.map(loan => (
+                                    <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
+                                        <div>
+                                            <p><strong>Player:</strong> {loan.accountId}</p>
+                                            <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
+                                            <p><strong>Type:</strong> {loan.loanType}</p>
+                                            <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
+                                            <p><strong>Repayment:</strong> {loan.repayment}</p>
+                                            <p><strong>Purpose:</strong> {loan.purpose}</p>
+                                            {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
+                                            {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
+                                            {loan.employeeVisitTime && <p><strong>Employee Visit Time:</strong> {loan.employeeVisitTime}</p>}
+                                            {loan.employeeMessage && <p><strong>Employee Message:</strong> {loan.employeeMessage}</p>}
+                                        </div>
+                                        <div className="flex flex-col space-y-2">
+                                            <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                                            {adminUser === 'admin' && (
+                                                <>
+                                                    <button onClick={() => handleApproveLoan(loan.accountId, loan.id)} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md">Approve</button>
+                                                    <button onClick={() => handleCancelLoan(loan.accountId, loan.id)} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md">Reject</button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                )) : <p>No loans waiting for admin approval.</p>}
+                            </div>
+                        </div>
+                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            <h3 className="text-xl font-bold text-amber-400 mb-4">Approved Loans</h3>
+                            <div className="space-y-4">
+                                {approvedLoans.length > 0 ? approvedLoans.map(loan => (
+                                    <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
+                                        <div>
+                                            <p><strong>Player:</strong> {loan.accountId}</p>
+                                            <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
+                                            <p><strong>Type:</strong> {loan.loanType}</p>
+                                            <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
+                                            <p><strong>Repayment:</strong> {loan.repayment}</p>
+                                            <p><strong>Purpose:</strong> {loan.purpose}</p>
+                                            {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
+                                            {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
+                                            {loan.adminReply && <p><strong>Admin Reply:</strong> {loan.adminReply}</p>}
+                                        </div>
+                                        <div className="flex flex-col space-y-2">
+                                            <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                                        </div>
+                                    </div>
+                                )) : <p>No approved loans.</p>}
+                            </div>
+                        </div>
+                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            <h3 className="text-xl font-bold text-amber-400 mb-4">Rejected Loans</h3>
+                            <div className="space-y-4">
+                                {rejectedLoans.length > 0 ? rejectedLoans.map(loan => (
+                                    <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
+                                        <div>
+                                            <p><strong>Player:</strong> {loan.accountId}</p>
+                                            <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
+                                            <p><strong>Type:</strong> {loan.loanType}</p>
+                                            <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
+                                            <p><strong>Repayment:</strong> {loan.repayment}</p>
+                                            <p><strong>Purpose:</strong> {loan.purpose}</p>
+                                            {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
+                                            {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
+                                            {loan.adminReply && <p><strong>Admin Reply:</strong> {loan.adminReply}</p>}
+                                        </div>
+                                        <div className="flex flex-col space-y-2">
+                                            <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                                        </div>
+                                    </div>
+                                )) : <p>No rejected loans.</p>}
                             </div>
                         </div>
                         <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
@@ -556,8 +660,19 @@
             );
         };
 
-        const LoanDetailModal = ({ loan, onClose }) => {
+        const LoanDetailModal = ({ loan, onClose, handleApproveLoan, handleRejectLoan }) => {
+            const [adminReply, setAdminReply] = useState('');
             if (!loan) return null;
+
+            const onApprove = () => {
+                handleApproveLoan(loan.accountId, loan.id, adminReply);
+                onClose();
+            };
+
+            const onReject = () => {
+                handleRejectLoan(loan.accountId, loan.id, adminReply);
+                onClose();
+            };
 
             return (
                 <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
@@ -573,12 +688,29 @@
                             <p><strong>Purpose:</strong> {loan.purpose}</p>
                             {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
                             {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
+                            {loan.job && <p><strong>Job:</strong> {loan.job}</p>}
+                            {loan.perDayIncome && <p><strong>Per Day Income:</strong> ${loan.perDayIncome?.toFixed(2)}</p>}
+                            {loan.employeeVisitTime && <p><strong>Employee Visit Time:</strong> {loan.employeeVisitTime}</p>}
+                            {loan.employeeMessage && <p><strong>Employee Message:</strong> {loan.employeeMessage}</p>}
                             <p><strong>Status:</strong> <span className="capitalize">{loan.loanStatus}</span></p>
                             <p><strong>Application Date:</strong> {new Date(loan.applicationDate).toLocaleDateString()}</p>
                             <p><strong>Amount Due:</strong> ${loan.loanAmountDue?.toFixed(2)}</p>
                             <p><strong>Amount Paid:</strong> ${loan.loanPaid?.toFixed(2)}</p>
+                            {loan.adminReply && <p><strong>Admin Reply:</strong> {loan.adminReply}</p>}
                         </div>
-                        <div className="flex justify-end mt-6">
+                        {(loan.loanStatus === 'waitingForAdminApproval' || loan.loanStatus === 'rejected') && (
+                            <div className="mt-4">
+                                <label htmlFor="adminReply" className="block text-gray-300 text-sm font-bold mb-2">Admin Reply:</label>
+                                <textarea id="adminReply" rows="3" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={adminReply} onChange={(e) => setAdminReply(e.target.value)}></textarea>
+                            </div>
+                        )}
+                        <div className="flex justify-end mt-6 space-x-2">
+                            {loan.loanStatus === 'waitingForAdminApproval' && (
+                                <>
+                                    <button onClick={onApprove} className="px-5 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 transition duration-200">Approve</button>
+                                    <button onClick={onReject} className="px-5 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200">Reject</button>
+                                </>
+                            )}
                             <button onClick={onClose} className="px-5 py-2 bg-amber-600 text-white font-semibold rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-opacity-75 transition duration-200">Close</button>
                         </div>
                     </div>

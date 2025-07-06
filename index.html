@@ -455,7 +455,16 @@
         };
         
         const ApplyLoanPage = ({ currentUserAccount, showModal, handleApplyLoan }) => {
-            const [loanDetails, setLoanDetails] = useState('', duration: 1, type: 'personal', purpose: '', coord1: '', coord2: '', repayment: 'daily' });
+            const [loanDetails, setLoanDetails] = useState({
+                amount: '', duration: 1, type: 'personal', purpose: '',
+                coord1X: '', coord1Y: '', coord1Z: '',
+                coord2X: '', coord2Y: '', coord2Z: '',
+                repayment: 'daily',
+                loanerNetWorth: '',
+                valueOfLand: '', valueOfBuilding: '', areaVolume: '',
+                playerScreenshot: '', landPhoto: '', buildingPhoto: '',
+                employeePhoto: '', signatureOfBankEmployee: '',
+            });
             const [isSubmitting, setIsSubmitting] = useState(false); // New state for submission status
             const hasIncomeProfile = (currentUserAccount.jobPerDayIncome > 0 || currentUserAccount.businessPerDayIncome > 0);
             const loanDurationLimits = { personal: 5, home: 3, business: 6, homeStartup: 4, bizStartup: 6 };
@@ -466,9 +475,20 @@
                 const durationWeeks = parseInt(loanDetails.duration) || 0;
                 if (!amount || !durationWeeks) return { perPaymentAmount: 0, principalPerPayment: 0, interestPerPayment: 0, totalInterestAmount: 0, weeklyInterestRateDisplay: 0 };
 
-                const weeklyInterestRates = { personal: 0.06, home: 0.02, business: 0.05, bizStartup: 0.05, homeStartup: 0.04 }; // These are WEEKLY rates
-                const isCompound = !loanDetails.type.includes('Startup');
-                const weeklyRate = weeklyInterestRates[loanDetails.type];
+                const interestRates = {
+                    personal: 0.06,
+                    home: 0.02,
+                    business: 0.05,
+                    bizStartup: [0.02, 0.04, 0.05, 0.06, 0.08], // Weeks 1-5
+                    homeStartup: [0.015, 0.02, 0.03, 0.05, 0.07] // Weeks 1-5
+                };
+
+                let weeklyRate;
+                if (loanDetails.type.includes('Startup')) {
+                    weeklyRate = interestRates[loanDetails.type][durationWeeks - 1]; // duration is 1-indexed for weeks
+                } else {
+                    weeklyRate = interestRates[loanDetails.type];
+                }
                 
                 let totalLoanAmountDue;
                 let calculatedTotalInterest = 0;
@@ -500,9 +520,15 @@
 
             const handleChange = (e) => {
                 const { name, value } = e.target;
-                if (name === 'duration' && parseInt(value) > maxDuration) return;
-                if (name === 'type') setLoanDetails({ ...loanDetails, duration: 1, [name]: value });
-                else setLoanDetails({ ...loanDetails, [name]: value });
+                if (name.startsWith('coord')) {
+                    setLoanDetails(prev => ({ ...prev, [name]: value }));
+                } else if (name === 'duration' && parseInt(value) > maxDuration) {
+                    return;
+                } else if (name === 'type') {
+                    setLoanDetails({ ...loanDetails, duration: 1, [name]: value });
+                } else {
+                    setLoanDetails({ ...loanDetails, [name]: value });
+                }
             };
 
             const onSubmitLoan = async (e) => { // Made async
@@ -510,8 +536,28 @@
                 if (!hasIncomeProfile) { showModal('Profile Incomplete', 'Please set your income in Account Settings before applying.', 'error'); return; }
                 setIsSubmitting(true); // Disable button on submit
                 try {
-                    await handleApplyLoan({ ...loanDetails, amount: parseFloat(loanDetails.amount), duration: parseInt(loanDetails.duration) });
-                    setLoanDetails({ amount: '', duration: 1, type: 'personal', purpose: '', coord1: '', coord2: '', repayment: 'daily' });
+                    const loanDataToSend = {
+                        ...loanDetails,
+                        loanerBankId: currentUserAccount.bankId,
+                        loanerUsername: currentUserAccount.accountId,
+                        loanerPerDayIncome: currentUserAccount.jobPerDayIncome + (currentUserAccount.businessIncomeUnit === 'hour' ? currentUserAccount.businessPerDayIncome * 8 : currentUserAccount.businessPerDayIncome),
+                        hasBusiness: currentUserAccount.hasBusiness,
+                        coord1: `${loanDetails.coord1X},${loanDetails.coord1Y},${loanDetails.coord1Z}`,
+                        coord2: `${loanDetails.coord2X},${loanDetails.coord2Y},${loanDetails.coord2Z}`,
+                        loanStatus: 'pending',
+                        applicationDate: new Date().toISOString(),
+                    };
+                    await handleApplyLoan(loanDataToSend);
+                    setLoanDetails({
+                        amount: '', duration: 1, type: 'personal', purpose: '',
+                        coord1X: '', coord1Y: '', coord1Z: '',
+                        coord2X: '', coord2Y: '', coord2Z: '',
+                        repayment: 'daily',
+                        loanerNetWorth: '',
+                        valueOfLand: '', valueOfBuilding: '', areaVolume: '',
+                        playerScreenshot: '', landPhoto: '', buildingPhoto: '',
+                        employeePhoto: '', signatureOfBankEmployee: '',
+                    });
                 } finally {
                     setIsSubmitting(false); // Re-enable button after submission (success or failure)
                 }
@@ -538,11 +584,17 @@
                         </select>
                         <textarea name="purpose" value={loanDetails.purpose} onChange={handleChange} placeholder="What is the purpose of this loan?" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md h-24"></textarea>
                         
+                        <input name="loanerNetWorth" type="number" value={loanDetails.loanerNetWorth} onChange={handleChange} placeholder="Your Net Worth ($)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+
                         {loanDetails.type === 'personal' && (
                             <div className="space-y-4 pt-2 border-t border-gray-700">
                                 <h3 className="text-lg font-semibold text-yellow-400">Personal Loan Details</h3>
                                 <p className="text-sm text-gray-400">Please provide the coordinates for the location related to your loan purpose.</p>
-                                <input name="coord1" value={loanDetails.coord1} onChange={handleChange} placeholder="X, Y, Z Coordinates" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                <div className="grid grid-cols-3 gap-2">
+                                    <input name="coord1X" type="number" value={loanDetails.coord1X} onChange={handleChange} placeholder="X" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord1Y" type="number" value={loanDetails.coord1Y} onChange={handleChange} placeholder="Y" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord1Z" type="number" value={loanDetails.coord1Z} onChange={handleChange} placeholder="Z" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                </div>
                                 <input name="playerScreenshot" type="text" value={loanDetails.playerScreenshot} onChange={handleChange} placeholder="Player Screenshot URL" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                             </div>
                         )}
@@ -550,6 +602,10 @@
                         {(loanDetails.type === 'home' || loanDetails.type === 'business' || loanDetails.type.includes('Startup')) && (
                             <div className="space-y-4 pt-2 border-t border-gray-700">
                                 <h3 className="text-lg font-semibold text-yellow-400">Property/Business Details</h3>
+                                <input name="areaVolume" type="number" value={loanDetails.areaVolume} onChange={handleChange} placeholder="Area/Volume (sq/cu blocks)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                <input name="valueOfLand" type="number" value={loanDetails.valueOfLand} onChange={handleChange} placeholder="Value of Land ($)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                <input name="valueOfBuilding" type="number" value={loanDetails.valueOfBuilding} onChange={handleChange} placeholder="Value of Building ($)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                <p className="text-sm text-gray-400">Corner Coordinates (X1, Y1, Z1 to X2, Y2, Z2)</p>
                                 <div className="grid grid-cols-3 gap-2">
                                     <input name="coord1X" type="number" value={loanDetails.coord1X} onChange={handleChange} placeholder="X1" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                     <input name="coord1Y" type="number" value={loanDetails.coord1Y} onChange={handleChange} placeholder="Y1" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
@@ -559,8 +615,11 @@
                                     <input name="coord2Z" type="number" value={loanDetails.coord2Z} onChange={handleChange} placeholder="Z2" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                 </div>
                                 <input name="landPhoto" type="text" value={loanDetails.landPhoto} onChange={handleChange} placeholder="Land Photo URL" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                <input name="buildingPhoto" type="text" value={loanDetails.buildingPhoto} onChange={handleChange} placeholder="Building Photo URL" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                             </div>
                         )}
+                        <input name="employeePhoto" type="text" value={loanDetails.employeePhoto} onChange={handleChange} placeholder="Employee Photo URL" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                        <input name="signatureOfBankEmployee" type="text" value={loanDetails.signatureOfBankEmployee} onChange={handleChange} placeholder="Signature of Bank Employee URL" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
 
                         <div className="p-3 bg-gray-700 rounded-md text-center">
                             <p className="text-gray-300">Payment per {loanDetails.repayment === 'daily' ? 'Day' : 'Week'}: <span className="font-bold text-yellow-400">${perPaymentAmount.toFixed(2)}</span></p>

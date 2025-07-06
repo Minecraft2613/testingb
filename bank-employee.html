@@ -1,0 +1,315 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank Employee Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { background-color: #1a202c; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const API_URL = 'https://bank-data.1987sakshamsingh.workers.dev/admin'; // Admin endpoint for login
+        const EMPLOYEE_API_URL = 'https://bank-data.1987sakshamsingh.workers.dev/employee'; // New employee endpoints
+
+        const App = () => {
+            const [employeeUser, setEmployeeUser] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [message, setMessage] = useState('');
+
+            const handleLogin = async (username, password) => {
+                setLoading(true);
+                setMessage('');
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'login', username, password })
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.success) {
+                        setEmployeeUser(username);
+                    } else {
+                        setMessage(data.message || 'Login failed');
+                    }
+                } catch (e) {
+                    setMessage('Connection error');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleLogout = () => {
+                setEmployeeUser(null);
+                setMessage('Logged out successfully.');
+            };
+
+            if (loading) return (
+                <div className="min-h-screen flex items-center justify-center bg-gray-900">
+                    <div className="loader"></div>
+                </div>
+            );
+
+            return employeeUser ? (
+                <EmployeeDashboard employeeUser={employeeUser} handleLogout={handleLogout} />
+            ) : (
+                <EmployeeLogin onLogin={handleLogin} message={message} />
+            );
+        };
+
+        const EmployeeLogin = ({ onLogin, message }) => {
+            const [username, setUsername] = useState('');
+            const [password, setPassword] = useState('');
+
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-gray-900">
+                    <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+                        <h2 className="text-3xl font-bold text-center text-blue-400 mb-6">Employee Login</h2>
+                        <form onSubmit={e => { e.preventDefault(); onLogin(username, password); }} className="space-y-4">
+                            <input type="text" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-md">Login</button>
+                        </form>
+                        {message && <p className="text-center text-red-400 mt-4">{message}</p>}
+                    </div>
+                </div>
+            );
+        };
+
+        const EmployeeDashboard = ({ employeeUser, handleLogout }) => {
+            const [loans, setLoans] = useState([]);
+            const [loadingLoans, setLoadingLoans] = useState(true);
+            const [selectedLoan, setSelectedLoan] = useState(null);
+            const [visitTime, setVisitTime] = useState('');
+            const [employeeMessage, setEmployeeMessage] = useState('');
+            const [modalMessage, setModalMessage] = useState('');
+
+            const fetchLoans = async () => {
+                setLoadingLoans(true);
+                try {
+                    const response = await fetch(EMPLOYEE_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'get_loans', employeeUser })
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        // Filter loans that are 'pending' or 'waitingForEmployeeApproval'
+                        const filteredLoans = data.loans.filter(loan => 
+                            loan.loanStatus === 'pending' || loan.loanStatus === 'waitingForEmployeeApproval'
+                        );
+                        setLoans(filteredLoans);
+                    } else {
+                        setModalMessage('Failed to fetch loans.');
+                    }
+                } catch (e) {
+                    setModalMessage('Connection error fetching loans.');
+                } finally {
+                    setLoadingLoans(false);
+                }
+            };
+
+            useEffect(() => {
+                fetchLoans();
+                const interval = setInterval(fetchLoans, 10000); // Refresh every 10 seconds
+                return () => clearInterval(interval);
+            }, []);
+
+            const handleSetVisitTime = async () => {
+                if (!selectedLoan || !visitTime) {
+                    setModalMessage('Please select a loan and set a visit time.');
+                    return;
+                }
+                try {
+                    const response = await fetch(EMPLOYEE_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'set_visit_time',
+                            loanId: selectedLoan.id,
+                            userAccountId: selectedLoan.accountId,
+                            employeeVisitTime: visitTime,
+                            employeeUser: employeeUser
+                        })
+                    });
+                    if (response.ok) {
+                        setModalMessage('Visit time set successfully!');
+                        fetchLoans(); // Refresh loans
+                        setSelectedLoan(null);
+                        setVisitTime('');
+                    } else {
+                        const errorData = await response.json();
+                        setModalMessage(errorData.message || 'Failed to set visit time.');
+                    }
+                } catch (e) {
+                    setModalMessage('Connection error setting visit time.');
+                }
+            };
+
+            const handleAddMessage = async () => {
+                if (!selectedLoan || !employeeMessage) {
+                    setModalMessage('Please select a loan and enter a message.');
+                    return;
+                }
+                try {
+                    const response = await fetch(EMPLOYEE_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'add_message',
+                            loanId: selectedLoan.id,
+                            userAccountId: selectedLoan.accountId,
+                            employeeMessage: employeeMessage,
+                            employeeUser: employeeUser
+                        })
+                    });
+                    if (response.ok) {
+                        setModalMessage('Message added successfully!');
+                        fetchLoans(); // Refresh loans
+                        setSelectedLoan(null);
+                        setEmployeeMessage('');
+                    } else {
+                        const errorData = await response.json();
+                        setModalMessage(errorData.message || 'Failed to add message.');
+                    }
+                } catch (e) {
+                    setModalMessage('Connection error adding message.');
+                }
+            };
+
+            const handlePassLoan = async () => {
+                if (!selectedLoan) {
+                    setModalMessage('Please select a loan to pass.');
+                    return;
+                }
+                try {
+                    const response = await fetch(EMPLOYEE_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'pass_loan',
+                            loanId: selectedLoan.id,
+                            employeeUser: employeeUser
+                        })
+                    });
+                    if (response.ok) {
+                        setModalMessage('Loan passed for admin approval!');
+                        fetchLoans(); // Refresh loans
+                        setSelectedLoan(null);
+                    } else {
+                        const errorData = await response.json();
+                        setModalMessage(errorData.message || 'Failed to pass loan.');
+                    }
+                } catch (e) {
+                    setModalMessage('Connection error passing loan.');
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col bg-gray-800 p-6">
+                    <header className="flex justify-between items-center mb-6 pb-4 border-b border-gray-700">
+                        <h1 className="text-4xl font-bold text-blue-400">Employee Dashboard</h1>
+                        <div className="flex items-center space-x-4">
+                            <span className="text-xl">Welcome, {employeeUser}!</span>
+                            <button onClick={handleLogout} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md">Logout</button>
+                        </div>
+                    </header>
+
+                    {modalMessage && (
+                        <div className="bg-blue-500 text-white p-3 rounded-md mb-4 text-center">
+                            {modalMessage}
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow">
+                        <div className="bg-gray-900 p-6 rounded-lg shadow-lg">
+                            <h2 className="text-2xl font-bold text-blue-300 mb-4">Loans for Review</h2>
+                            {loadingLoans ? (
+                                <div className="flex justify-center items-center h-32"><div className="loader"></div></div>
+                            ) : loans.length > 0 ? (
+                                <ul className="space-y-3">
+                                    {loans.map(loan => (
+                                        <li key={loan.id} 
+                                            className={`p-4 rounded-md cursor-pointer ${selectedLoan?.id === loan.id ? 'bg-blue-700' : 'bg-gray-700'} hover:bg-gray-600`}
+                                            onClick={() => setSelectedLoan(loan)}>
+                                            <p className="font-semibold">{loan.loanType} Loan for {loan.accountId}</p>
+                                            <p className="text-sm text-gray-400">Amount: ${loan.loanAmount.toFixed(2)} | Status: {loan.loanStatus}</p>
+                                            {loan.employeeVisitTime && <p className="text-sm text-gray-400">Visit: {new Date(loan.employeeVisitTime).toLocaleString()}</p>}
+                                            {loan.employeeMessage && <p className="text-sm text-gray-400">Message: {loan.employeeMessage}</p>}
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p>No loans currently awaiting employee review.</p>
+                            )}
+                        </div>
+
+                        <div className="bg-gray-900 p-6 rounded-lg shadow-lg">
+                            <h2 className="text-2xl font-bold text-blue-300 mb-4">Loan Details & Actions</h2>
+                            {selectedLoan ? (
+                                <div className="space-y-4">
+                                    <p><strong>Loan ID:</strong> {selectedLoan.id}</p>
+                                    <p><strong>Loaner:</strong> {selectedLoan.accountId}</p>
+                                    <p><strong>Amount:</strong> ${selectedLoan.loanAmount.toFixed(2)}</p>
+                                    <p><strong>Status:</strong> {selectedLoan.loanStatus}</p>
+                                    <p><strong>Purpose:</strong> {selectedLoan.purpose}</p>
+                                    {selectedLoan.coord1 && <p><strong>Coords 1:</strong> {selectedLoan.coord1}</p>}
+                                    {selectedLoan.coord2 && <p><strong>Coords 2:</strong> {selectedLoan.coord2}</p>}
+                                    {selectedLoan.loanerPhoto && <p><strong>Loaner Photo:</strong> <a href={selectedLoan.loanerPhoto} target="_blank" className="text-blue-400 hover:underline">View</a></p>}
+                                    {selectedLoan.landPhoto && <p><strong>Land Photo:</strong> <a href={selectedLoan.landPhoto} target="_blank" className="text-blue-400 hover:underline">View</a></p>}
+                                    {selectedLoan.buildingPhoto && <p><strong>Building Photo:</strong> <a href={selectedLoan.buildingPhoto} target="_blank" className="text-blue-400 hover:underline">View</a></p>}
+                                    {selectedLoan.employeePhoto && <p><strong>Employee Photo:</strong> <a href={selectedLoan.employeePhoto} target="_blank" className="text-blue-400 hover:underline">View</a></p>}
+                                    {selectedLoan.signatureOfBankEmployee && <p><strong>Signature:</strong> <a href={selectedLoan.signatureOfBankEmployee} target="_blank" className="text-blue-400 hover:underline">View</a></p>}
+                                    
+                                    <hr className="border-gray-700" />
+
+                                    <h3 className="text-xl font-bold text-blue-300 mb-2">Employee Actions</h3>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-300">Set Visit Time:</label>
+                                            <input type="datetime-local" value={visitTime} onChange={e => setVisitTime(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                            <button onClick={handleSetVisitTime} className="mt-2 w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-md">Set Time</button>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-300">Add Message:</label>
+                                            <textarea value={employeeMessage} onChange={e => setEmployeeMessage(e.target.value)} rows="3" className="w-full p-2 bg-gray-700 rounded-md border border-gray-600"></textarea>
+                                            <button onClick={handleAddMessage} className="mt-2 w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-md">Add Message</button>
+                                        </div>
+                                        <button onClick={handlePassLoan} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-md">Pass Loan for Admin Approval</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p>Select a loan from the left to view details and perform actions.</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
