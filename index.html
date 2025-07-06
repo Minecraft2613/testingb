@@ -417,7 +417,7 @@
                     return;
                 }
                 setIsPaying(true);
-                await handlePayTax(amount, isFullTax, currentSession);
+                await handlePayTax(amount, isFullTax);
                 setIsPaying(false);
             };
 
@@ -427,7 +427,7 @@
                     return;
                 }
                 setIsPaying(true);
-                await handleAdvanceTax(amount, currentSession);
+                await handleAdvanceTax(amount);
                 setIsPaying(false);
             };
 
