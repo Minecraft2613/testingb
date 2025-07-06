@@ -1,1 +1,19 @@
-[]
+[
+  {
+    "bankName": "Ansh",
+    "accountId": "Ansh",
+    "email": "Ansh@test",
+    "password": "2",
+    "edition": "java",
+    "bankId": "BANK972156",
+    "balance": 1000,
+    "transactions": [
+      {
+        "type": "credit",
+        "amount": 1000,
+        "date": "2025-07-06T08:27:36.548Z",
+        "description": "Initial deposit"
+      }
+    ]
+  }
+]
