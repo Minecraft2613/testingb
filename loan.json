@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "id": "LOAN1751805557499",
+    "accountId": "Ansh",
+    "loanAmount": 100000,
+    "loanAmountDue": 105999.99999999994,
+    "loanPaid": 0,
+    "dailyRepayment": 15142.857142857134,
+    "durationWeeks": 1,
+    "loanType": "personal",
+    "loanStatus": "pending",
+    "applicationDate": "2025-07-06T12:39:17.499Z",
+    "purpose": "for buisness",
+    "coord1": "11,75,98",
+    "coord2": "",
+    "repayment": "daily"
+  }
+]
