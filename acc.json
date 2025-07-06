@@ -6,7 +6,7 @@
     "password": "26",
     "edition": "java",
     "bankId": "BANK622688",
-    "balance": 45353,
+    "balance": 45342,
     "transactions": [
       {
         "type": "credit",
@@ -42,6 +42,12 @@
         "type": "debit",
         "amount": -11,
         "date": "2025-07-06T14:10:52.337Z",
+        "description": "Tax payment for session N3637"
+      },
+      {
+        "type": "debit",
+        "amount": -11,
+        "date": "2025-07-06T14:11:07.787Z",
         "description": "Tax payment for session N3637"
       }
     ],
