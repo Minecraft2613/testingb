@@ -140,7 +140,7 @@
             const renderView = () => {
                 if (loading) return <div className="text-center p-10"><div className="vip-loader mx-auto"></div></div>;
                 
-                const props = { data, adminUser, handleApproveLoan, setView };
+                const props = { data, adminUser, handleApproveLoan, handleCancelLoan, setView };
 
                 switch(view) {
                     case 'home': return <HomeView {...props} />;

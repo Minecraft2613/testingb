@@ -273,7 +273,7 @@
             return (
                 <div className="space-y-6">
                     <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Account Overview</h2><p className="text-gray-300"><strong>Bank Name:</strong> {bankName}</p><p className="text-2xl font-bold">Balance: <span className="text-green-400">${balance?.toFixed(2) || '0.00'}</span></p><p className="text-lg font-semibold mt-2">Total Income: <span className="text-yellow-400">${totalPerDayIncome}/day</span></p><p className="text-sm text-gray-400">Job: ${jobPerDayIncome}/day | Business: ${businessPerDayIncome}/{businessIncomeUnit}</p></div>
-                    <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Loans ({loans.length})</h2>{loans.length > 0 ? <div className="space-y-4">{loans.map((loan) => <div key={loan.id} className="p-4 border border-gray-700 rounded-md bg-gray-700"><div className="flex justify-between items-start"><div className="flex-grow"><p className="font-bold capitalize text-yellow-400">{loan.loanType} Loan</p><p className="text-gray-300">Amount: ${loan.loanAmount.toFixed(2)} | Total Due: ${loan.loanAmountDue.toFixed(2)}</p><p className="text-gray-300">Status: <span className={`font-semibold ${loan.loanStatus === 'pending' ? 'text-yellow-400' : 'text-green-400'}`}>{loan.loanStatus}</span></p></div><div className="flex flex-col items-end gap-2">{loan.loanStatus === 'pending' && <>                                            <button onClick={() => handleCancelLoan(loan.id)} className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded">Cancel</button></>}{loan.loanStatus === 'active' && <button onClick={() => handlePayLoan(loan.id)} className="text-xs bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-2 rounded">Pay Full Amount</button>}</div></div></div>)}</div> : <p className="text-gray-400">No active loans.</p>}</div>
+                    <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Loans ({loans.length})</h2>{loans.length > 0 ? <div className="space-y-4">{[...new Map(loans.map(item => [item['id'], item])).values()].map((loan) => <div key={loan.id} className="p-4 border border-gray-700 rounded-md bg-gray-700"><div className="flex justify-between items-start"><div className="flex-grow"><p className="font-bold capitalize text-yellow-400">{loan.loanType} Loan</p><p className="text-gray-300">Amount: ${loan.loanAmount.toFixed(2)} | Total Due: ${loan.loanAmountDue.toFixed(2)}</p><p className="text-gray-300">Status: <span className={`font-semibold ${loan.loanStatus === 'pending' ? 'text-yellow-400' : 'text-green-400'}`}>{loan.loanStatus}</span></p></div><div className="flex flex-col items-end gap-2">{loan.loanStatus === 'pending' && <>                                            <button onClick={() => handleCancelLoan(loan.id)} className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded">Cancel</button></>}{loan.loanStatus === 'active' && <button onClick={() => handlePayLoan(loan.id)} className="text-xs bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-2 rounded">Pay Full Amount</button>}</div></div></div>)}</div> : <p className="text-gray-400">No active loans.</p>}</div>
                     <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Transaction History</h2>{transactions.length > 0 ? <div className="max-h-80 overflow-y-auto"><table className="min-w-full text-sm text-left"><thead className="bg-gray-700 sticky top-0"><tr><th className="p-2 text-gray-300">Date</th><th className="p-2 text-gray-300">Description</th><th className="p-2 text-right text-gray-300">Amount</th></tr></thead><tbody>{transactions.slice().reverse().map((tx, index) => <tr key={index} className="border-b border-gray-700 hover:bg-gray-700/50"><td className="p-2 text-gray-400">{new Date(tx.date).toLocaleDateString()}</td><td className="p-2 text-gray-300">{tx.description}</td><td className={`p-2 text-right font-semibold ${tx.amount < 0 ? 'text-red-400' : 'text-green-400'}`}>{tx.amount < 0 ? '-' : '+'}${Math.abs(tx.amount).toFixed(2)}</td></tr>)}</tbody></table></div> : <p className="text-gray-400">No transactions yet.</p>}</div>
                 </div>
             );
@@ -290,7 +290,7 @@
             if (!currentUserAccount) return null;
             const { taxData = {}, accountId, transactions = [], balance } = currentUserAccount;
 
-            const totalTaxPaidTillYet = transactions.filter(tx => tx.description.includes('tax payment')).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+            const totalTaxPaidTillYet = (transactions || []).filter(tx => tx.description && (tx.description.includes('Tax payment') || tx.description.includes('Advance tax payment'))).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
             
             // Ensure taxData.players is an object, or default to an empty object
             const playersData = taxData.players && typeof taxData.players === 'object' ? taxData.players : {};
@@ -455,7 +455,8 @@
         };
         
         const ApplyLoanPage = ({ currentUserAccount, showModal, handleApplyLoan }) => {
-            const [loanDetails, setLoanDetails] = useState({ amount: '', duration: 1, type: 'personal', purpose: '', coord1: '', coord2: '', repayment: 'daily' });
+            const [loanDetails, setLoanDetails] = useState('', duration: 1, type: 'personal', purpose: '', coord1: '', coord2: '', repayment: 'daily' });
+            const [isSubmitting, setIsSubmitting] = useState(false); // New state for submission status
             const hasIncomeProfile = (currentUserAccount.jobPerDayIncome > 0 || currentUserAccount.businessPerDayIncome > 0);
             const loanDurationLimits = { personal: 5, home: 3, business: 6, homeStartup: 4, bizStartup: 6 };
             const maxDuration = loanDurationLimits[loanDetails.type];
@@ -504,11 +505,16 @@
                 else setLoanDetails({ ...loanDetails, [name]: value });
             };
 
-            const onSubmitLoan = (e) => {
+            const onSubmitLoan = async (e) => { // Made async
                 e.preventDefault();
                 if (!hasIncomeProfile) { showModal('Profile Incomplete', 'Please set your income in Account Settings before applying.', 'error'); return; }
-                handleApplyLoan({ ...loanDetails, amount: parseFloat(loanDetails.amount), duration: parseInt(loanDetails.duration) });
-                setLoanDetails({ amount: '', duration: 1, type: 'personal', purpose: '', coord1: '', coord2: '', repayment: 'daily' });
+                setIsSubmitting(true); // Disable button on submit
+                try {
+                    await handleApplyLoan({ ...loanDetails, amount: parseFloat(loanDetails.amount), duration: parseInt(loanDetails.duration) });
+                    setLoanDetails({ amount: '', duration: 1, type: 'personal', purpose: '', coord1: '', coord2: '', repayment: 'daily' });
+                } finally {
+                    setIsSubmitting(false); // Re-enable button after submission (success or failure)
+                }
             };
 
             const showLoanSpecificFields = loanDetails.type === 'home' || loanDetails.type === 'business' || loanDetails.type.includes('Startup');
@@ -521,6 +527,8 @@
                             <option value="personal">Personal</option>
                             <option value="home">Home</option>
                             <option value="business">Business</option>
+                            <option value="bizStartup">Business Startup</option>
+                            <option value="homeStartup">Home Startup</option>
                         </select>
                         <input name="amount" type="number" value={loanDetails.amount} onChange={handleChange} placeholder="Loan Amount ($)" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                         <input name="duration" type="number" value={loanDetails.duration} onChange={handleChange} placeholder={`Duration (Weeks, max ${maxDuration})`} min="1" max={maxDuration} required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
@@ -535,14 +543,22 @@
                                 <h3 className="text-lg font-semibold text-yellow-400">Personal Loan Details</h3>
                                 <p className="text-sm text-gray-400">Please provide the coordinates for the location related to your loan purpose.</p>
                                 <input name="coord1" value={loanDetails.coord1} onChange={handleChange} placeholder="X, Y, Z Coordinates" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                <input name="playerScreenshot" type="text" value={loanDetails.playerScreenshot} onChange={handleChange} placeholder="Player Screenshot URL" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                             </div>
                         )}
 
-                        {showLoanSpecificFields && (
+                        {(loanDetails.type === 'home' || loanDetails.type === 'business' || loanDetails.type.includes('Startup')) && (
                             <div className="space-y-4 pt-2 border-t border-gray-700">
                                 <h3 className="text-lg font-semibold text-yellow-400">Property/Business Details</h3>
-                                <input name="coord1" value={loanDetails.coord1} onChange={handleChange} placeholder="Start Coordinates (X, Y, Z)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                <input name="coord2" value={loanDetails.coord2} onChange={handleChange} placeholder="End Coordinates (X, Y, Z)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                <div className="grid grid-cols-3 gap-2">
+                                    <input name="coord1X" type="number" value={loanDetails.coord1X} onChange={handleChange} placeholder="X1" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord1Y" type="number" value={loanDetails.coord1Y} onChange={handleChange} placeholder="Y1" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord1Z" type="number" value={loanDetails.coord1Z} onChange={handleChange} placeholder="Z1" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord2X" type="number" value={loanDetails.coord2X} onChange={handleChange} placeholder="X2" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord2Y" type="number" value={loanDetails.coord2Y} onChange={handleChange} placeholder="Y2" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord2Z" type="number" value={loanDetails.coord2Z} onChange={handleChange} placeholder="Z2" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                </div>
+                                <input name="landPhoto" type="text" value={loanDetails.landPhoto} onChange={handleChange} placeholder="Land Photo URL" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                             </div>
                         )}
 
@@ -552,7 +568,7 @@
                             <p className="text-gray-300">Total Interest: <span className="font-bold text-red-400">${totalInterestAmount.toFixed(2)}</span></p>
                             <p className="text-xs text-gray-400">Weekly Interest Rate: {weeklyInterestRateDisplay.toFixed(2)}%</p>
                         </div>
-                        <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md">Submit Application</button>
+                        <button type="submit" disabled={isSubmitting} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md">{isSubmitting ? 'Submitting...' : 'Submit Application'}</button>
                         {!hasIncomeProfile && <p className="text-red-400 mt-4 text-sm text-center">Your income profile is not set up. You must set your income in Account Settings to apply for a loan.</p>}
                     </form>
                 </div>
@@ -630,9 +646,14 @@
         const TopTaxPayersPage = ({ getAllAccounts }) => {
             const [topTaxPayers, setTopTaxPayers] = useState([]);
             useEffect(() => {
-                const accounts = getAllAccounts();
-                const sorted = accounts.sort((a, b) => (b.taxData?.taxPaid || 0) - (a.taxData?.taxPaid || 0)).slice(0, 3);
-                setTopTaxPayers(sorted);
+                const fetchTopTaxPayers = async () => {
+                    const accounts = await getAllAccounts();
+                    const sorted = accounts.filter(acc => acc.taxData?.taxPaid !== undefined && acc.taxData.taxPaid !== null)
+                                           .sort((a, b) => (b.taxData.taxPaid || 0) - (a.taxData.taxPaid || 0))
+                                           .slice(0, 3);
+                    setTopTaxPayers(sorted);
+                };
+                fetchTopTaxPayers();
             }, [getAllAccounts]);
 
             return (
@@ -660,9 +681,14 @@
         const TopAdvanceTaxPayersPage = ({ getAllAccounts }) => {
             const [topAdvanceTaxPayers, setTopAdvanceTaxPayers] = useState([]);
             useEffect(() => {
-                const accounts = getAllAccounts();
-                const sorted = accounts.sort((a, b) => (b.taxData?.advanceTaxPaid || 0) - (a.taxData?.advanceTaxPaid || 0)).slice(0, 3);
-                setTopAdvanceTaxPayers(sorted);
+                const fetchTopAdvanceTaxPayers = async () => {
+                    const accounts = await getAllAccounts();
+                    const sorted = accounts.filter(acc => acc.taxData?.advanceTaxPaid !== undefined && acc.taxData.advanceTaxPaid !== null)
+                                           .sort((a, b) => (b.taxData.advanceTaxPaid || 0) - (a.taxData.advanceTaxPaid || 0))
+                                           .slice(0, 3);
+                    setTopAdvanceTaxPayers(sorted);
+                };
+                fetchTopAdvanceTaxPayers();
             }, [getAllAccounts]);
 
             return (
@@ -1022,8 +1048,12 @@
 
             const handleUpdateProfile = async (profileData) => {
                 const updatedAccount = { ...currentUserAccount, ...profileData };
-                await updateCurrentUser(updatedAccount);
-                showModal('Success', 'Your profile has been updated.', 'success');
+                const success = await updateCurrentUser(updatedAccount);
+                if (success) {
+                    showModal('Success', 'Your profile has been updated.', 'success');
+                } else {
+                    showModal('Error', 'Failed to update profile.', 'error');
+                }
             };
 
             const handleChangePassword = async (oldPass, newPass) => {
@@ -1131,12 +1161,25 @@ const handleAdvanceTax = async (amount) => {
 };
 
 
-            const handleApplyLoan = async ({ amount, duration, type, ...details }) => {
+            const handleApplyLoan = async ({ amount, duration, type, purpose, coord1, coord2, repayment, playerScreenshot, landPhoto }) => {
                 const jobIncome = currentUserAccount.jobPerDayIncome || 0;
                 const bizIncome = currentUserAccount.businessPerDayIncome || 0;
                 const maxDailyRepayment = (jobIncome * 0.55) + (bizIncome * (currentUserAccount.businessIncomeUnit === 'hour' ? 0.70 * 8 : 0.70));
-                const interestRates = { personal: 0.06, home: 0.02, business: 0.05 };
-                const weeklyRate = interestRates[type];
+                
+                const interestRates = {
+                    personal: 0.06,
+                    home: 0.02,
+                    business: 0.05,
+                    bizStartup: [0.02, 0.04, 0.05, 0.06, 0.08], // Weeks 1-5
+                    homeStartup: [0.015, 0.02, 0.03, 0.05, 0.07] // Weeks 1-5
+                };
+
+                let weeklyRate;
+                if (type.includes('Startup')) {
+                    weeklyRate = interestRates[type][duration - 1]; // duration is 1-indexed for weeks
+                } else {
+                    weeklyRate = interestRates[type];
+                }
                 
                 let totalDue, dailyRepayment;
                 const dailyRate = Math.pow(1 + weeklyRate, 1/7) - 1;
@@ -1159,7 +1202,7 @@ const handleAdvanceTax = async (amount) => {
                     return;
                 }
 
-                const newLoan = { id: `LOAN${Date.now()}`, accountId: currentUserAccount.accountId, loanAmount: amount, loanAmountDue: totalDue, loanPaid: 0, dailyRepayment, durationWeeks: duration, loanType: type, loanStatus: 'pending', applicationDate: new Date().toISOString(), ...details };
+                const newLoan = { id: `LOAN${Date.now()}`, accountId: currentUserAccount.accountId, loanAmount: amount, loanAmountDue: totalDue, loanPaid: 0, dailyRepayment, durationWeeks: duration, loanType: type, loanStatus: 'pending', applicationDate: new Date().toISOString(), purpose, coord1, coord2, playerScreenshot, landPhoto };
                 
                 try {
                     const response = await fetch(`${API_ENDPOINTS.ACCOUNTS}/apply-loan`, {
