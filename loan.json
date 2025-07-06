@@ -14,5 +14,21 @@
     "coord1": "11,75,98",
     "coord2": "",
     "repayment": "daily"
+  },
+  {
+    "id": "LOAN1751806582405",
+    "accountId": "Ansh",
+    "loanAmount": 1111,
+    "loanAmountDue": 1177.6599999999994,
+    "loanPaid": 0,
+    "dailyRepayment": 168.23714285714277,
+    "durationWeeks": 1,
+    "loanType": "personal",
+    "loanStatus": "pending",
+    "applicationDate": "2025-07-06T12:56:22.405Z",
+    "purpose": "111",
+    "coord1": "1111",
+    "coord2": "",
+    "repayment": "daily"
   }
 ]
