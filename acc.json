@@ -6,7 +6,7 @@
     "password": "2",
     "edition": "java",
     "bankId": "BANK972156",
-    "balance": 989,
+    "balance": 978,
     "transactions": [
       {
         "type": "credit",
@@ -18,6 +18,12 @@
         "type": "debit",
         "amount": -11,
         "date": "2025-07-06T08:30:47.191Z",
+        "description": "Advance tax payment for session undefined"
+      },
+      {
+        "type": "debit",
+        "amount": -11,
+        "date": "2025-07-06T08:31:08.795Z",
         "description": "Advance tax payment for session undefined"
       }
     ]
