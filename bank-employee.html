@@ -105,6 +105,20 @@
             const [visitTime, setVisitTime] = useState('');
             const [employeeMessage, setEmployeeMessage] = useState('');
             const [modalMessage, setModalMessage] = useState('');
+            const [showAdditionalFields, setShowAdditionalFields] = useState(false);
+            const [loanerPhoto, setLoanerPhoto] = useState('');
+            const [landPhoto, setLandPhoto] = useState('');
+            const [buildingPhoto, setBuildingPhoto] = useState('');
+            const [employeePhoto, setEmployeePhoto] = useState('');
+            const [signatureOfBankEmployee, setSignatureOfBankEmployee] = useState('');
+            const [loanerBankId, setLoanerBankId] = useState('');
+            const [loanerPerDayIncome, setLoanerPerDayIncome] = useState('');
+            const [hasBusiness, setHasBusiness] = useState(false);
+            const [areaVolume, setAreaVolume] = useState('');
+            const [cornerCoords, setCornerCoords] = useState('');
+            const [valueOfLand, setValueOfLand] = useState('');
+            const [valueOfBuilding, setValueOfBuilding] = useState('');
+            const [loanerNetWorth, setLoanerNetWorth] = useState('');
 
             const fetchLoans = async () => {
                 setLoadingLoans(true);
@@ -220,7 +234,20 @@
                             action: 'pass_loan',
                             loanId: selectedLoan.id,
                             userAccountId: selectedLoan.accountId,
-                            employeeUser: employeeUser
+                            employeeUser: employeeUser,
+                            loanerPhoto: loanerPhoto,
+                            landPhoto: landPhoto,
+                            buildingPhoto: buildingPhoto,
+                            employeePhoto: employeePhoto,
+                            signatureOfBankEmployee: signatureOfBankEmployee,
+                            loanerBankId: loanerBankId,
+                            loanerPerDayIncome: loanerPerDayIncome,
+                            hasBusiness: hasBusiness,
+                            areaVolume: areaVolume,
+                            cornerCoords: cornerCoords,
+                            valueOfLand: valueOfLand,
+                            valueOfBuilding: valueOfBuilding,
+                            loanerNetWorth: loanerNetWorth
                         })
                     });
                     if (response.ok) {
@@ -309,7 +336,82 @@
                                             <textarea value={employeeMessage} onChange={e => setEmployeeMessage(e.target.value)} rows="3" className="w-full p-2 bg-gray-700 rounded-md border border-gray-600"></textarea>
                                             <button onClick={handleAddMessage} className="mt-2 w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-md">Add Message</button>
                                         </div>
-                                        <button onClick={handlePassLoan} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-md">Pass Loan for Admin Approval</button>
+                                        {showAdditionalFields && (
+                                            <div className="space-y-3">
+                                                <h3 className="text-xl font-bold text-blue-300 mb-2">Additional Loan Details</h3>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Loaner Photo URL:</label>
+                                                    <input type="text" value={loanerPhoto} onChange={e => setLoanerPhoto(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Land Photo URL:</label>
+                                                    <input type="text" value={landPhoto} onChange={e => setLandPhoto(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Building Photo URL:</label>
+                                                    <input type="text" value={buildingPhoto} onChange={e => setBuildingPhoto(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Employee Photo URL:</label>
+                                                    <input type="text" value={employeePhoto} onChange={e => setEmployeePhoto(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Signature of Bank Employee URL:</label>
+                                                    <input type="text" value={signatureOfBankEmployee} onChange={e => setSignatureOfBankEmployee(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Loaner Bank ID:</label>
+                                                    <input type="text" value={loanerBankId} onChange={e => setLoanerBankId(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Loaner Per Day Income:</label>
+                                                    <input type="number" value={loanerPerDayIncome} onChange={e => setLoanerPerDayIncome(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <input type="checkbox" checked={hasBusiness} onChange={e => setHasBusiness(e.target.checked)} className="mr-2" />
+                                                    <label className="text-sm font-medium text-gray-300">Has Business</label>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Area Volume:</label>
+                                                    <input type="text" value={areaVolume} onChange={e => setAreaVolume(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Corner Coords:</label>
+                                                    <input type="text" value={cornerCoords} onChange={e => setCornerCoords(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Value of Land:</label>
+                                                    <input type="number" value={valueOfLand} onChange={e => setValueOfLand(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Value of Building:</label>
+                                                    <input type="number" value={valueOfBuilding} onChange={e => setValueOfBuilding(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Loaner Net Worth:</label>
+                                                    <input type="number" value={loanerNetWorth} onChange={e => setLoanerNetWorth(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                            </div>
+                                        )}
+                                        <button onClick={() => {
+                                            if (!selectedLoan) {
+                                                setModalMessage('Please select a loan to pass.');
+                                                return;
+                                            }
+                                            if (!visitTime) {
+                                                setModalMessage('Please set an employee visit time before proceeding.');
+                                                return;
+                                            }
+                                            if (!employeeMessage) {
+                                                setModalMessage('Please add an employee message before proceeding.');
+                                                return;
+                                            }
+                                            if (!showAdditionalFields) {
+                                                setShowAdditionalFields(true);
+                                            } else {
+                                                handlePassLoan();
+                                            }
+                                        }} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-md">{showAdditionalFields ? 'Submit and Pass Loan for Admin Approval' : 'Next'}</button>
                                     </div>
                                 </div>
                             ) : (
