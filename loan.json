@@ -8,14 +8,15 @@
     "dailyRepayment": 15142.857142857134,
     "durationWeeks": 1,
     "loanType": "personal",
-    "loanStatus": "waitingForEmployeeApproval",
+    "loanStatus": "waitingForAdminApproval",
     "applicationDate": "2025-07-06T12:39:17.499Z",
     "purpose": "for buisness",
     "coord1": "11,75,98",
     "coord2": "",
     "repayment": "daily",
     "employeeVisitTime": "2025-07-06T21:23",
-    "assignedEmployee": "admin22"
+    "assignedEmployee": "admin22",
+    "passedByEmployee": "admin22"
   },
   {
     "id": "LOAN1751806582405",
