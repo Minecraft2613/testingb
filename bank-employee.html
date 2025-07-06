@@ -204,6 +204,14 @@
                     setModalMessage('Please select a loan to pass.');
                     return;
                 }
+                if (!selectedLoan.employeeVisitTime) {
+                    setModalMessage('Please set an employee visit time before passing the loan.');
+                    return;
+                }
+                if (!selectedLoan.employeeMessage) {
+                    setModalMessage('Please add an employee message before passing the loan.');
+                    return;
+                }
                 try {
                     const response = await fetch(EMPLOYEE_API_URL, {
                         method: 'POST',
@@ -211,6 +219,7 @@
                         body: JSON.stringify({
                             action: 'pass_loan',
                             loanId: selectedLoan.id,
+                            userAccountId: selectedLoan.accountId,
                             employeeUser: employeeUser
                         })
                     });
@@ -289,7 +298,10 @@
                                     <div className="space-y-3">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-300">Set Visit Time:</label>
-                                            <input type="datetime-local" value={visitTime} onChange={e => setVisitTime(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                            <div className="flex space-x-2">
+                                                <input type="datetime-local" value={visitTime} onChange={e => setVisitTime(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                <button onClick={() => setVisitTime(new Date().toISOString().slice(0, 16))} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm">Today</button>
+                                            </div>
                                             <button onClick={handleSetVisitTime} className="mt-2 w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-md">Set Time</button>
                                         </div>
                                         <div>

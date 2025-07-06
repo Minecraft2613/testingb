@@ -137,6 +137,15 @@
                 fetchData(); // Refresh data after action
             };
 
+            const handleForceApproveLoan = async (accountId, loanId, employeeVisitTime, employeeMessage, adminReply) => {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'force_approve_loan', userAccountId: accountId, loanId, employeeVisitTime, employeeMessage, adminReply })
+                });
+                fetchData(); // Refresh data after action
+            };
+
             const renderView = () => {
                 if (loading) return <div className="text-center p-10"><div className="vip-loader mx-auto"></div></div>;
                 
@@ -293,9 +302,12 @@
                                             <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
                                             {adminUser === 'admin' && (
                                                 <>
-                                                    <button onClick={() => handleApproveLoan(loan.accountId, loan.id)} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md">Approve</button>
-                                                    <button onClick={() => handleCancelLoan(loan.accountId, loan.id)} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md">Reject</button>
+                                                    <button onClick={() => handleApproveLoan(loan.accountId, loan.id, prompt("Admin Reply:"))} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md">Approve</button>
+                                                    <button onClick={() => handleCancelLoan(loan.accountId, loan.id, prompt("Admin Reply:"))} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md">Reject</button>
                                                 </>
+                                            )}
+                                            {adminUser === 'admin' && loan.loanStatus !== 'waitingForAdminApproval' && (
+                                                <button onClick={() => handleForceApproveLoan(loan.accountId, loan.id, prompt("Employee Visit Time (YYYY-MM-DDTHH:MM):"), prompt("Employee Message:"), prompt("Admin Reply:"))} className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-md">Forceful Approve</button>
                                             )}
                                         </div>
                                     </div>
@@ -660,8 +672,11 @@
             );
         };
 
-        const LoanDetailModal = ({ loan, onClose, handleApproveLoan, handleRejectLoan }) => {
-            const [adminReply, setAdminReply] = useState('');
+        const LoanDetailModal = ({ loan, onClose, handleApproveLoan, handleRejectLoan, handleForceApproveLoan }) => {
+            const [adminReply, setAdminReply] = useState(loan.adminReply || '');
+            const [employeeVisitTime, setEmployeeVisitTime] = useState(loan.employeeVisitTime || '');
+            const [employeeMessage, setEmployeeMessage] = useState(loan.employeeMessage || '');
+
             if (!loan) return null;
 
             const onApprove = () => {
@@ -671,6 +686,11 @@
 
             const onReject = () => {
                 handleRejectLoan(loan.accountId, loan.id, adminReply);
+                onClose();
+            };
+
+            const onForceApprove = () => {
+                handleForceApproveLoan(loan.accountId, loan.id, employeeVisitTime, employeeMessage, adminReply);
                 onClose();
             };
 
@@ -690,26 +710,35 @@
                             {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
                             {loan.job && <p><strong>Job:</strong> {loan.job}</p>}
                             {loan.perDayIncome && <p><strong>Per Day Income:</strong> ${loan.perDayIncome?.toFixed(2)}</p>}
-                            {loan.employeeVisitTime && <p><strong>Employee Visit Time:</strong> {loan.employeeVisitTime}</p>}
-                            {loan.employeeMessage && <p><strong>Employee Message:</strong> {loan.employeeMessage}</p>}
+                            
+                            <div className="mt-4">
+                                <label htmlFor="employeeVisitTime" className="block text-gray-300 text-sm font-bold mb-2">Employee Visit Time:</label>
+                                <input type="datetime-local" id="employeeVisitTime" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={employeeVisitTime} onChange={(e) => setEmployeeVisitTime(e.target.value)} />
+                            </div>
+                            <div className="mt-4">
+                                <label htmlFor="employeeMessage" className="block text-gray-300 text-sm font-bold mb-2">Employee Message:</label>
+                                <textarea id="employeeMessage" rows="3" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={employeeMessage} onChange={(e) => setEmployeeMessage(e.target.value)}></textarea>
+                            </div>
+
                             <p><strong>Status:</strong> <span className="capitalize">{loan.loanStatus}</span></p>
                             <p><strong>Application Date:</strong> {new Date(loan.applicationDate).toLocaleDateString()}</p>
                             <p><strong>Amount Due:</strong> ${loan.loanAmountDue?.toFixed(2)}</p>
                             <p><strong>Amount Paid:</strong> ${loan.loanPaid?.toFixed(2)}</p>
-                            {loan.adminReply && <p><strong>Admin Reply:</strong> {loan.adminReply}</p>}
-                        </div>
-                        {(loan.loanStatus === 'waitingForAdminApproval' || loan.loanStatus === 'rejected') && (
+                            
                             <div className="mt-4">
                                 <label htmlFor="adminReply" className="block text-gray-300 text-sm font-bold mb-2">Admin Reply:</label>
                                 <textarea id="adminReply" rows="3" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={adminReply} onChange={(e) => setAdminReply(e.target.value)}></textarea>
                             </div>
-                        )}
+                        </div>
                         <div className="flex justify-end mt-6 space-x-2">
                             {loan.loanStatus === 'waitingForAdminApproval' && (
                                 <>
                                     <button onClick={onApprove} className="px-5 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 transition duration-200">Approve</button>
                                     <button onClick={onReject} className="px-5 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200">Reject</button>
                                 </>
+                            )}
+                            {(loan.loanStatus !== 'approved' && loan.loanStatus !== 'rejected') && (
+                                <button onClick={onForceApprove} className="px-5 py-2 bg-yellow-600 text-white font-semibold rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-75 transition duration-200">Forceful Approve</button>
                             )}
                             <button onClick={onClose} className="px-5 py-2 bg-amber-600 text-white font-semibold rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-opacity-75 transition duration-200">Close</button>
                         </div>
