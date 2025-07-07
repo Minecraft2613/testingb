@@ -98,7 +98,7 @@
 
         const AdminDashboard = ({ adminUser, setAdminUser }) => {
             const [view, setView] = useState('home');
-            const [data, setData] = useState({ accounts: [], taxData: { players: {} } });
+            const [data, setData] = useState({ accounts: [], taxData: { players: {} }, loans: [] });
             const [loading, setLoading] = useState(true);
 
             const fetchData = async () => {
@@ -106,7 +106,6 @@
                     const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'get_all_data' }) });
                     if(res.ok) {
                         const allData = await res.json();
-                        // Filter loans relevant to the current user if needed, or pass all loans
                         setData(allData);
                     }
                 } catch (e) { console.error("Failed to fetch data", e); } 
@@ -209,17 +208,6 @@
             const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
             const [selectedLoan, setSelectedLoan] = useState(null);
 
-            const pendingLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'pending').map(l => ({ ...l, accountId: acc.accountId })));
-            const waitingForEmployeeApprovalLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'waitingForEmployeeApproval').map(l => ({ ...l, accountId: acc.accountId })));
-            const waitingForAdminApprovalLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'waitingForAdminApproval').map(l => ({ ...l, accountId: acc.accountId })));
-            const approvedLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'approved').map(l => ({ ...l, accountId: acc.accountId })));
-            const rejectedLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'rejected').map(l => ({ ...l, accountId: acc.accountId })));
-            const activeLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'active').map(l => ({ ...l, accountId: acc.accountId })));
-            const cancelledLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'cancelled').map(l => ({ ...l, accountId: acc.accountId })));
-            const closedLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'closed' || (l.loanPaid >= l.loanAmountDue && l.loanStatus !== 'cancelled')).map(l => ({ ...l, accountId: acc.accountId })));
-
-            const pendingTaxes = data.accounts.filter(acc => data.taxData?.players?.[acc.accountId]?.sessions?.[data.taxData.currentSession]?.taxDue > 0);
-
             const openLoanDetails = (loan) => {
                 setSelectedLoan(loan);
                 setShowLoanDetailModal(true);
@@ -228,217 +216,48 @@
             return (
                 <div>
                     <h2 className="text-3xl font-bold text-white mb-6">Dashboard</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-                            <h3 className="text-xl font-bold text-amber-400 mb-4">Pending Loan Applications</h3>
+                            <h3 className="text-xl font-bold text-amber-400 mb-4">User Accounts</h3>
                             <div className="space-y-4">
-                                {pendingLoans.length > 0 ? pendingLoans.map(loan => (
-                                    <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
-                                        <div>
-                                            <p><strong>Player:</strong> {loan.accountId}</p>
-                                            <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
-                                            <p><strong>Type:</strong> {loan.loanType}</p>
-                                            <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
-                                            <p><strong>Repayment:</strong> {loan.repayment}</p>
-                                            <p><strong>Purpose:</strong> {loan.purpose}</p>
-                                            {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
-                                            {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
-                                        </div>
-                                        <div className="flex flex-col space-y-2">
-                                            <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
-                                            {adminUser === 'admin22' && (
-                                                <>
-                                                    <button onClick={() => handleApproveLoan(loan.accountId, loan.id)} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md">Approve</button>
-                                                    <button onClick={() => handleCancelLoan(loan.accountId, loan.id)} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md">Cancel</button>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                )) : <p>No pending loans.</p>}
-                            </div>
-                        </div>
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-                            <h3 className="text-xl font-bold text-amber-400 mb-4">Loans Waiting for Employee Approval</h3>
-                            <div className="space-y-4">
-                                {waitingForEmployeeApprovalLoans.length > 0 ? waitingForEmployeeApprovalLoans.map(loan => (
-                                    <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
-                                        <div>
-                                            <p><strong>Player:</strong> {loan.accountId}</p>
-                                            <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
-                                            <p><strong>Type:</strong> {loan.loanType}</p>
-                                            <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
-                                            <p><strong>Repayment:</strong> {loan.repayment}</p>
-                                            <p><strong>Purpose:</strong> {loan.purpose}</p>
-                                            {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
-                                            {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
-                                            {loan.employeeVisitTime && <p><strong>Employee Visit Time:</strong> {loan.employeeVisitTime}</p>}
-                                            {loan.employeeMessage && <p><strong>Employee Message:</strong> {loan.employeeMessage}</p>}
-                                        </div>
-                                        <div className="flex flex-col space-y-2">
-                                            <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
-                                        </div>
-                                    </div>
-                                )) : <p>No loans waiting for employee approval.</p>}
-                            </div>
-                        </div>
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-                            <h3 className="text-xl font-bold text-amber-400 mb-4">Loans Waiting for Admin Approval</h3>
-                            <div className="space-y-4">
-                                {waitingForAdminApprovalLoans.length > 0 ? waitingForAdminApprovalLoans.map(loan => (
-                                    <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
-                                        <div>
-                                            <p><strong>Player:</strong> {loan.accountId}</p>
-                                            <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
-                                            <p><strong>Type:</strong> {loan.loanType}</p>
-                                            <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
-                                            <p><strong>Repayment:</strong> {loan.repayment}</p>
-                                            <p><strong>Purpose:</strong> {loan.purpose}</p>
-                                            {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
-                                            {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
-                                            {loan.employeeVisitTime && <p><strong>Employee Visit Time:</strong> {loan.employeeVisitTime}</p>}
-                                            {loan.employeeMessage && <p><strong>Employee Message:</strong> {loan.employeeMessage}</p>}
-                                        </div>
-                                        <div className="flex flex-col space-y-2">
-                                            <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
-                                            {adminUser === 'admin' && (
-                                                <>
-                                                    <button onClick={() => handleApproveLoan(loan.accountId, loan.id, prompt("Admin Reply:"))} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md">Approve</button>
-                                                    <button onClick={() => handleCancelLoan(loan.accountId, loan.id, prompt("Admin Reply:"))} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md">Reject</button>
-                                                </>
-                                            )}
-                                            {adminUser === 'admin' && loan.loanStatus !== 'waitingForAdminApproval' && (
-                                                <button onClick={() => handleForceApproveLoan(loan.accountId, loan.id, prompt("Employee Visit Time (YYYY-MM-DDTHH:MM):"), prompt("Employee Message:"), prompt("Admin Reply:"))} className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-md">Forceful Approve</button>
-                                            )}
-                                        </div>
-                                    </div>
-                                )) : <p>No loans waiting for admin approval.</p>}
-                            </div>
-                        </div>
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-                            <h3 className="text-xl font-bold text-amber-400 mb-4">Approved Loans</h3>
-                            <div className="space-y-4">
-                                {approvedLoans.length > 0 ? approvedLoans.map(loan => (
-                                    <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
-                                        <div>
-                                            <p><strong>Player:</strong> {loan.accountId}</p>
-                                            <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
-                                            <p><strong>Type:</strong> {loan.loanType}</p>
-                                            <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
-                                            <p><strong>Repayment:</strong> {loan.repayment}</p>
-                                            <p><strong>Purpose:</strong> {loan.purpose}</p>
-                                            {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
-                                            {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
-                                            {loan.adminReply && <p><strong>Admin Reply:</strong> {loan.adminReply}</p>}
-                                        </div>
-                                        <div className="flex flex-col space-y-2">
-                                            <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
-                                        </div>
-                                    </div>
-                                )) : <p>No approved loans.</p>}
-                            </div>
-                        </div>
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-                            <h3 className="text-xl font-bold text-amber-400 mb-4">Rejected Loans</h3>
-                            <div className="space-y-4">
-                                {rejectedLoans.length > 0 ? rejectedLoans.map(loan => (
-                                    <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
-                                        <div>
-                                            <p><strong>Player:</strong> {loan.accountId}</p>
-                                            <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
-                                            <p><strong>Type:</strong> {loan.loanType}</p>
-                                            <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
-                                            <p><strong>Repayment:</strong> {loan.repayment}</p>
-                                            <p><strong>Purpose:</strong> {loan.purpose}</p>
-                                            {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
-                                            {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
-                                            {loan.adminReply && <p><strong>Admin Reply:</strong> {loan.adminReply}</p>}
-                                        </div>
-                                        <div className="flex flex-col space-y-2">
-                                            <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
-                                        </div>
-                                    </div>
-                                )) : <p>No rejected loans.</p>}
-                            </div>
-                        </div>
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-                            <h3 className="text-xl font-bold text-amber-400 mb-4">Active Loans</h3>
-                            <div className="space-y-4">
-                                {activeLoans.length > 0 ? activeLoans.map(loan => (
-                                    <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
-                                        <div>
-                                            <p><strong>Player:</strong> {loan.accountId}</p>
-                                            <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
-                                            <p><strong>Type:</strong> {loan.loanType}</p>
-                                            <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
-                                            <p><strong>Repayment:</strong> {loan.repayment}</p>
-                                            <p><strong>Purpose:</strong> {loan.purpose}</p>
-                                            {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
-                                            {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
-                                        </div>
-                                        <div className="flex flex-col space-y-2">
-                                            <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
-                                        </div>
-                                    </div>
-                                )) : <p>No active loans.</p>}
-                            </div>
-                        </div>
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-                            <h3 className="text-xl font-bold text-amber-400 mb-4">Cancelled Loans</h3>
-                            <div className="space-y-4">
-                                {cancelledLoans.length > 0 ? cancelledLoans.map(loan => (
-                                    <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
-                                        <div>
-                                            <p><strong>Player:</strong> {loan.accountId}</p>
-                                            <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
-                                            <p><strong>Type:</strong> {loan.loanType}</p>
-                                            <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
-                                            <p><strong>Repayment:</strong> {loan.repayment}</p>
-                                            <p><strong>Purpose:</strong> {loan.purpose}</p>
-                                            {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
-                                            {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
-                                        </div>
-                                        <div className="flex flex-col space-y-2">
-                                            <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
-                                        </div>
-                                    </div>
-                                )) : <p>No cancelled loans.</p>}
-                            </div>
-                        </div>
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-                            <h3 className="text-xl font-bold text-amber-400 mb-4">Closed Loans</h3>
-                            <div className="space-y-4">
-                                {closedLoans.length > 0 ? closedLoans.map(loan => (
-                                    <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
-                                        <div>
-                                            <p><strong>Player:</strong> {loan.accountId}</p>
-                                            <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
-                                            <p><strong>Type:</strong> {loan.loanType}</p>
-                                            <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
-                                            <p><strong>Repayment:</strong> {loan.repayment}</p>
-                                            <p><strong>Purpose:</strong> {loan.purpose}</p>
-                                            {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
-                                            {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
-                                        </div>
-                                        <div className="flex flex-col space-y-2">
-                                            <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
-                                        </div>
-                                    </div>
-                                )) : <p>No closed loans.</p>}
-                            </div>
-                        </div>
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-                            <h3 className="text-xl font-bold text-amber-400 mb-4">Players with Pending Taxes</h3>
-                            <div className="space-y-4">
-                                {pendingTaxes.length > 0 ? pendingTaxes.map(acc => (
+                                {data.accounts.map(acc => (
                                     <div key={acc.accountId} className="bg-gray-700 p-4 rounded-md">
                                         <p><strong>Player:</strong> {acc.accountId}</p>
-                                <p><strong>Tax Due:</strong> ${data.taxData?.players?.[acc.accountId]?.sessions?.[data.taxData.currentSession]?.taxDue?.toFixed(2) || '0.00'}</p>
+                                        <p><strong>Bank ID:</strong> {acc.bankId}</p>
+                                        <p><strong>Balance:</strong> ${acc.balance.toFixed(2)}</p>
                                     </div>
-                                )) : <p>No pending taxes.</p>}
+                                ))}
+                            </div>
+                        </div>
+                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            <h3 className="text-xl font-bold text-amber-400 mb-4">All Loans</h3>
+                            <div className="space-y-4">
+                                {data.loans.map(loan => (
+                                    <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
+                                        <div>
+                                            <p><strong>Player:</strong> {loan.accountId}</p>
+                                            <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
+                                            <p><strong>Status:</strong> {loan.loanStatus}</p>
+                                        </div>
+                                        <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            <h3 className="text-xl font-bold text-amber-400 mb-4">Tax Data</h3>
+                            <div className="space-y-4">
+                                {Object.keys(data.taxData.players).map(player => (
+                                    <div key={player} className="bg-gray-700 p-4 rounded-md">
+                                        <p><strong>Player:</strong> {player}</p>
+                                        <p><strong>Tax Due:</strong> ${data.taxData.players[player].sessions[data.taxData.currentSession]?.taxDue?.toFixed(2) || '0.00'}</p>
+                                        <p><strong>Tax Paid:</strong> ${data.taxData.players[player].sessions[data.taxData.currentSession]?.taxPaid?.toFixed(2) || '0.00'}</p>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
-                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} />}
+                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} />}
                 </div>
             );
         };

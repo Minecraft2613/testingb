@@ -112,7 +112,7 @@
         const API_ENDPOINTS = {
             ACCOUNTS: 'https://bank-data.1987sakshamsingh.workers.dev',
             TAX: 'https://bank-data.1987sakshamsingh.workers.dev',
-            CONTACT: 'https://bank-data.1987sakshamsingh.workers.dev',
+            CONTACT: 'https://bank-data.1987sakshamsingh.workers.dev/contact',
         };
 
         // --- UTILITY & HELPER FUNCTIONS ---
@@ -195,11 +195,11 @@
         };
 
         // --- Main Application Layout ---
-        const MainLayout = ({ children, currentUserAccount, setCurrentPage, handleLogout }) => {
+        const MainLayout = ({ children, currentUserAccount, setCurrentPage, handleLogout, notification }) => {
             const [isSidebarOpen, setIsSidebarOpen] = useState(false);
             return (
                 <div className="flex min-h-screen bg-gray-800 text-gray-100">
-                    <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} setCurrentPage={setCurrentPage} handleLogout={handleLogout} />
+                    <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} setCurrentPage={setCurrentPage} handleLogout={handleLogout} notification={notification} />
                     <div className="flex-1 flex flex-col transition-all duration-300 ease-in-out">
                         <TopBar setIsSidebarOpen={setIsSidebarOpen} currentUserAccount={currentUserAccount} />
                         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">{children}</main>
@@ -215,13 +215,13 @@
             </div>
         );
 
-        const Sidebar = ({ isOpen, setIsOpen, setCurrentPage, handleLogout }) => {
+        const Sidebar = ({ isOpen, setIsOpen, setCurrentPage, handleLogout, notification }) => {
             const sidebarClass = isOpen ? 'translate-x-0' : '-translate-x-full';
             const navigateAndClose = (page) => { setCurrentPage(page); setIsOpen(false); };
             const menuItems = [
                 { page: 'home', label: 'Home', icon: '🏠' }, { page: 'account-settings', label: 'Account Settings', icon: '⚙️' },
                 { page: 'top-tax-payers', label: 'Top Tax Payers', icon: '🏆' }, { page: 'top-advance-tax-payers', label: 'Top Advance Tax Payers', icon: '🥇' },
-                { page: 'contact-us', label: 'Contact Us', icon: '📞' }, { page: 'theme-setting', label: 'Theme Settings', icon: '🎨' },
+                { page: 'contact-us', label: 'Contact Us', icon: '📞', notification: notification }, { page: 'theme-setting', label: 'Theme Settings', icon: '🎨' },
             ];
             return (
                 <>
@@ -229,7 +229,7 @@
                     <div className={`fixed inset-y-0 left-0 w-64 bg-gray-800 p-6 transform ${sidebarClass} transition-transform duration-300 ease-in-out shadow-xl z-30 flex flex-col border-r-4 border-gray-700`}>
                         <div className="flex justify-between items-center mb-10"><h2 className="text-2xl font-extrabold text-green-400">Menu</h2><button onClick={() => setIsOpen(false)} className="text-gray-400 text-3xl hover:text-white">&times;</button></div>
                         <nav className="flex-grow space-y-2">
-                            {menuItems.map(item => <button key={item.page} onClick={() => navigateAndClose(item.page)} className="w-full text-left py-2.5 px-4 rounded-md text-md font-semibold text-gray-300 hover:bg-gray-700 hover:text-white transition duration-200 flex items-center gap-3">{item.icon} {item.label}</button>)}
+                            {menuItems.map(item => <button key={item.page} onClick={() => navigateAndClose(item.page)} className="w-full text-left py-2.5 px-4 rounded-md text-md font-semibold text-gray-300 hover:bg-gray-700 hover:text-white transition duration-200 flex items-center gap-3">{item.icon} {item.label} {item.notification && <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">{item.notification}</span>}</button>)}
                         </nav>
                         <div className="mt-8"><button onClick={handleLogout} className="w-full text-left py-2.5 px-4 rounded-md text-md font-semibold text-gray-300 hover:bg-red-700 hover:text-white transition duration-200 flex items-center gap-3 bg-red-600">🚪 Logout</button></div>
                     </div>
@@ -384,7 +384,7 @@
             }, [dataToDisplay, chartDataType]); // Re-render chart when dataToDisplay or chartDataType changes
 
             const downloadReport = () => {
-                if (!chartRef.current || !chartInstanceRef.current) {
+                if (!chartRef.current) {
                     showModal('Error', 'Chart not rendered yet. Please view the chart before downloading.', 'error');
                     return;
                 }
@@ -393,9 +393,9 @@
                 const link = document.createElement('a');
                 link.href = chartImage;
                 link.download = `tax-chart-${accountId}-${chartDataType}.png`;
-                document.body.appendChild(link); // Append to body to make it clickable
+                document.body.appendChild(link);
                 link.click();
-                document.body.removeChild(link); // Clean up
+                document.body.removeChild(link);
                 showModal('Download Complete', 'Tax chart downloaded successfully!', 'success');
             };
 
@@ -465,12 +465,13 @@
                 playerScreenshot: '', landPhoto: '', buildingPhoto: '',
                 employeePhoto: '', signatureOfBankEmployee: '',
             });
+            const [isCompound, setIsCompound] = useState(false);
             const [isSubmitting, setIsSubmitting] = useState(false); // New state for submission status
             const hasIncomeProfile = (currentUserAccount.jobPerDayIncome > 0 || currentUserAccount.businessPerDayIncome > 0);
             const loanDurationLimits = { personal: 5, home: 3, business: 6, homeStartup: 4, bizStartup: 6 };
             const maxDuration = loanDurationLimits[loanDetails.type];
 
-            const { perPaymentAmount, principalPerPayment, interestPerPayment, totalInterestAmount, weeklyInterestRateDisplay } = useMemo(() => {
+            const { perPaymentAmount, principalPerPayment, interestPerPayment, totalInterestAmount, weeklyInterestRateDisplay, totalArea, landValue, buildingValue } = useMemo(() => {
                 const amount = parseFloat(loanDetails.amount) || 0;
                 const durationWeeks = parseInt(loanDetails.duration) || 0;
                 if (!amount || !durationWeeks) return { perPaymentAmount: 0, principalPerPayment: 0, interestPerPayment: 0, totalInterestAmount: 0, weeklyInterestRateDisplay: 0 };
@@ -509,14 +510,23 @@
                 const principalPerPayment = amount / numberOfPayments;
                 const interestPerPayment = calculatedTotalInterest / numberOfPayments;
 
+                const xCoords = [loanDetails.coord1X, loanDetails.coord2X, loanDetails.coord3X, loanDetails.coord4X].filter(c => c).map(c => parseFloat(c));
+                const zCoords = [loanDetails.coord1Z, loanDetails.coord2Z, loanDetails.coord3Z, loanDetails.coord4Z].filter(c => c).map(c => parseFloat(c));
+                const totalArea = xCoords.length > 1 && zCoords.length > 1 ? Math.abs((Math.max(...xCoords) - Math.min(...xCoords)) * (Math.max(...zCoords) - Math.min(...zCoords))) : 0;
+                const landValue = totalArea * 10; // Assuming $10 per square block
+                const buildingValue = parseFloat(loanDetails.valueOfBuilding) || 0;
+
                 return {
                     perPaymentAmount: perPaymentAmount,
                     principalPerPayment: principalPerPayment,
                     interestPerPayment: interestPerPayment,
                     totalInterestAmount: calculatedTotalInterest,
-                    weeklyInterestRateDisplay: weeklyRate * 100 // Display as percentage
+                    weeklyInterestRateDisplay: weeklyRate * 100, // Display as percentage
+                    totalArea: totalArea,
+                    landValue: landValue,
+                    buildingValue: buildingValue
                 };
-            }, [loanDetails.amount, loanDetails.duration, loanDetails.type, loanDetails.repayment]);
+            }, [loanDetails.amount, loanDetails.duration, loanDetails.type, loanDetails.repayment, isCompound]);
 
             const handleChange = (e) => {
                 const { name, value } = e.target;
@@ -582,6 +592,12 @@
                             <option value="daily">Daily</option>
                             <option value="weekly" disabled={loanDetails.duration < 2}>Weekly (2+ weeks)</option>
                         </select>
+                        <div className="flex items-center">
+                            <input type="checkbox" id="isCompound" name="isCompound" checked={isCompound} onChange={(e) => setIsCompound(e.target.checked)} className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" />
+                            <label htmlFor="isCompound" className="ml-2 block text-sm text-gray-300">
+                                Compound Interest
+                            </label>
+                        </div>
                         <textarea name="purpose" value={loanDetails.purpose} onChange={handleChange} placeholder="What is the purpose of this loan?" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md h-24"></textarea>
                         
                         <input name="loanerNetWorth" type="number" value={loanDetails.loanerNetWorth} onChange={handleChange} placeholder="Your Net Worth ($)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
@@ -601,27 +617,36 @@
 
                         {(loanDetails.type === 'home' || loanDetails.type === 'business' || loanDetails.type.includes('Startup')) && (
                             <div className="space-y-4 pt-2 border-t border-gray-700">
-                                <h3 className="text-lg font-semibold text-yellow-400">Property/Business Details</h3>
+                                <h3 class="text-lg font-semibold text-yellow-400">Property/Business Details</h3>
                                 <input name="areaVolume" type="number" value={loanDetails.areaVolume} onChange={handleChange} placeholder="Area/Volume (sq/cu blocks)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                 <input name="valueOfLand" type="number" value={loanDetails.valueOfLand} onChange={handleChange} placeholder="Value of Land ($)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                 <input name="valueOfBuilding" type="number" value={loanDetails.valueOfBuilding} onChange={handleChange} placeholder="Value of Building ($)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                <p className="text-sm text-gray-400">Corner Coordinates (X1, Y1, Z1 to X2, Y2, Z2)</p>
-                                <div className="grid grid-cols-3 gap-2">
+                                <p class="text-sm text-gray-400">Corner Coordinates (up to 4 corners)</p>
+                                <div class="grid grid-cols-3 gap-2">
                                     <input name="coord1X" type="number" value={loanDetails.coord1X} onChange={handleChange} placeholder="X1" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                     <input name="coord1Y" type="number" value={loanDetails.coord1Y} onChange={handleChange} placeholder="Y1" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                     <input name="coord1Z" type="number" value={loanDetails.coord1Z} onChange={handleChange} placeholder="Z1" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                     <input name="coord2X" type="number" value={loanDetails.coord2X} onChange={handleChange} placeholder="X2" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                     <input name="coord2Y" type="number" value={loanDetails.coord2Y} onChange={handleChange} placeholder="Y2" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                     <input name="coord2Z" type="number" value={loanDetails.coord2Z} onChange={handleChange} placeholder="Z2" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord3X" type="number" value={loanDetails.coord3X} onChange={handleChange} placeholder="X3" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord3Y" type="number" value={loanDetails.coord3Y} onChange={handleChange} placeholder="Y3" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord3Z" type="number" value={loanDetails.coord3Z} onChange={handleChange} placeholder="Z3" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord4X" type="number" value={loanDetails.coord4X} onChange={handleChange} placeholder="X4" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord4Y" type="number" value={loanDetails.coord4Y} onChange={handleChange} placeholder="Y4" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord4Z" type="number" value={loanDetails.coord4Z} onChange={handleChange} placeholder="Z4" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                 </div>
-                                <input name="landPhoto" type="text" value={loanDetails.landPhoto} onChange={handleChange} placeholder="Land Photo URL" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                <input name="buildingPhoto" type="text" value={loanDetails.buildingPhoto} onChange={handleChange} placeholder="Building Photo URL" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                <label class="block text-gray-300">Land Photo:</label>
+                                <input name="landPhoto" type="file" onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                <label class="block text-gray-300">Building Photo:</label>
+                                <input name="buildingPhoto" type="file" onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                             </div>
                         )}
-                        <input name="employeePhoto" type="text" value={loanDetails.employeePhoto} onChange={handleChange} placeholder="Employee Photo URL" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                        <input name="signatureOfBankEmployee" type="text" value={loanDetails.signatureOfBankEmployee} onChange={handleChange} placeholder="Signature of Bank Employee URL" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
 
                         <div className="p-3 bg-gray-700 rounded-md text-center">
+                            <p className="text-gray-300">Total Area: <span className="font-bold text-yellow-400">{totalArea.toFixed(2)}</span></p>
+                            <p className="text-gray-300">Estimated Land Value: <span className="font-bold text-yellow-400">${landValue.toFixed(2)}</span></p>
+                            <p className="text-gray-300">Building Value: <span className="font-bold text-yellow-400">${buildingValue.toFixed(2)}</span></p>
                             <p className="text-gray-300">Payment per {loanDetails.repayment === 'daily' ? 'Day' : 'Week'}: <span className="font-bold text-yellow-400">${perPaymentAmount.toFixed(2)}</span></p>
                             <p className="text-gray-300 text-sm">(Principal: ${principalPerPayment.toFixed(2)}, Interest: ${interestPerPayment.toFixed(2)})</p>
                             <p className="text-gray-300">Total Interest: <span className="font-bold text-red-400">${totalInterestAmount.toFixed(2)}</span></p>
@@ -670,30 +695,28 @@
                                 <form onSubmit={onProfileSubmit} className="space-y-4">
                                     <div>
                                         <label className="text-gray-300">Job Type: </label>
-                                        {editMode.job ? <input name="jobType" value={profile.jobType} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" /> : <span className="text-gray-200">{profile.jobType || 'N/A'}</span>}
-                                        <button type="button" onClick={() => setEditMode(prev => ({ ...prev, job: !prev.job }))} className="ml-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-md">{editMode.job ? 'Cancel' : 'Edit'}</button>
+                                        <input name="jobType" value={profile.jobType} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                     </div>
                                     <div>
                                         <label className="text-gray-300">Job Income per Day: </label>
-                                        {editMode.job ? <input name="jobPerDayIncome" type="number" value={profile.jobPerDayIncome} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" /> : <span className="text-gray-200">${profile.jobPerDayIncome || '0'}/day</span>}
+                                        <input name="jobPerDayIncome" type="number" value={profile.jobPerDayIncome} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                     </div>
                                     <div className="flex items-center gap-4 mt-4"><label className="text-gray-300">Have a business?</label><input type="checkbox" checked={profile.hasBusiness} onChange={(e) => setProfile({...profile, hasBusiness: e.target.checked})} className="h-5 w-5 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500" /></div>
                                     {profile.hasBusiness && <>
                                         <div>
                                             <label className="text-gray-300">Business Type: </label>
-                                            {editMode.business ? <input name="businessType" value={profile.businessType} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" /> : <span className="text-gray-200">{profile.businessType || 'N/A'}</span>}
-                                            <button type="button" onClick={() => setEditMode(prev => ({ ...prev, business: !prev.business }))} className="ml-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-md">{editMode.business ? 'Cancel' : 'Edit'}</button>
+                                            <input name="businessType" value={profile.businessType} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                         </div>
                                         <div>
                                             <label className="text-gray-300">Business Income: </label>
-                                            {editMode.business ? <input name="businessPerDayIncome" type="number" value={profile.businessPerDayIncome} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" /> : <span className="text-gray-200">${profile.businessPerDayIncome || '0'}/{profile.businessIncomeUnit}</span>}
+                                            <input name="businessPerDayIncome" type="number" value={profile.businessPerDayIncome} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                         </div>
                                         <div>
                                             <label className="text-gray-300">Income Unit: </label>
-                                            {editMode.business ? <select name="businessIncomeUnit" value={profile.businessIncomeUnit} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md"><option value="day">Per Day</option><option value="hour">Per Hour</option></select> : <span className="text-gray-200">{profile.businessIncomeUnit}</span>}
+                                            <select name="businessIncomeUnit" value={profile.businessIncomeUnit} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md"><option value="day">Per Day</option><option value="hour">Per Hour</option></select>
                                         </div>
                                     </>}
-                                    {(editMode.job || editMode.business) && <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">Save Changes</button>}
+                                    <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">Save Changes</button>
                                 </form>
                             </div>
                             <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Change Password</h2><form onSubmit={onPasswordSubmit} className="space-y-4 max-w-sm"><input type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} placeholder="Old Password" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" /><input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New Password" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" /><button type="submit" className="bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700">Change Password</button></form></div></div>
@@ -772,30 +795,52 @@
             );
         };
 
-        const ContactUsPage = ({ showModal }) => {
-            const [formData, setFormData] = useState({
-                platform: 'discord',
-                username: '',
-                language: 'english',
-                problem: '',
-            });
+        const ContactUsPage = ({ showModal, currentUserAccount }) => {
+            const [messages, setMessages] = useState([]);
+            const [newMessage, setNewMessage] = useState('');
 
-            const handleChange = (e) => {
-                setFormData({ ...formData, [e.target.name]: e.target.value });
-            };
+            useEffect(() => {
+                const fetchMessages = async () => {
+                    try {
+                        const response = await fetch(`${API_ENDPOINTS.ACCOUNTS}/messages`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            setMessages(data.filter(m => m.username === currentUserAccount.accountId));
+                        }
+                    } catch (error) {
+                        console.error("Error fetching messages:", error);
+                    }
+                };
 
-            const handleSubmit = async (e) => {
+                if (currentUserAccount) {
+                    fetchMessages();
+                }
+            }, [currentUserAccount]);
+
+            const handleSendMessage = async (e) => {
                 e.preventDefault();
+                if (!newMessage.trim()) return;
+
                 try {
                     const response = await fetch(API_ENDPOINTS.CONTACT, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(formData),
+                        body: JSON.stringify({ 
+                            username: currentUserAccount.accountId,
+                            problem: newMessage,
+                            platform: 'web',
+                            language: 'english'
+                         }),
                     });
 
                     if (response.ok) {
-                        showModal('Message Sent!', 'Your message has been sent. We will get back to you soon!', 'success');
-                        setFormData({ platform: 'discord', username: '', language: 'english', problem: '' });
+                        setNewMessage('');
+                        // Refetch messages to show the new one
+                        const messagesResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/messages`);
+                        if (messagesResponse.ok) {
+                            const data = await messagesResponse.json();
+                            setMessages(data.filter(m => m.username === currentUserAccount.accountId));
+                        }
                     } else {
                         const errorData = await response.json();
                         showModal('Error', errorData.message || 'Failed to send message. Please try again.', 'error');
@@ -809,30 +854,30 @@
             return (
                 <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft animate-fade-in max-w-lg mx-auto">
                     <h1 className="text-3xl font-bold text-green-400 mb-6">📞 Contact Us</h1>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label htmlFor="platform" className="block text-gray-300 text-sm font-bold mb-2">Platform:</label>
-                            <select name="platform" value={formData.platform} onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
-                                <option value="discord">Discord</option>
-                                <option value="instagram">Instagram</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label htmlFor="username" className="block text-gray-300 text-sm font-bold mb-2">Your Username:</label>
-                            <input type="text" name="username" value={formData.username} onChange={handleChange} placeholder="Your social username" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" />
-                        </div>
-                        <div>
-                            <label htmlFor="language" className="block text-gray-300 text-sm font-bold mb-2">Preferred Language:</label>
-                            <select name="language" value={formData.language} onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
-                                <option value="english">English</option>
-                                <option value="hindi">Hindi</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label htmlFor="problem" className="block text-gray-300 text-sm font-bold mb-2">Describe your problem:</label>
-                            <textarea name="problem" value={formData.problem} onChange={handleChange} placeholder="e.g., Account issue, Bug report, Suggestion" rows="5" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
-                        </div>
-                        <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md transition duration-200 shadow-md transform hover:scale-105">Submit</button>
+                    <div className="space-y-4 h-96 overflow-y-auto p-4 bg-gray-700 rounded-md">
+                        {messages.map((msg) => (
+                            <div key={msg.id} className={`chat-message ${msg.sender === 'admin' ? 'text-left' : 'text-right'}`}>
+                                <div className={`inline-block p-2 rounded-lg ${msg.sender === 'admin' ? 'bg-gray-600' : 'bg-green-600'}`}>
+                                    <p className="text-sm">{msg.problem}</p>
+                                    {msg.replies && msg.replies.map((reply, index) => (
+                                        <div key={index} className="mt-2 pt-2 border-t border-gray-500">
+                                            <p className="text-xs font-bold">{reply.sender}</p>
+                                            <p className="text-xs">{reply.message}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <form onSubmit={handleSendMessage} className="mt-4 flex gap-2">
+                        <input 
+                            type="text" 
+                            value={newMessage} 
+                            onChange={(e) => setNewMessage(e.target.value)} 
+                            placeholder="Type your message..." 
+                            className="flex-grow p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" 
+                        />
+                        <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md">Send</button>
                     </form>
                 </div>
             );
@@ -956,6 +1001,7 @@
             const [loading, setLoading] = useState(true);
             const [loginSuccess, setLoginSuccess] = useState(false);
             const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'info', callback: null });
+            const [notification, setNotification] = useState(null);
             const [paymentAnimationDetails, setPaymentAnimationDetails] = useState({ show: false, amount: 0, status: 'processing', paymentType: '' });
 
             const showModal = (title, message, type = 'info', callback = null) => setModal({ isOpen: true, title, message, type, callback });
@@ -1402,12 +1448,12 @@ const handleAdvanceTax = async (amount) => {
                     case 'account-settings': pageComponent = <AccountSettingsPage {...commonProps} />; break;
                     case 'top-tax-payers': pageComponent = <TopTaxPayersPage {...commonProps} getAllAccounts={getAllAccounts} />; break;
                     case 'top-advance-tax-payers': pageComponent = <TopAdvanceTaxPayersPage {...commonProps} getAllAccounts={getAllAccounts} />; break;
-                    case 'contact-us': pageComponent = <ContactUsPage {...commonProps} />; break;
+                    case 'contact-us': pageComponent = <ContactUsPage {...commonProps} setNotification={setNotification} />; break;
                     case 'theme-setting': pageComponent = <ThemeSettingsPage {...commonProps} />; break;
                     case 'tax-page': pageComponent = <TaxPage {...commonProps} paymentAnimationDetails={paymentAnimationDetails} setPaymentAnimationDetails={setPaymentAnimationDetails} />; break;
                     default: pageComponent = <Dashboard {...commonProps} />;
                 }
-                return <MainLayout {...commonProps}>{pageComponent}</MainLayout>;
+                return <MainLayout {...commonProps} notification={notification}>{pageComponent}</MainLayout>;
             };
 
             return <>{renderPage()}{paymentAnimationDetails.show && <PaymentLoadingAnimation {...paymentAnimationDetails} onAnimationComplete={() => setPaymentAnimationDetails({ show: false, amount: 0, status: 'processing', paymentType: '' })} /> }<Modal {...modal} onClose={closeModal} /></>;
