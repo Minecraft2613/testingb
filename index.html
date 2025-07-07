@@ -1468,7 +1468,8 @@ const handleAdvanceTax = async (amount) => {
                     let successMessage = `Payment successful!`;
                     if (paymentType === 'fullTax') {
                         successMessage += ` Thanks for paying the tax.`;
-                    } else if (paymentType === 'advanceTax') {
+                    }
+                    else if (paymentType === 'advanceTax') {
                         successMessage += ` Thanks for paying the tax advance.`;
                     }
                     setMessage(successMessage);
@@ -1479,7 +1480,7 @@ const handleAdvanceTax = async (amount) => {
                     setBoxClass('error');
                     timer = setTimeout(() => onAnimationComplete(), 3000); // Display error for 3 seconds
                 } else {
-                    setMessage(`Processing payment of ${amount.toFixed(2)}...`);
+                    setMessage(`Processing payment of ${amount?.toFixed(2) || '0.00'}...`);
                     setBoxClass('');
                 }
                 return () => clearTimeout(timer);
