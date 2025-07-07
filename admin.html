@@ -224,7 +224,7 @@
                                     <div key={acc.accountId} className="bg-gray-700 p-4 rounded-md">
                                         <p><strong>Player:</strong> {acc.accountId}</p>
                                         <p><strong>Bank ID:</strong> {acc.bankId}</p>
-                                        <p><strong>Balance:</strong> ${acc.balance?.toFixed(2) || '0.00'}</p>
+                                        <p><strong>Balance:</strong> ${parseFloat(acc.balance)?.toFixed(2) || '0.00'}</p>
                                     </div>
                                 ))}
                             </div>
@@ -236,7 +236,7 @@
                                     <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
                                         <div>
                                             <p><strong>Player:</strong> {loan.accountId}</p>
-                                            <p><strong>Amount:</strong> ${loan.loanAmount?.toFixed(2) || '0.00'}</p>
+                                            <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
                                             <p><strong>Status:</strong> {loan.loanStatus}</p>
                                         </div>
                                         <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
@@ -250,8 +250,8 @@
                                 {Object.keys(data.taxData.players).map(player => (
                                     <div key={player} className="bg-gray-700 p-4 rounded-md">
                                         <p><strong>Player:</strong> {player}</p>
-                                        <p><strong>Tax Due:</strong> ${data.taxData.players[player].sessions[data.taxData.currentSession]?.taxDue?.toFixed(2) || '0.00'}</p>
-                                        <p><strong>Tax Paid:</strong> ${data.taxData.players[player].sessions[data.taxData.currentSession]?.taxPaid?.toFixed(2) || '0.00'}</p>
+                                        <p><strong>Tax Due:</strong> ${parseFloat(data.taxData.players[player].sessions[data.taxData.currentSession]?.taxDue)?.toFixed(2) || '0.00'}</p>
+                                        <p><strong>Tax Paid:</strong> ${parseFloat(data.taxData.players[player].sessions[data.taxData.currentSession]?.taxPaid)?.toFixed(2) || '0.00'}</p>
                                     </div>
                                 ))}
                             </div>
@@ -271,7 +271,7 @@
                         {approvedLoans.length > 0 ? approvedLoans.map(loan => (
                             <div key={loan.id} className="bg-gray-800 p-4 rounded-lg shadow-lg">
                                 <p><strong>Player:</strong> {loan.accountId}</p>
-                                <p><strong>Amount:</strong> ${loan.loanAmount?.toFixed(2) || '0.00'}</p>
+                                <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
                                 <p><strong>Status:</strong> {loan.loanStatus}</p>
                             </div>
                         )) : <p>No approved loans.</p>}
@@ -289,7 +289,7 @@
                         {allLoans.length > 0 ? allLoans.map(loan => (
                             <div key={loan.id} className="bg-gray-800 p-4 rounded-lg shadow-lg">
                                 <p><strong>Player:</strong> {loan.accountId}</p>
-                                <p><strong>Amount:</strong> ${loan.loanAmount?.toFixed(2) || '0.00'}</p>
+                                <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
                                 <p><strong>Status:</strong> {loan.loanStatus}</p>
                                 <p><strong>Type:</strong> {loan.loanType}</p>
                                 <p><strong>Application Date:</strong> {new Date(loan.applicationDate).toLocaleDateString()}</p>
@@ -554,8 +554,8 @@
 
                             <p><strong>Status:</strong> <span className="capitalize">{loan.loanStatus}</span></p>
                             <p><strong>Application Date:</strong> {new Date(loan.applicationDate).toLocaleDateString()}</p>
-                            <p><strong>Amount Due:</strong> ${loan.loanAmountDue?.toFixed(2) || '0.00'}</p>
-                            <p><strong>Amount Paid:</strong> ${loan.loanPaid?.toFixed(2) || '0.00'}</p>
+                            <p><strong>Amount Due:</strong> ${parseFloat(loan.loanAmountDue)?.toFixed(2) || '0.00'}</p>
+                            <p><strong>Amount Paid:</strong> ${parseFloat(loan.loanPaid)?.toFixed(2) || '0.00'}</p>
                             
                             <div className="mt-4">
                                 <label htmlFor="adminReply" className="block text-gray-300 text-sm font-bold mb-2">Admin Reply:</label>

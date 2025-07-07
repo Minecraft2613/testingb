@@ -291,7 +291,7 @@
                                             className={`p-4 rounded-md cursor-pointer ${selectedLoan?.id === loan.id ? 'bg-blue-700' : 'bg-gray-700'} hover:bg-gray-600`}
                                             onClick={() => setSelectedLoan(loan)}>
                                             <p className="font-semibold">{loan.loanType} Loan for {loan.accountId}</p>
-                                            <p className="text-sm text-gray-400">Amount: ${loan.loanAmount?.toFixed(2) || '0.00'} | Status: {loan.loanStatus === 'pending' && !loan.employeeVisitTime ? 'Pending Visit Time' : loan.loanStatus === 'pending' && loan.employeeVisitTime ? 'Waiting for employee to pass' : loan.loanStatus}</p>
+                                            <p className="text-sm text-gray-400">Amount: ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'} | Status: {loan.loanStatus === 'pending' && !loan.employeeVisitTime ? 'Pending Visit Time' : loan.loanStatus === 'pending' && loan.employeeVisitTime ? 'Waiting for employee to pass' : loan.loanStatus}</p>
                                             {loan.employeeVisitTime && <p className="text-sm text-gray-400">Visit: {new Date(loan.employeeVisitTime).toLocaleString()}</p>}
                                             {loan.employeeMessage && <p className="text-sm text-gray-400">Message: {loan.employeeMessage}</p>}
                                         </li>
@@ -308,7 +308,7 @@
                                 <div className="space-y-4">
                                     <p><strong>Loan ID:</strong> {selectedLoan.id}</p>
                                     <p><strong>Loaner:</strong> {selectedLoan.accountId}</p>
-                                    <p><strong>Amount:</strong> ${selectedLoan.loanAmount?.toFixed(2) || '0.00'}</p>
+                                    <p><strong>Amount:</strong> ${parseFloat(selectedLoan.loanAmount)?.toFixed(2) || '0.00'}</p>
                                     <p><strong>Status:</strong> {selectedLoan.loanStatus}</p>
                                     <p><strong>Purpose:</strong> {selectedLoan.purpose}</p>
                                     {selectedLoan.coord1 && <p><strong>Coords 1:</strong> {selectedLoan.coord1}</p>}
