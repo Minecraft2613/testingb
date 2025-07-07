@@ -136,11 +136,11 @@
                 fetchData(); // Refresh data after action
             };
 
-            const handleForceApproveLoan = async (accountId, loanId, employeeVisitTime, employeeMessage, adminReply) => {
+            const handleForceApproveLoan = async (accountId, loanId, employeeVisitTime, employeeMessage, adminReply, adminUser) => {
                 await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'force_approve_loan', userAccountId: accountId, loanId, employeeVisitTime, employeeMessage, adminReply })
+                    body: JSON.stringify({ action: 'force_approve_loan', userAccountId: accountId, loanId, employeeVisitTime, employeeMessage, adminReply, adminUser })
                 });
                 fetchData(); // Refresh data after action
             };
@@ -148,7 +148,7 @@
             const renderView = () => {
                 if (loading) return <div className="text-center p-10"><div className="vip-loader mx-auto"></div></div>;
                 
-                const props = { data, adminUser, handleApproveLoan, handleCancelLoan, setView };
+                const props = { data, adminUser, handleApproveLoan, handleCancelLoan, handleForceApproveLoan, setView };
 
                 switch(view) {
                     case 'home': return <HomeView {...props} />;
@@ -224,7 +224,7 @@
                                     <div key={acc.accountId} className="bg-gray-700 p-4 rounded-md">
                                         <p><strong>Player:</strong> {acc.accountId}</p>
                                         <p><strong>Bank ID:</strong> {acc.bankId}</p>
-                                        <p><strong>Balance:</strong> ${acc.balance.toFixed(2)}</p>
+                                        <p><strong>Balance:</strong> ${acc.balance?.toFixed(2) || '0.00'}</p>
                                     </div>
                                 ))}
                             </div>
@@ -236,7 +236,7 @@
                                     <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
                                         <div>
                                             <p><strong>Player:</strong> {loan.accountId}</p>
-                                            <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
+                                            <p><strong>Amount:</strong> ${loan.loanAmount?.toFixed(2) || '0.00'}</p>
                                             <p><strong>Status:</strong> {loan.loanStatus}</p>
                                         </div>
                                         <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
@@ -257,7 +257,7 @@
                             </div>
                         </div>
                     </div>
-                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} />}
+                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} adminUser={adminUser} />}
                 </div>
             );
         };
@@ -271,7 +271,7 @@
                         {approvedLoans.length > 0 ? approvedLoans.map(loan => (
                             <div key={loan.id} className="bg-gray-800 p-4 rounded-lg shadow-lg">
                                 <p><strong>Player:</strong> {loan.accountId}</p>
-                                <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
+                                <p><strong>Amount:</strong> ${loan.loanAmount?.toFixed(2) || '0.00'}</p>
                                 <p><strong>Status:</strong> {loan.loanStatus}</p>
                             </div>
                         )) : <p>No approved loans.</p>}
@@ -289,7 +289,7 @@
                         {allLoans.length > 0 ? allLoans.map(loan => (
                             <div key={loan.id} className="bg-gray-800 p-4 rounded-lg shadow-lg">
                                 <p><strong>Player:</strong> {loan.accountId}</p>
-                                <p><strong>Amount:</strong> ${loan.loanAmount.toFixed(2)}</p>
+                                <p><strong>Amount:</strong> ${loan.loanAmount?.toFixed(2) || '0.00'}</p>
                                 <p><strong>Status:</strong> {loan.loanStatus}</p>
                                 <p><strong>Type:</strong> {loan.loanType}</p>
                                 <p><strong>Application Date:</strong> {new Date(loan.applicationDate).toLocaleDateString()}</p>
@@ -386,7 +386,7 @@
                                         <div key={session} className="ml-4 mb-2">
                                             <h4 className="font-bold text-gray-400">Session: {session}</h4>
                                             {sessionData.dailyCharges.map((charge, i) => (
-                                                <p key={i}>Date: {new Date(charge.date).toLocaleDateString()}, Amount: ${charge.amount.toFixed(2)}</p>
+                                                <p key={i}>Date: {new Date(charge.date).toLocaleDateString()}, Amount: ${charge.amount?.toFixed(2) || '0.00'}</p>
                                             ))}
                                         </div>
                                     );
@@ -432,14 +432,14 @@
                         <div className="border-t-4 border-gray-700 pt-4 mt-4">
                             <h3 className="text-xl font-bold text-white mb-4">Viewing: {selectedPlayer.accountId}</h3>
                             <div className="space-y-6">
-                                <div className="bg-gray-700 p-4 rounded-lg"><p><strong>Balance:</strong> ${selectedPlayer.balance.toFixed(2)}</p></div>
+                                <div className="bg-gray-700 p-4 rounded-lg"><p><strong>Balance:</strong> ${selectedPlayer.balance?.toFixed(2) || '0.00'}</p></div>
                                 <div className="bg-gray-700 p-4 rounded-lg">
                                     <h4 className="font-bold mb-2">Loans</h4>
-                                    {(selectedPlayer.loans || []).map(loan => <div key={loan.id}>{loan.loanType}: ${loan.loanAmount.toFixed(2)} ({loan.loanStatus})</div>)}
+                                    {(selectedPlayer.loans || []).map(loan => <div key={loan.id}>{loan.loanType}: ${loan.loanAmount?.toFixed(2) || '0.00'} ({loan.loanStatus})</div>)}
                                 </div>
                                 <div className="bg-gray-700 p-4 rounded-lg">
                                     <h4 className="font-bold mb-2">Transactions</h4>
-                                    {(selectedPlayer.transactions || []).slice(-5).map((tx, i) => <div key={i}>{tx.description}: ${tx.amount.toFixed(2)}</div>)}
+                                    {(selectedPlayer.transactions || []).slice(-5).map((tx, i) => <div key={i}>{tx.description}: ${tx.amount?.toFixed(2) || '0.00'}</div>)}
                                 </div>
                             </div>
                         </div>
@@ -522,7 +522,7 @@
             };
 
             const onForceApprove = () => {
-                handleForceApproveLoan(loan.accountId, loan.id, employeeVisitTime, employeeMessage, adminReply);
+                handleForceApproveLoan(loan.accountId, loan.id, employeeVisitTime, employeeMessage, adminReply, adminUser); // Pass adminUser
                 onClose();
             };
 
@@ -533,7 +533,7 @@
                         <h3 className="text-2xl font-bold text-amber-400 mb-4">Loan Details for {loan.accountId}</h3>
                         <div className="space-y-2 text-gray-300">
                             <p><strong>Loan ID:</strong> {loan.id}</p>
-                            <p><strong>Amount:</strong> ${loan.loanAmount?.toFixed(2)}</p>
+                            <p><strong>Amount:</strong> ${loan.loanAmount?.toFixed(2) || '0.00'}</p>
                             <p><strong>Loan Type:</strong> {loan.loanType}</p>
                             <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
                             <p><strong>Repayment:</strong> {loan.repayment}</p>
@@ -541,31 +541,110 @@
                             {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
                             {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
                             {loan.job && <p><strong>Job:</strong> {loan.job}</p>}
-                            {loan.perDayIncome && <p><strong>Per Day Income:</strong> ${loan.perDayIncome?.toFixed(2)}</p>}
+                            {loan.perDayIncome && <p><strong>Per Day Income:</strong> ${loan.perDayIncome?.toFixed(2) || '0.00'}</p>}
                             
                             <div className="mt-4">
                                 <label htmlFor="employeeVisitTime" className="block text-gray-300 text-sm font-bold mb-2">Employee Visit Time:</label>
-                                <input type="datetime-local" id="employeeVisitTime" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={employeeVisitTime} onChange={(e) => setEmployeeVisitTime(e.target.value)} />
+                                {loan.employeeVisitTime && !adminUser ? <p>{new Date(loan.employeeVisitTime).toLocaleString()}</p> : <input type="datetime-local" id="employeeVisitTime" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={employeeVisitTime} onChange={(e) => setEmployeeVisitTime(e.target.value)} />}
                             </div>
                             <div className="mt-4">
                                 <label htmlFor="employeeMessage" className="block text-gray-300 text-sm font-bold mb-2">Employee Message:</label>
-                                <textarea id="employeeMessage" rows="3" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={employeeMessage} onChange={(e) => setEmployeeMessage(e.target.value)}></textarea>
+                                {loan.employeeMessage && !adminUser ? <p>{loan.employeeMessage}</p> : <textarea id="employeeMessage" rows="3" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={employeeMessage} onChange={(e) => setEmployeeMessage(e.target.value)}></textarea>}
                             </div>
 
                             <p><strong>Status:</strong> <span className="capitalize">{loan.loanStatus}</span></p>
                             <p><strong>Application Date:</strong> {new Date(loan.applicationDate).toLocaleDateString()}</p>
-                            <p><strong>Amount Due:</strong> ${loan.loanAmountDue?.toFixed(2)}</p>
-                            <p><strong>Amount Paid:</strong> ${loan.loanPaid?.toFixed(2)}</p>
+                            <p><strong>Amount Due:</strong> ${loan.loanAmountDue?.toFixed(2) || '0.00'}</p>
+                            <p><strong>Amount Paid:</strong> ${loan.loanPaid?.toFixed(2) || '0.00'}</p>
                             
                             <div className="mt-4">
                                 <label htmlFor="adminReply" className="block text-gray-300 text-sm font-bold mb-2">Admin Reply:</label>
                                 <textarea id="adminReply" rows="3" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={adminReply} onChange={(e) => setAdminReply(e.target.value)}></textarea>
                             </div>
+                            {/* Admin can fill employee fields if not already filled */}
+                            {!loan.loanerPhoto && adminUser && (
+                                <div>
+                                    <label htmlFor="loanerPhoto" className="block text-gray-300 text-sm font-bold mb-2">Loaner Photo URL:</label>
+                                    <input type="text" id="loanerPhoto" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={loanerPhoto} onChange={(e) => setLoanerPhoto(e.target.value)} />
+                                </div>
+                            )}
+                            {!loan.landPhoto && adminUser && (
+                                <div>
+                                    <label htmlFor="landPhoto" className="block text-gray-300 text-sm font-bold mb-2">Land Photo URL:</label>
+                                    <input type="text" id="landPhoto" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={landPhoto} onChange={(e) => setLandPhoto(e.target.value)} />
+                                </div>
+                            )}
+                            {!loan.buildingPhoto && adminUser && (
+                                <div>
+                                    <label htmlFor="buildingPhoto" className="block text-gray-300 text-sm font-bold mb-2">Building Photo URL:</label>
+                                    <input type="text" id="buildingPhoto" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={buildingPhoto} onChange={(e) => setBuildingPhoto(e.target.value)} />
+                                </div>
+                            )}
+                            {!loan.employeePhoto && adminUser && (
+                                <div>
+                                    <label htmlFor="employeePhoto" className="block text-gray-300 text-sm font-bold mb-2">Employee Photo URL:</label>
+                                    <input type="text" id="employeePhoto" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={employeePhoto} onChange={(e) => setEmployeePhoto(e.target.value)} />
+                                </div>
+                            )}
+                            {!loan.signatureOfBankEmployee && adminUser && (
+                                <div>
+                                    <label htmlFor="signatureOfBankEmployee" className="block text-gray-300 text-sm font-bold mb-2">Signature of Bank Employee URL:</label>
+                                    <input type="text" id="signatureOfBankEmployee" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={signatureOfBankEmployee} onChange={(e) => setSignatureOfBankEmployee(e.target.value)} />
+                                </div>
+                            )}
+                            {!loan.loanerBankId && adminUser && (
+                                <div>
+                                    <label htmlFor="loanerBankId" className="block text-gray-300 text-sm font-bold mb-2">Loaner Bank ID:</label>
+                                    <input type="text" id="loanerBankId" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={loanerBankId} onChange={(e) => setLoanerBankId(e.target.value)} />
+                                </div>
+                            )}
+                            {!loan.loanerPerDayIncome && adminUser && (
+                                <div>
+                                    <label htmlFor="loanerPerDayIncome" className="block text-gray-300 text-sm font-bold mb-2">Loaner Per Day Income:</label>
+                                    <input type="number" id="loanerPerDayIncome" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={loanerPerDayIncome} onChange={(e) => setLoanerPerDayIncome(e.target.value)} />
+                                </div>
+                            )}
+                            {!loan.hasBusiness && adminUser && (
+                                <div className="flex items-center">
+                                    <input type="checkbox" id="hasBusiness" className="mr-2" checked={hasBusiness} onChange={(e) => setHasBusiness(e.target.checked)} />
+                                    <label htmlFor="hasBusiness" className="text-sm font-medium text-gray-300">Has Business</label>
+                                </div>
+                            )}
+                            {!loan.areaVolume && adminUser && (
+                                <div>
+                                    <label htmlFor="areaVolume" className="block text-gray-300 text-sm font-bold mb-2">Area/Volume:</label>
+                                    <input type="text" id="areaVolume" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={areaVolume} onChange={(e) => setAreaVolume(e.target.value)} />
+                                </div>
+                            )}
+                            {!loan.cornerCoords && adminUser && (
+                                <div>
+                                    <label htmlFor="cornerCoords" className="block text-gray-300 text-sm font-bold mb-2">Corner Coords:</label>
+                                    <input type="text" id="cornerCoords" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={cornerCoords} onChange={(e) => setCornerCoords(e.target.value)} />
+                                </div>
+                            )}
+                            {!loan.valueOfLand && adminUser && (
+                                <div>
+                                    <label htmlFor="valueOfLand" className="block text-gray-300 text-sm font-bold mb-2">Value of Land:</label>
+                                    <input type="number" id="valueOfLand" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={valueOfLand} onChange={(e) => setValueOfLand(e.target.value)} />
+                                </div>
+                            )}
+                            {!loan.valueOfBuilding && adminUser && (
+                                <div>
+                                    <label htmlFor="valueOfBuilding" className="block text-gray-300 text-sm font-bold mb-2">Value of Building:</label>
+                                    <input type="number" id="valueOfBuilding" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={valueOfBuilding} onChange={(e) => setValueOfBuilding(e.target.value)} />
+                                </div>
+                            )}
+                            {!loan.loanerNetWorth && adminUser && (
+                                <div>
+                                    <label htmlFor="loanerNetWorth" className="block text-gray-300 text-sm font-bold mb-2">Loaner Net Worth:</label>
+                                    <input type="number" id="loanerNetWorth" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={loanerNetWorth} onChange={(e) => setLoanerNetWorth(e.target.value)} />
+                                </div>
+                            )}
                         </div>
                         <div className="flex justify-end mt-6 space-x-2">
-                            <button onClick={() => alert('View Player Details')} className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200">View Player Details</button>
-                            <button onClick={() => alert('View Bank Employee Details')} className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200">View Bank Employee Details</button>
-                            <button onClick={() => handleCancelLoan(loan.accountId, loan.id)} className="px-5 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200">Cancel</button>
+                            <button onClick={() => alert('View Player Details for ' + loan.accountId)} className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200">View Player Details</button>
+                            <button onClick={() => alert('View Bank Employee Details for ' + loan.assignedEmployee)} className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200">View Bank Employee Details</button>
+                            <button onClick={onReject} className="px-5 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200">Cancel</button>
                             {loan.loanStatus === 'waitingForAdminApproval' && (
                                 <>
                                     <button onClick={onApprove} className="px-5 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 transition duration-200">Approve</button>
