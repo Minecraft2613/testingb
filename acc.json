@@ -79,6 +79,12 @@
         "amount": 0,
         "date": "2025-07-07T12:43:05.977Z",
         "description": "Tax payment for session N3637"
+      },
+      {
+        "type": "debit",
+        "amount": 0,
+        "date": "2025-07-07T12:43:14.087Z",
+        "description": "Tax payment for session N3637"
       }
     ],
     "taxData": {
