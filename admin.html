@@ -325,7 +325,7 @@
                         <div key={player} className="bg-gray-800 p-4 rounded-lg shadow-lg mb-4">
                             <h3 className="text-xl font-bold text-amber-400 mb-2">{player}</h3>
                             {paidTaxData[player].map((tx, i) => (
-                                <p key={i}>Amount: ${tx.amount.toFixed(2)} on {new Date(tx.date).toLocaleDateString()} (Session: {tx.session})</p>
+                                <p key={i}>Amount: ${tx.amount?.toFixed(2) || '0.00'} on {new Date(tx.date).toLocaleDateString()} (Session: {tx.session})</p>
                             ))}
                         </div>
                     )) : <p>No paid tax records.</p>}
@@ -491,10 +491,23 @@
             );
         };
 
-        const LoanDetailModal = ({ loan, onClose, handleApproveLoan, handleRejectLoan, handleForceApproveLoan }) => {
+        const LoanDetailModal = ({ loan, onClose, handleApproveLoan, handleRejectLoan, handleForceApproveLoan, adminUser }) => {
             const [adminReply, setAdminReply] = useState(loan.adminReply || '');
             const [employeeVisitTime, setEmployeeVisitTime] = useState(loan.employeeVisitTime || '');
             const [employeeMessage, setEmployeeMessage] = useState(loan.employeeMessage || '');
+            const [loanerPhoto, setLoanerPhoto] = useState(loan.loanerPhoto || '');
+            const [landPhoto, setLandPhoto] = useState(loan.landPhoto || '');
+            const [buildingPhoto, setBuildingPhoto] = useState(loan.buildingPhoto || '');
+            const [employeePhoto, setEmployeePhoto] = useState(loan.employeePhoto || '');
+            const [signatureOfBankEmployee, setSignatureOfBankEmployee] = useState(loan.signatureOfBankEmployee || '');
+            const [loanerBankId, setLoanerBankId] = useState(loan.loanerBankId || '');
+            const [loanerPerDayIncome, setLoanerPerDayIncome] = useState(loan.loanerPerDayIncome || '');
+            const [hasBusiness, setHasBusiness] = useState(loan.hasBusiness || false);
+            const [areaVolume, setAreaVolume] = useState(loan.areaVolume || '');
+            const [cornerCoords, setCornerCoords] = useState(loan.cornerCoords || '');
+            const [valueOfLand, setValueOfLand] = useState(loan.valueOfLand || '');
+            const [valueOfBuilding, setValueOfBuilding] = useState(loan.valueOfBuilding || '');
+            const [loanerNetWorth, setLoanerNetWorth] = useState(loan.loanerNetWorth || '');
 
             if (!loan) return null;
 
@@ -550,6 +563,9 @@
                             </div>
                         </div>
                         <div className="flex justify-end mt-6 space-x-2">
+                            <button onClick={() => alert('View Player Details')} className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200">View Player Details</button>
+                            <button onClick={() => alert('View Bank Employee Details')} className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200">View Bank Employee Details</button>
+                            <button onClick={() => handleCancelLoan(loan.accountId, loan.id)} className="px-5 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200">Cancel</button>
                             {loan.loanStatus === 'waitingForAdminApproval' && (
                                 <>
                                     <button onClick={onApprove} className="px-5 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 transition duration-200">Approve</button>

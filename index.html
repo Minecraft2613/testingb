@@ -644,13 +644,13 @@
                         )}
 
                         <div className="p-3 bg-gray-700 rounded-md text-center">
-                            <p className="text-gray-300">Total Area: <span className="font-bold text-yellow-400">{totalArea.toFixed(2)}</span></p>
-                            <p className="text-gray-300">Estimated Land Value: <span className="font-bold text-yellow-400">${landValue.toFixed(2)}</span></p>
-                            <p className="text-gray-300">Building Value: <span className="font-bold text-yellow-400">${buildingValue.toFixed(2)}</span></p>
-                            <p className="text-gray-300">Payment per {loanDetails.repayment === 'daily' ? 'Day' : 'Week'}: <span className="font-bold text-yellow-400">${perPaymentAmount.toFixed(2)}</span></p>
-                            <p className="text-gray-300 text-sm">(Principal: ${principalPerPayment.toFixed(2)}, Interest: ${interestPerPayment.toFixed(2)})</p>
-                            <p className="text-gray-300">Total Interest: <span className="font-bold text-red-400">${totalInterestAmount.toFixed(2)}</span></p>
-                            <p className="text-xs text-gray-400">Weekly Interest Rate: {weeklyInterestRateDisplay.toFixed(2)}%</p>
+                            <p className="text-gray-300">Total Area: <span className="font-bold text-yellow-400">{totalArea?.toFixed(2) || '0.00'}</span></p>
+                            <p className="text-gray-300">Estimated Land Value: <span className="font-bold text-yellow-400">${landValue?.toFixed(2) || '0.00'}</span></p>
+                            <p className="text-gray-300">Building Value: <span className="font-bold text-yellow-400">${buildingValue?.toFixed(2) || '0.00'}</span></p>
+                            <p className="text-gray-300">Payment per {loanDetails.repayment === 'daily' ? 'Day' : 'Week'}: <span className="font-bold text-yellow-400">${perPaymentAmount?.toFixed(2) || '0.00'}</span></p>
+                            <p className="text-gray-300 text-sm">(Principal: ${principalPerPayment?.toFixed(2) || '0.00'}, Interest: ${interestPerPayment?.toFixed(2) || '0.00'})</p>
+                            <p className="text-gray-300">Total Interest: <span className="font-bold text-red-400">${totalInterestAmount?.toFixed(2) || '0.00'}</span></p>
+                            <p className="text-xs text-gray-400">Weekly Interest Rate: {weeklyInterestRateDisplay?.toFixed(2) || '0.00'}%</p>
                         </div>
                         <button type="submit" disabled={isSubmitting} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md">{isSubmitting ? 'Submitting...' : 'Submit Application'}</button>
                         {!hasIncomeProfile && <p className="text-red-400 mt-4 text-sm text-center">Your income profile is not set up. You must set your income in Account Settings to apply for a loan.</p>}
