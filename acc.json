@@ -91,6 +91,12 @@
         "amount": -2,
         "date": "2025-07-07T12:43:23.321Z",
         "description": "Tax payment for session N3637"
+      },
+      {
+        "type": "info",
+        "amount": 0,
+        "date": "2025-07-07T13:05:03.381Z",
+        "description": "Loan LOAN1751805557499 cancelled by admin"
       }
     ],
     "taxData": {
