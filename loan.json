@@ -8,7 +8,7 @@
     "dailyRepayment": 15142.857142857134,
     "durationWeeks": 1,
     "loanType": "personal",
-    "loanStatus": "waitingForAdminApproval",
+    "loanStatus": "cancelled",
     "applicationDate": "2025-07-06T12:39:17.499Z",
     "purpose": "for buisness",
     "coord1": "11,75,98",
