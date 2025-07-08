@@ -264,64 +264,8 @@
             </button>
         );
 
-        const BankStatusPage = ({ currentUserAccount, handleCancelLoan, handleAdminApproveLoan, handlePayLoan }) => {
-            const BankStatusPage = ({ currentUserAccount, handleCancelLoan, handleAdminApproveLoan, handlePayLoan }) => {
-            const [balance, setBalance] = useState(0);
-            const [shopTransactions, setShopTransactions] = useState([]);
-            const [jobTransactions, setJobTransactions] = useState([]);
-
-            useEffect(() => {
-                const fetchData = async () => {
-                    if (currentUserAccount && currentUserAccount.accountId) {
-                        // Fetch balance
-                        try {
-                            const balResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/bal.json`);
-                            if (balResponse.ok) {
-                                const balData = await balResponse.json();
-                                const playerBal = balData.find(entry => entry.player === currentUserAccount.accountId);
-                                setBalance(playerBal ? playerBal.balance : 0);
-                            } else {
-                                console.error("Failed to fetch balance:", balResponse.statusText);
-                            }
-                        } catch (error) {
-                            console.error("Error fetching balance:", error);
-                        }
-
-                        // Fetch shop transactions
-                        try {
-                            const shopTranResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/shop-tran.json`);
-                            if (shopTranResponse.ok) {
-                                const shopTranData = await shopTranResponse.json();
-                                setShopTransactions(shopTranData.filter(tx => tx.player === currentUserAccount.accountId));
-                            } else {
-                                console.error("Failed to fetch shop transactions:", shopTranResponse.statusText);
-                            }
-                        } catch (error) {
-                            console.error("Error fetching shop transactions:", error);
-                        }
-
-                        // Fetch job transactions
-                        try {
-                            const jobTranResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/job-tran.json`);
-                            if (jobTranResponse.ok) {
-                                const jobTranData = await jobTranResponse.json();
-                                setJobTransactions(jobTranData.filter(tx => tx.player === currentUserAccount.accountId));
-                            } else {
-                                console.error("Failed to fetch job transactions:", jobTranResponse.statusText);
-                            }
-                        } catch (error) {
-                            console.error("Error fetching job transactions:", error);
-                        }
-                    }
-                };
-                fetchData();
-            }, [currentUserAccount]);
-
-            if (!currentUserAccount) return null;
-            const { bankName, loans = [], jobPerDayIncome = 0, businessPerDayIncome = 0, businessIncomeUnit = 'day' } = currentUserAccount;
-            const totalPerDayIncome = jobPerDayIncome + (businessIncomeUnit === 'hour' ? businessPerDayIncome * 8 : businessPerDayIncome);
-
-            const allTransactions = [...shopTransactions, ...jobTransactions].sort((a, b) => b.timestamp - a.timestamp);
+                    
+            
 
             return (
                 <div className="space-y-6">
