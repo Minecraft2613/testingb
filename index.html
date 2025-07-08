@@ -151,7 +151,7 @@
                     <div className="text-center mt-6"><p className="text-gray-400">{footerText}</p><button onClick={onFooterClick} className="text-green-400 hover:underline font-semibold mt-1 focus:outline-none">{footerButtonText}</button></div>
                 </div>
             </div>
-            );
+        );
         };
 
         const LoginPage = ({ setCurrentPage, handleLogin }) => {
@@ -266,14 +266,69 @@
         );
 
         const BankStatusPage = ({ currentUserAccount, handleCancelLoan, handleAdminApproveLoan, handlePayLoan }) => {
+            const BankStatusPage = ({ currentUserAccount, handleCancelLoan, handleAdminApproveLoan, handlePayLoan }) => {
+            const [balance, setBalance] = useState(0);
+            const [shopTransactions, setShopTransactions] = useState([]);
+            const [jobTransactions, setJobTransactions] = useState([]);
+
+            useEffect(() => {
+                const fetchData = async () => {
+                    if (currentUserAccount && currentUserAccount.accountId) {
+                        // Fetch balance
+                        try {
+                            const balResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/bal.json`);
+                            if (balResponse.ok) {
+                                const balData = await balResponse.json();
+                                const playerBal = balData.find(entry => entry.player === currentUserAccount.accountId);
+                                setBalance(playerBal ? playerBal.balance : 0);
+                            } else {
+                                console.error("Failed to fetch balance:", balResponse.statusText);
+                            }
+                        } catch (error) {
+                            console.error("Error fetching balance:", error);
+                        }
+
+                        // Fetch shop transactions
+                        try {
+                            const shopTranResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/shop-tran.json`);
+                            if (shopTranResponse.ok) {
+                                const shopTranData = await shopTranResponse.json();
+                                setShopTransactions(shopTranData.filter(tx => tx.player === currentUserAccount.accountId));
+                            } else {
+                                console.error("Failed to fetch shop transactions:", shopTranResponse.statusText);
+                            }
+                        } catch (error) {
+                            console.error("Error fetching shop transactions:", error);
+                        }
+
+                        // Fetch job transactions
+                        try {
+                            const jobTranResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/job-tran.json`);
+                            if (jobTranResponse.ok) {
+                                const jobTranData = await jobTranResponse.json();
+                                setJobTransactions(jobTranData.filter(tx => tx.player === currentUserAccount.accountId));
+                            } else {
+                                console.error("Failed to fetch job transactions:", jobTranResponse.statusText);
+                            }
+                        } catch (error) {
+                            console.error("Error fetching job transactions:", error);
+                        }
+                    }
+                };
+                fetchData();
+            }, [currentUserAccount]);
+
             if (!currentUserAccount) return null;
-            const { bankName, balance, loans = [], transactions = [], jobPerDayIncome = 0, businessPerDayIncome = 0, businessIncomeUnit = 'day' } = currentUserAccount;
+            const { bankName, loans = [], jobPerDayIncome = 0, businessPerDayIncome = 0, businessIncomeUnit = 'day' } = currentUserAccount;
             const totalPerDayIncome = jobPerDayIncome + (businessIncomeUnit === 'hour' ? businessPerDayIncome * 8 : businessPerDayIncome);
+
+            const allTransactions = [...shopTransactions, ...jobTransactions].sort((a, b) => b.timestamp - a.timestamp);
+
             return (
                 <div className="space-y-6">
                     <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Account Overview</h2><p className="text-gray-300"><strong>Bank Name:</strong> {bankName}</p><p className="text-2xl font-bold">Balance: <span className="text-green-400">${balance?.toFixed(2) || '0.00'}</span></p><p className="text-lg font-semibold mt-2">Total Income: <span className="text-yellow-400">${totalPerDayIncome}/day</span></p><p className="text-sm text-gray-400">Job: ${jobPerDayIncome}/day | Business: ${businessPerDayIncome}/{businessIncomeUnit}</p></div>
                     <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Loans ({loans.length})</h2>{loans.length > 0 ? <div className="space-y-4">{[...new Map(loans.map(item => [item['id'], item])).values()].map((loan) => <div key={loan.id} className="p-4 border border-gray-700 rounded-md bg-gray-700"><div className="flex justify-between items-start"><div className="flex-grow"><p className="font-bold capitalize text-yellow-400">{loan.loanType} Loan</p><p className="text-gray-300">Amount: ${loan.loanAmount?.toFixed(2) || '0.00'} | Total Due: ${loan.loanAmountDue?.toFixed(2) || '0.00'}</p><p className="text-gray-300">Status: <span className={`font-semibold ${loan.loanStatus === 'pending' ? 'text-yellow-400' : 'text-green-400'}`}>{loan.loanStatus === 'pending' && loan.employeeVisitTime ? 'Waiting for employee to pass' : loan.loanStatus === 'waitingForAdminApproval' ? 'Waiting for admin approval' : loan.loanStatus}</span></p></div><div className="flex flex-col items-end gap-2">{loan.loanStatus === 'pending' && <>                                            <button onClick={() => handleCancelLoan(loan.id)} className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded">Cancel</button></>}{loan.loanStatus === 'active' && <button onClick={() => handlePayLoan(loan.id)} className="text-xs bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-2 rounded">Pay Full Amount</button>}</div></div></div>)}</div> : <p className="text-gray-400">No active loans.</p>}</div>
-                    <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Transaction History</h2>{transactions.length > 0 ? <div className="max-h-80 overflow-y-auto"><table className="min-w-full text-sm text-left"><thead className="bg-gray-700 sticky top-0"><tr><th className="p-2 text-gray-300">Date</th><th className="p-2 text-gray-300">Description</th><th className="p-2 text-right text-gray-300">Amount</th></tr></thead><tbody>{transactions.slice().reverse().map((tx, index) => <tr key={index} className="border-b border-gray-700 hover:bg-gray-700/50"><td className="p-2 text-gray-400">{new Date(tx.date).toLocaleDateString()}</td><td className="p-2 text-gray-300">{tx.description}</td><td className={`p-2 text-right font-semibold ${tx.amount < 0 ? 'text-red-400' : 'text-green-400'}`}>{tx.amount < 0 ? '-' : '+'}${Math.abs(tx.amount).toFixed(2)}</td></tr>)}</tbody></table></div> : <p className="text-gray-400">No transactions yet.</p>}</div>
+                    <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Transaction History</h2>{allTransactions.length > 0 ? <div className="max-h-80 overflow-y-auto"><table className="min-w-full text-sm text-left"><thead className="bg-gray-700 sticky top-0"><tr><th className="p-2 text-gray-300">Date</th><th className="p-2 text-gray-300">Type</th><th className="p-2 text-gray-300">Description</th><th className="p-2 text-right text-gray-300">Amount</th><th className="p-2 text-right text-gray-300">Tax</th></tr></thead><tbody>{allTransactions.map((tx, index) => <tr key={index} className="border-b border-gray-700 hover:bg-gray-700/50"><td className="p-2 text-gray-400">{(new Date(tx.timestamp)).toLocaleDateString()}</td><td className="p-2 text-gray-300">{tx.type}</td><td className="p-2 text-gray-300">{tx.item || tx.jobName}</td><td className={`p-2 text-right font-semibold ${tx.amount < 0 ? 'text-red-400' : 'text-green-400'}`}>{tx.amount.toFixed(2)}</td><td className="p-2 text-right text-red-400">{tx.tax?.toFixed(2) || '0.00'}</td></tr>)}</tbody></table></div> : <p className="text-gray-400">No transactions yet.</p>}</div>
                 </div>
             );
         };
@@ -456,8 +511,7 @@
         const ApplyLoanPage = ({ currentUserAccount, showModal, handleApplyLoan }) => {
             const [loanDetails, setLoanDetails] = useState({
                 amount: '', duration: 1, type: 'personal', purpose: '',
-                coord1X: '', coord1Y: '', coord1Z: '',
-                coord2X: '', coord2Y: '', coord2Z: '',
+                coords: [{ x: '', y: '', z: '' }], // Array to hold multiple coordinate sets
                 repayment: 'daily',
                 loanerNetWorth: '',
                 valueOfLand: '', valueOfBuilding: '', areaVolume: '',
@@ -509,8 +563,8 @@
                 const principalPerPayment = amount / numberOfPayments;
                 const interestPerPayment = calculatedTotalInterest / numberOfPayments;
 
-                const xCoords = [loanDetails.coord1X, loanDetails.coord2X, loanDetails.coord3X, loanDetails.coord4X].filter(c => c).map(c => parseFloat(c));
-                const zCoords = [loanDetails.coord1Z, loanDetails.coord2Z, loanDetails.coord3Z, loanDetails.coord4Z].filter(c => c).map(c => parseFloat(c));
+                const xCoords = loanDetails.coords.map(c => parseFloat(c.x)).filter(c => !isNaN(c));
+                const zCoords = loanDetails.coords.map(c => parseFloat(c.z)).filter(c => !isNaN(c));
                 const totalArea = xCoords.length > 1 && zCoords.length > 1 ? Math.abs((Math.max(...xCoords) - Math.min(...xCoords)) * (Math.max(...zCoords) - Math.min(...zCoords))) : 0;
                 const landValue = totalArea * 10; // Assuming $10 per square block
                 const buildingValue = parseFloat(loanDetails.valueOfBuilding) || 0;
@@ -528,9 +582,14 @@
             }, [loanDetails.amount, loanDetails.duration, loanDetails.type, loanDetails.repayment, isCompound]);
 
             const handleChange = (e) => {
-                const { name, value } = e.target;
+                const { name, value, type, files } = e.target;
                 if (name.startsWith('coord')) {
-                    setLoanDetails(prev => ({ ...prev, [name]: value }));
+                    const [prop, index, axis] = name.split('-');
+                    const newCoords = [...loanDetails.coords];
+                    newCoords[index] = { ...newCoords[index], [axis]: value };
+                    setLoanDetails(prev => ({ ...prev, coords: newCoords }));
+                } else if (type === 'file') {
+                    setLoanDetails(prev => ({ ...prev, [name]: files[0] }));
                 } else if (name === 'duration' && parseInt(value) > maxDuration) {
                     return;
                 } else if (name === 'type') {
@@ -551,8 +610,8 @@
                         loanerUsername: currentUserAccount.accountId,
                         loanerPerDayIncome: currentUserAccount.jobPerDayIncome + (currentUserAccount.businessIncomeUnit === 'hour' ? currentUserAccount.businessPerDayIncome * 8 : currentUserAccount.businessPerDayIncome),
                         hasBusiness: currentUserAccount.hasBusiness,
-                        coord1: `${loanDetails.coord1X},${loanDetails.coord1Y},${loanDetails.coord1Z}`,
-                        coord2: `${loanDetails.coord2X},${loanDetails.coord2Y},${loanDetails.coord2Z}`,
+                        coord1: loanDetails.coords[0] ? `${loanDetails.coords[0].x},${loanDetails.coords[0].y},${loanDetails.coords[0].z}` : '',
+                        coord2: loanDetails.coords[1] ? `${loanDetails.coords[1].x},${loanDetails.coords[1].y},${loanDetails.coords[1].z}` : '',
                         loanStatus: 'pending',
                         applicationDate: new Date().toISOString(),
                     };
@@ -610,7 +669,9 @@
                                     <input name="coord1Y" type="number" value={loanDetails.coord1Y} onChange={handleChange} placeholder="Y" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                     <input name="coord1Z" type="number" value={loanDetails.coord1Z} onChange={handleChange} placeholder="Z" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                 </div>
-                                <input name="playerScreenshot" type="text" value={loanDetails.playerScreenshot} onChange={handleChange} placeholder="Player Screenshot URL" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                <label class="block text-gray-300">Player Screenshot:</label>
+                                <input name="playerScreenshot" type="file" onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                {loanDetails.playerScreenshot && <p className="text-sm text-gray-400">Selected: {loanDetails.playerScreenshot.name}</p>}
                             </div>
                         )}
 
@@ -620,25 +681,27 @@
                                 <input name="areaVolume" type="number" value={loanDetails.areaVolume} onChange={handleChange} placeholder="Area/Volume (sq/cu blocks)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                 <input name="valueOfLand" type="number" value={loanDetails.valueOfLand} onChange={handleChange} placeholder="Value of Land ($)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                 <input name="valueOfBuilding" type="number" value={loanDetails.valueOfBuilding} onChange={handleChange} placeholder="Value of Building ($)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                <p class="text-sm text-gray-400">Corner Coordinates (up to 4 corners)</p>
-                                <div class="grid grid-cols-3 gap-2">
-                                    <input name="coord1X" type="number" value={loanDetails.coord1X} onChange={handleChange} placeholder="X1" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord1Y" type="number" value={loanDetails.coord1Y} onChange={handleChange} placeholder="Y1" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord1Z" type="number" value={loanDetails.coord1Z} onChange={handleChange} placeholder="Z1" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord2X" type="number" value={loanDetails.coord2X} onChange={handleChange} placeholder="X2" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord2Y" type="number" value={loanDetails.coord2Y} onChange={handleChange} placeholder="Y2" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord2Z" type="number" value={loanDetails.coord2Z} onChange={handleChange} placeholder="Z2" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord3X" type="number" value={loanDetails.coord3X} onChange={handleChange} placeholder="X3" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord3Y" type="number" value={loanDetails.coord3Y} onChange={handleChange} placeholder="Y3" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord3Z" type="number" value={loanDetails.coord3Z} onChange={handleChange} placeholder="Z3" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord4X" type="number" value={loanDetails.coord4X} onChange={handleChange} placeholder="X4" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord4Y" type="number" value={loanDetails.coord4Y} onChange={handleChange} placeholder="Y4" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord4Z" type="number" value={loanDetails.coord4Z} onChange={handleChange} placeholder="Z4" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                </div>
+                                <p class="text-sm text-gray-400">Corner Coordinates (up to 10 corners)</p>
+                                {loanDetails.coords.map((coord, index) => (
+                                    <div key={index} className="grid grid-cols-4 gap-2">
+                                        <input name={`coord-${index}-x`} type="number" value={coord.x} onChange={handleChange} placeholder="X" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                        <input name={`coord-${index}-y`} type="number" value={coord.y} onChange={handleChange} placeholder="Y" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                        <input name={`coord-${index}-z`} type="number" value={coord.z} onChange={handleChange} placeholder="Z" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                        {loanDetails.coords.length > 1 && (
+                                            <button type="button" onClick={() => setLoanDetails(prev => ({ ...prev, coords: prev.coords.filter((_, i) => i !== index) }))} className="p-3 bg-red-600 text-white rounded-md">-</button>
+                                        )}
+                                    </div>
+                                ))}
+                                {loanDetails.coords.length < 10 && (
+                                    <button type="button" onClick={() => setLoanDetails(prev => ({ ...prev, coords: [...prev.coords, { x: '', y: '', z: '' }] }))} className="w-full p-3 bg-blue-600 text-white rounded-md">Add Coordinate</button>
+                                )}
+                                <p className="text-gray-300">Calculated Area: <span className="font-bold text-yellow-400">{totalArea?.toFixed(2) || '0.00'}</span></p>
                                 <label class="block text-gray-300">Land Photo:</label>
                                 <input name="landPhoto" type="file" onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                {loanDetails.landPhoto && <p className="text-sm text-gray-400">Selected: {loanDetails.landPhoto.name}</p>}
                                 <label class="block text-gray-300">Building Photo:</label>
                                 <input name="buildingPhoto" type="file" onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                {loanDetails.buildingPhoto && <p className="text-sm text-gray-400">Selected: {loanDetails.buildingPhoto.name}</p>}
                             </div>
                         )}
 

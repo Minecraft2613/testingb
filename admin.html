@@ -98,16 +98,37 @@
 
         const AdminDashboard = ({ adminUser, setAdminUser }) => {
             const [view, setView] = useState('home');
-            const [data, setData] = useState({ accounts: [], taxData: { players: {} }, loans: [] });
+            const [data, setData] = useState({ accounts: [], taxData: { players: {} }, loans: [], balances: [], shopTransactions: [], jobTransactions: [] });
             const [loading, setLoading] = useState(true);
 
             const fetchData = async () => {
                 try {
-                    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'get_all_data' }) });
-                    if(res.ok) {
-                        const allData = await res.json();
-                        setData(allData);
-                    }
+                    const [accountsRes, taxRes, loansRes, balRes, shopTranRes, jobTranRes] = await Promise.all([
+                        fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'get_all_data' }) }),
+                        fetch(`${TAX_API_URL}/tax-data`),
+                        fetch(`${TAX_API_URL}/loan.json`), // Assuming loan.json is directly accessible
+                        fetch(`${TAX_API_URL}/bal.json`),
+                        fetch(`${TAX_API_URL}/shop-tran.json`),
+                        fetch(`${TAX_API_URL}/job-tran.json`)
+                    ]);
+
+                    const [accountsData, taxData, loansData, balData, shopTranData, jobTranData] = await Promise.all([
+                        accountsRes.ok ? accountsRes.json() : { accounts: [] },
+                        taxRes.ok ? taxRes.json() : { players: {} },
+                        loansRes.ok ? loansRes.json() : [],
+                        balRes.ok ? balRes.json() : [],
+                        shopTranRes.ok ? shopTranRes.json() : [],
+                        jobTranRes.ok ? jobTranRes.json() : []
+                    ]);
+
+                    setData({
+                        accounts: accountsData.accounts || [],
+                        taxData: taxData,
+                        loans: loansData.loans || loansData || [], // loansData might be an array directly
+                        balances: balData,
+                        shopTransactions: shopTranData,
+                        jobTransactions: jobTranData
+                    });
                 } catch (e) { console.error("Failed to fetch data", e); } 
                 finally { setLoading(false); }
             };
@@ -145,10 +166,28 @@
                 fetchData(); // Refresh data after action
             };
 
+            const handleUpdateLoanDetails = async (loanId, updatedFields) => {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'update_loan_details', loanId, updatedFields })
+                });
+                fetchData(); // Refresh data after action
+            };
+
             const renderView = () => {
                 if (loading) return <div className="text-center p-10"><div className="vip-loader mx-auto"></div></div>;
                 
-                const props = { data, adminUser, handleApproveLoan, handleCancelLoan, handleForceApproveLoan, setView };
+                const handleUpdateLoanDetails = async (loanId, updatedFields) => {
+                    await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'update_loan_details', loanId, updatedFields })
+                    });
+                    fetchData(); // Refresh data after action
+                };
+
+                const props = { data, adminUser, handleApproveLoan, handleCancelLoan, handleForceApproveLoan, handleUpdateLoanDetails, setView };
 
                 switch(view) {
                     case 'home': return <HomeView {...props} />;
@@ -220,13 +259,16 @@
                         <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
                             <h3 className="text-xl font-bold text-amber-400 mb-4">User Accounts</h3>
                             <div className="space-y-4">
-                                {data.accounts.map(acc => (
-                                    <div key={acc.accountId} className="bg-gray-700 p-4 rounded-md">
-                                        <p><strong>Player:</strong> {acc.accountId}</p>
-                                        <p><strong>Bank ID:</strong> {acc.bankId}</p>
-                                        <p><strong>Balance:</strong> ${parseFloat(acc.balance)?.toFixed(2) || '0.00'}</p>
-                                    </div>
-                                ))}
+                                {data.accounts.map(acc => {
+                                    const playerBalance = data.balances.find(bal => bal.player === acc.accountId);
+                                    return (
+                                        <div key={acc.accountId} className="bg-gray-700 p-4 rounded-md">
+                                            <p><strong>Player:</strong> {acc.accountId}</p>
+                                            <p><strong>Bank ID:</strong> {acc.bankId}</p>
+                                            <p><strong>Balance:</strong> ${playerBalance?.balance?.toFixed(2) || '0.00'}</p>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                         <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
@@ -351,49 +393,51 @@
         };
 
         const TaxHistoryView = ({ data }) => {
-            const [taxDailyData, setTaxDailyData] = useState({});
+            const [taxDailyData, setTaxDailyData] = useState([]);
+            const [taxPayData, setTaxPayData] = useState([]);
 
             useEffect(() => {
-                const fetchDailyTax = async () => {
+                const fetchTaxData = async () => {
                     try {
-                        const response = await fetch(`${TAX_API_URL}/tax-daily-data`);
-                        if (response.ok) {
-                            const json = await response.json();
+                        const dailyResponse = await fetch(`${TAX_API_URL}/tax-daily-data`);
+                        if (dailyResponse.ok) {
+                            const json = await dailyResponse.json();
                             setTaxDailyData(json);
                         }
+                        const payResponse = await fetch(`${TAX_API_URL}/tax-pay-data`);
+                        if (payResponse.ok) {
+                            const json = await payResponse.json();
+                            setTaxPayData(json);
+                        }
                     } catch (e) {
-                        console.error("Failed to fetch daily tax data", e);
+                        console.error("Failed to fetch tax history data", e);
                     }
                 };
-                fetchDailyTax();
+                fetchTaxData();
             }, []);
 
             return (
                 <div>
                     <h2 className="text-3xl font-bold text-white mb-6">Tax Payers History</h2>
-                    {taxDailyData && Object.keys(taxDailyData).length > 0 ? Object.keys(taxDailyData).map(player => {
-                        const playerData = taxDailyData[player];
-                        if (!playerData || !playerData.sessions) return null; // Defensive check
+                    <h3 className="text-2xl font-bold text-amber-400 mb-4">Daily Tax Charges</h3>
+                    {taxDailyData.length > 0 ? taxDailyData.map((entry, index) => (
+                        <div key={index} className="bg-gray-800 p-4 rounded-lg shadow-lg mb-4">
+                            <p><strong>Player:</strong> {entry.player}</p>
+                            <p><strong>Date:</strong> {new Date(entry.timestamp).toLocaleDateString()}</p>
+                            <p><strong>Amount:</strong> ${entry.amount?.toFixed(2) || '0.00'}</p>
+                            <p><strong>Description:</strong> {entry.description}</p>
+                        </div>
+                    )) : <p>No daily tax records.</p>}
 
-                        return (
-                            <div key={player} className="bg-gray-800 p-4 rounded-lg shadow-lg mb-4">
-                                <h3 className="text-xl font-bold text-amber-400 mb-2">{player}</h3>
-                                {Object.keys(playerData.sessions).map(session => {
-                                    const sessionData = playerData.sessions[session];
-                                    if (!sessionData || !sessionData.dailyCharges) return null; // Defensive check
-
-                                    return (
-                                        <div key={session} className="ml-4 mb-2">
-                                            <h4 className="font-bold text-gray-400">Session: {session}</h4>
-                                            {sessionData.dailyCharges.map((charge, i) => (
-                                                <p key={i}>Date: {new Date(charge.date).toLocaleDateString()}, Amount: ${charge.amount?.toFixed(2) || '0.00'}</p>
-                                            ))}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        );
-                    }) : <p>No tax history records.</p>}
+                    <h3 className="text-2xl font-bold text-amber-400 mb-4 mt-8">Tax Payments</h3>
+                    {taxPayData.length > 0 ? taxPayData.map((entry, index) => (
+                        <div key={index} className="bg-gray-800 p-4 rounded-lg shadow-lg mb-4">
+                            <p><strong>Player:</strong> {entry.player}</p>
+                            <p><strong>Date:</strong> {new Date(entry.date).toLocaleDateString()}</p>
+                            <p><strong>Amount:</strong> ${entry.amount?.toFixed(2) || '0.00'}</p>
+                            <p><strong>Session:</strong> {entry.session}</p>
+                        </div>
+                    )) : <p>No tax payment records.</p>}
                 </div>
             );
         };
@@ -432,14 +476,18 @@
                         <div className="border-t-4 border-gray-700 pt-4 mt-4">
                             <h3 className="text-xl font-bold text-white mb-4">Viewing: {selectedPlayer.accountId}</h3>
                             <div className="space-y-6">
-                                <div className="bg-gray-700 p-4 rounded-lg"><p><strong>Balance:</strong> ${selectedPlayer.balance?.toFixed(2) || '0.00'}</p></div>
+                                <div className="bg-gray-700 p-4 rounded-lg"><p><strong>Bank Balance:</strong> ${data.balances.find(bal => bal.player === selectedPlayer.accountId)?.balance?.toFixed(2) || '0.00'}</p></div>
                                 <div className="bg-gray-700 p-4 rounded-lg">
                                     <h4 className="font-bold mb-2">Loans</h4>
                                     {(selectedPlayer.loans || []).map(loan => <div key={loan.id}>{loan.loanType}: ${loan.loanAmount?.toFixed(2) || '0.00'} ({loan.loanStatus})</div>)}
                                 </div>
                                 <div className="bg-gray-700 p-4 rounded-lg">
-                                    <h4 className="font-bold mb-2">Transactions</h4>
-                                    {(selectedPlayer.transactions || []).slice(-5).map((tx, i) => <div key={i}>{tx.description}: ${tx.amount?.toFixed(2) || '0.00'}</div>)}
+                                    <h4 className="font-bold mb-2">Shop Transactions</h4>
+                                    {(data.shopTransactions.filter(tx => tx.player === selectedPlayer.accountId) || []).slice(-5).map((tx, i) => <div key={i}>{tx.type} {tx.item}: ${tx.amount?.toFixed(2) || '0.00'} (Tax: ${tx.tax?.toFixed(2) || '0.00'})</div>)}
+                                </div>
+                                <div className="bg-gray-700 p-4 rounded-lg">
+                                    <h4 className="font-bold mb-2">Job Transactions</h4>
+                                    {(data.jobTransactions.filter(tx => tx.player === selectedPlayer.accountId) || []).slice(-5).map((tx, i) => <div key={i}>{tx.jobName}: ${tx.amountEarned?.toFixed(2) || '0.00'} (Tax: ${tx.tax?.toFixed(2) || '0.00'})</div>)}
                                 </div>
                             </div>
                         </div>
@@ -449,13 +497,12 @@
         }
 
         const MessagesView = ({ data }) => {
-            // This would fetch messages from a separate endpoint or from data.messages if available
             const [messages, setMessages] = useState([]);
 
             useEffect(() => {
                 const fetchMessages = async () => {
                     try {
-                        const response = await fetch(`${TAX_API_URL}/contact-messages`); // Assuming a new endpoint for messages
+                        const response = await fetch(`${TAX_API_URL}/messages`); // Corrected endpoint
                         if (response.ok) {
                             const json = await response.json();
                             setMessages(json);
@@ -492,6 +539,7 @@
         };
 
         const LoanDetailModal = ({ loan, onClose, handleApproveLoan, handleRejectLoan, handleForceApproveLoan, adminUser }) => {
+            const [showPlayerDetails, setShowPlayerDetails] = useState(false);
             const [adminReply, setAdminReply] = useState(loan.adminReply || '');
             const [employeeVisitTime, setEmployeeVisitTime] = useState(loan.employeeVisitTime || '');
             const [employeeMessage, setEmployeeMessage] = useState(loan.employeeMessage || '');
@@ -521,7 +569,41 @@
                 onClose();
             };
 
-            const onForceApprove = () => {
+            const handleSubmitEmployeeFields = async () => {
+                const updatedFields = {
+                    employeeVisitTime,
+                    employeeMessage,
+                    loanerPhoto,
+                    landPhoto,
+                    buildingPhoto,
+                    employeePhoto,
+                    signatureOfBankEmployee,
+                    loanerBankId,
+                    loanerPerDayIncome,
+                    hasBusiness,
+                    areaVolume,
+                    cornerCoords,
+                    valueOfLand,
+                    valueOfBuilding,
+                    loanerNetWorth
+                };
+                await handleUpdateLoanDetails(loan.id, updatedFields);
+                onClose();
+            };
+
+            const onForceApprove = async () => {
+                const adminUsername = prompt("Enter admin username:");
+                const adminPassword = prompt("Enter admin password:");
+                if (adminUsername === null || adminPassword === null) {
+                    // User cancelled the prompt
+                    return;
+                }
+                // You would typically send these credentials to your backend for verification
+                // For this example, we'll just proceed if they are not empty
+                if (adminUsername.trim() === '' || adminPassword.trim() === '') {
+                    alert("Admin username and password cannot be empty.");
+                    return;
+                }
                 handleForceApproveLoan(loan.accountId, loan.id, employeeVisitTime, employeeMessage, adminReply, adminUser); // Pass adminUser
                 onClose();
             };
@@ -531,9 +613,16 @@
                     <div className="bg-gray-800 rounded-lg shadow-2xl p-6 max-w-md w-full border-t-4 border-amber-500 relative">
                         <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-white text-2xl">&times;</button>
                         <h3 className="text-2xl font-bold text-amber-400 mb-4">Loan Details for {loan.accountId}</h3>
-                        <div className="space-y-2 text-gray-300">
+                        
+                        <div className="flex justify-between items-center mb-4">
+                            <button onClick={() => setShowPlayerDetails(!showPlayerDetails)} className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-md hover:bg-blue-600">
+                                {showPlayerDetails ? 'Hide Player Form Details' : 'Show Player Form Details'}
+                            </button>
+                        </div>
+
+                        <div className={`space-y-2 text-gray-300 ${showPlayerDetails ? 'max-h-96 overflow-y-auto' : 'max-h-48 overflow-hidden'}`}>
                             <p><strong>Loan ID:</strong> {loan.id}</p>
-                            <p><strong>Amount:</strong> ${loan.loanAmount?.toFixed(2) || '0.00'}</p>
+                            <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
                             <p><strong>Loan Type:</strong> {loan.loanType}</p>
                             <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
                             <p><strong>Repayment:</strong> {loan.repayment}</p>
@@ -541,7 +630,7 @@
                             {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
                             {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
                             {loan.job && <p><strong>Job:</strong> {loan.job}</p>}
-                            {loan.perDayIncome && <p><strong>Per Day Income:</strong> ${loan.perDayIncome?.toFixed(2) || '0.00'}</p>}
+                            {loan.perDayIncome && <p><strong>Per Day Income:</strong> ${parseFloat(loan.perDayIncome)?.toFixed(2) || '0.00'}</p>}
                             
                             <div className="mt-4">
                                 <label htmlFor="employeeVisitTime" className="block text-gray-300 text-sm font-bold mb-2">Employee Visit Time:</label>
@@ -642,19 +731,17 @@
                             )}
                         </div>
                         <div className="flex justify-end mt-6 space-x-2">
-                            <button onClick={() => alert('View Player Details for ' + loan.accountId)} className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200">View Player Details</button>
-                            <button onClick={() => alert('View Bank Employee Details for ' + loan.assignedEmployee)} className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200">View Bank Employee Details</button>
-                            <button onClick={onReject} className="px-5 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200">Cancel</button>
+                            <button onClick={onReject} className="px-5 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200">Reject</button>
                             {loan.loanStatus === 'waitingForAdminApproval' && (
                                 <>
                                     <button onClick={onApprove} className="px-5 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 transition duration-200">Approve</button>
-                                    <button onClick={onReject} className="px-5 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200">Reject</button>
                                 </>
                             )}
                             {(loan.loanStatus !== 'approved' && loan.loanStatus !== 'rejected') && (
                                 <button onClick={onForceApprove} className="px-5 py-2 bg-yellow-600 text-white font-semibold rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-75 transition duration-200">Forceful Approve</button>
                             )}
-                            <button onClick={onClose} className="px-5 py-2 bg-amber-600 text-white font-semibold rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-opacity-75 transition duration-200">Close</button>
+                            <button onClick={onClose} className="px-5 py-2 bg-amber-600 text-white font-semibold rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-opacity-75 transition duration-200">Back</button>
+                            <button onClick={handleSubmitEmployeeFields} className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200">Submit Form</button>
                         </div>
                     </div>
                 </div>
