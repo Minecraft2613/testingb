@@ -78,6 +78,8 @@
             return adminUser ? <AdminDashboard adminUser={adminUser} setAdminUser={setAdminUser} /> : <AdminLogin onLogin={handleLogin} />;
         };
 
+        );
+
         const AdminLogin = ({ onLogin }) => {
             const [username, setUsername] = useState('');
             const [password, setPassword] = useState('');
