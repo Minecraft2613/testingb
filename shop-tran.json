@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "player": "SimulatedPlayer21",
+    "type": "buy",
+    "item": "SimulatedItem",
+    "amount": 23.68597096763978,
+    "tax": 0.95,
+    "timestamp": 1751987359510
+  }
+]
