@@ -97,7 +97,7 @@
     "dailyRepayment": 183.53142857142848,
     "durationWeeks": 1,
     "loanType": "personal",
-    "loanStatus": "pending",
+    "loanStatus": "waitingForEmployeeApproval",
     "applicationDate": "2025-07-08T16:24:36.249Z",
     "purpose": "kuh",
     "coord1": ",,",
@@ -115,8 +115,9 @@
     "loanerNetWorth": "652",
     "employeePhoto": null,
     "signatureOfBankEmployee": null,
-    "employeeVisitTime": null,
+    "employeeVisitTime": "2025-07-08T16:24",
     "employeeMessage": null,
-    "adminReply": null
+    "adminReply": null,
+    "assignedEmployee": "Banker"
   }
 ]
