@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "player": "SimulatedPlayer17",
+    "jobName": "SimulatedJob",
+    "amountEarned": 68.13308291604974,
+    "tax": 4.77,
+    "timestamp": 1751986739119
+  }
+]
