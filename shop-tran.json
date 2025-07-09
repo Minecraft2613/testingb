@@ -94,5 +94,13 @@
     "amount": 20.57266144409241,
     "tax": 2.06,
     "timestamp": 1752072157653
+  },
+  {
+    "player": "SimulatedPlayer67",
+    "type": "sell",
+    "item": "SimulatedItem",
+    "amount": 8.786479747049565,
+    "tax": 0.88,
+    "timestamp": 1752073057636
   }
 ]
