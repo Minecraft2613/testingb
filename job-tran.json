@@ -40,5 +40,12 @@
     "amountEarned": 29.92021885168021,
     "tax": 2.09,
     "timestamp": 1752070057657
+  },
+  {
+    "player": "SimulatedPlayer93",
+    "jobName": "SimulatedJob",
+    "amountEarned": 31.038096218283783,
+    "tax": 2.17,
+    "timestamp": 1752070357638
   }
 ]
