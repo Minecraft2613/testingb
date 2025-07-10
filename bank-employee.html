@@ -41,7 +41,7 @@
 
             const handleLogin = async (username, password) => {
                 setLoading(true);
-                setMessage('');
+                setMessage(''); // Clear message on new login attempt
                 try {
                     const response = await fetch(API_URL, {
                         method: 'POST',
@@ -106,11 +106,11 @@
             const [employeeMessage, setEmployeeMessage] = useState('');
             const [modalMessage, setModalMessage] = useState('');
             const [showAdditionalFields, setShowAdditionalFields] = useState(false);
-            const [loanerPhoto, setLoanerPhoto] = useState('');
-            const [landPhoto, setLandPhoto] = useState('');
-            const [buildingPhoto, setBuildingPhoto] = useState('');
-            const [employeePhoto, setEmployeePhoto] = useState('');
-            const [signatureOfBankEmployee, setSignatureOfBankEmployee] = useState('');
+            const [loanerPhoto, setLoanerPhoto] = useState(null); // Changed to null for file object
+            const [landPhoto, setLandPhoto] = useState(null);
+            const [buildingPhoto, setBuildingPhoto] = useState(null);
+            const [employeePhoto, setEmployeePhoto] = useState(null);
+            const [signatureOfBankEmployee, setSignatureOfBankEmployee] = useState(null);
             const [loanerBankId, setLoanerBankId] = useState('');
             const [loanerPerDayIncome, setLoanerPerDayIncome] = useState('');
             const [hasBusiness, setHasBusiness] = useState(false);
@@ -119,6 +119,9 @@
             const [valueOfLand, setValueOfLand] = useState('');
             const [valueOfBuilding, setValueOfBuilding] = useState('');
             const [loanerNetWorth, setLoanerNetWorth] = useState('');
+            const [visitTimeSet, setVisitTimeSet] = useState(false);
+            const [messageSet, setMessageSet] = useState(false);
+            const [sendingLoan, setSendingLoan] = useState(false);
 
             const fetchLoans = async () => {
                 setLoadingLoans(true);
@@ -151,6 +154,42 @@
                 return () => clearInterval(interval);
             }, []);
 
+            useEffect(() => {
+                if (selectedLoan) {
+                    setVisitTime(selectedLoan.employeeVisitTime || '');
+                    setEmployeeMessage(selectedLoan.employeeMessage || '');
+                    setVisitTimeSet(!!selectedLoan.employeeVisitTime);
+                    setMessageSet(!!selectedLoan.employeeMessage);
+                    // Automatically show additional fields if time and message are already set
+                    if (selectedLoan.employeeVisitTime && selectedLoan.employeeMessage) {
+                        setShowAdditionalFields(true);
+                    } else {
+                        setShowAdditionalFields(false);
+                    }
+                } else {
+                    // Reset states when no loan is selected
+                    setVisitTime('');
+                    setEmployeeMessage('');
+                    setVisitTimeSet(false);
+                    setMessageSet(false);
+                    setShowAdditionalFields(false);
+                    // Reset file inputs and other fields when a new loan is selected or deselected
+                    setLoanerPhoto(null);
+                    setLandPhoto(null);
+                    setBuildingPhoto(null);
+                    setEmployeePhoto(null);
+                    setSignatureOfBankEmployee(null);
+                    setLoanerBankId('');
+                    setLoanerPerDayIncome('');
+                    setHasBusiness(false);
+                    setAreaVolume('');
+                    setCornerCoords('');
+                    setValueOfLand('');
+                    setValueOfBuilding('');
+                    setLoanerNetWorth('');
+                }
+            }, [selectedLoan]);
+
             const handleSetVisitTime = async () => {
                 if (!selectedLoan || !visitTime) {
                     setModalMessage('Please select a loan and set a visit time.');
@@ -170,9 +209,8 @@
                     });
                     if (response.ok) {
                         setModalMessage('Visit time set successfully!');
-                        fetchLoans(); // Refresh loans
-                        setSelectedLoan(null);
-                        setVisitTime('');
+                        setVisitTimeSet(true); // Mark visit time as set
+                        fetchLoans(); // Refresh loans to update selectedLoan
                     } else {
                         const errorData = await response.json();
                         setModalMessage(errorData.message || 'Failed to set visit time.');
@@ -201,9 +239,8 @@
                     });
                     if (response.ok) {
                         setModalMessage('Message added successfully!');
-                        fetchLoans(); // Refresh loans
-                        setSelectedLoan(null);
-                        setEmployeeMessage('');
+                        setMessageSet(true); // Mark message as set
+                        fetchLoans(); // Refresh loans to update selectedLoan
                     } else {
                         const errorData = await response.json();
                         setModalMessage(errorData.message || 'Failed to add message.');
@@ -213,19 +250,55 @@
                 }
             };
 
+            const fileToBase64 = (file) => {
+                return new Promise((resolve, reject) => {
+                    if (!file) return resolve(null);
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = error => reject(error);
+                });
+            };
+
+            const areAdditionalFieldsFilled = () => {
+                return (
+                    loanerPhoto &&
+                    landPhoto &&
+                    buildingPhoto &&
+                    employeePhoto &&
+                    signatureOfBankEmployee &&
+                    loanerBankId &&
+                    loanerPerDayIncome &&
+                    areaVolume &&
+                    cornerCoords &&
+                    valueOfLand &&
+                    valueOfBuilding &&
+                    loanerNetWorth
+                );
+            };
+
             const handlePassLoan = async () => {
                 if (!selectedLoan) {
                     setModalMessage('Please select a loan to pass.');
                     return;
                 }
-                if (!selectedLoan.employeeVisitTime) {
-                    setModalMessage('Please set an employee visit time before passing the loan.');
+                if (!visitTimeSet || !messageSet) {
+                    setModalMessage('Please set visit time and add a message before sending.');
                     return;
                 }
-                if (!selectedLoan.employeeMessage) {
-                    setModalMessage('Please add an employee message before passing the loan.');
+                if (!areAdditionalFieldsFilled()) {
+                    setModalMessage('Please fill all additional loan details before sending.');
                     return;
                 }
+
+                setSendingLoan(true); // Start loading
+
+                const base64LoanerPhoto = await fileToBase64(loanerPhoto);
+                const base64LandPhoto = await fileToBase64(landPhoto);
+                const base64BuildingPhoto = await fileToBase64(buildingPhoto);
+                const base64EmployeePhoto = await fileToBase64(employeePhoto);
+                const base64SignatureOfBankEmployee = await fileToBase64(signatureOfBankEmployee);
+
                 try {
                     const response = await fetch(EMPLOYEE_API_URL, {
                         method: 'POST',
@@ -235,11 +308,11 @@
                             loanId: selectedLoan.id,
                             userAccountId: selectedLoan.accountId,
                             employeeUser: employeeUser,
-                            loanerPhoto: loanerPhoto,
-                            landPhoto: landPhoto,
-                            buildingPhoto: buildingPhoto,
-                            employeePhoto: employeePhoto,
-                            signatureOfBankEmployee: signatureOfBankEmployee,
+                            loanerPhoto: base64LoanerPhoto,
+                            landPhoto: base64LandPhoto,
+                            buildingPhoto: base64BuildingPhoto,
+                            employeePhoto: base64EmployeePhoto,
+                            signatureOfBankEmployee: base64SignatureOfBankEmployee,
                             loanerBankId: loanerBankId,
                             loanerPerDayIncome: loanerPerDayIncome,
                             hasBusiness: hasBusiness,
@@ -254,17 +327,274 @@
                         setModalMessage('Loan passed for admin approval!');
                         fetchLoans(); // Refresh loans
                         setSelectedLoan(null);
+                        // Reset file inputs and other fields after successful submission
+                        setLoanerPhoto(null);
+                        setLandPhoto(null);
+                        setBuildingPhoto(null);
+                        setEmployeePhoto(null);
+                        setSignatureOfBankEmployee(null);
+                        setLoanerBankId('');
+                        setLoanerPerDayIncome('');
+                        setHasBusiness(false);
+                        setAreaVolume('');
+                        setCornerCoords('');
+                        setValueOfLand('');
+                        setValueOfBuilding('');
+                        setLoanerNetWorth('');
+                        setVisitTimeSet(false);
+                        setMessageSet(false);
+                        setShowAdditionalFields(false);
                     } else {
                         const errorData = await response.json();
                         setModalMessage(errorData.message || 'Failed to pass loan.');
                     }
                 } catch (e) {
                     setModalMessage('Connection error passing loan.');
+                } finally {
+                    setSendingLoan(false); // End loading
+                }
+            };
+
+            const fetchLoans = async () => {
+                setLoadingLoans(true);
+                try {
+                    const response = await fetch(EMPLOYEE_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'get_loans', employeeUser })
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        // Filter loans that are 'pending' or 'waitingForEmployeeApproval'
+                        const filteredLoans = data.loans.filter(loan => 
+                            loan.loanStatus === 'pending' || loan.loanStatus === 'waitingForEmployeeApproval'
+                        );
+                        setLoans(filteredLoans);
+                    } else {
+                        setModalMessage('Failed to fetch loans.');
+                    }
+                } catch (e) {
+                    setModalMessage('Connection error fetching loans.');
+                } finally {
+                    setLoadingLoans(false);
+                }
+            };
+
+            useEffect(() => {
+                fetchLoans();
+                const interval = setInterval(fetchLoans, 10000); // Refresh every 10 seconds
+                return () => clearInterval(interval);
+            }, []);
+
+            useEffect(() => {
+                if (selectedLoan) {
+                    setVisitTime(selectedLoan.employeeVisitTime || '');
+                    setEmployeeMessage(selectedLoan.employeeMessage || '');
+                    setVisitTimeSet(!!selectedLoan.employeeVisitTime);
+                    setMessageSet(!!selectedLoan.employeeMessage);
+                    // Automatically show additional fields if time and message are already set
+                    if (selectedLoan.employeeVisitTime && selectedLoan.employeeMessage) {
+                        setShowAdditionalFields(true);
+                    } else {
+                        setShowAdditionalFields(false);
+                    }
+                } else {
+                    // Reset states when no loan is selected
+                    setVisitTime('');
+                    setEmployeeMessage('');
+                    setVisitTimeSet(false);
+                    setMessageSet(false);
+                    setShowAdditionalFields(false);
+                    // Reset file inputs and other fields when a new loan is selected or deselected
+                    setLoanerPhoto(null);
+                    setLandPhoto(null);
+                    setBuildingPhoto(null);
+                    setEmployeePhoto(null);
+                    setSignatureOfBankEmployee(null);
+                    setLoanerBankId('');
+                    setLoanerPerDayIncome('');
+                    setHasBusiness(false);
+                    setAreaVolume('');
+                    setCornerCoords('');
+                    setValueOfLand('');
+                    setValueOfBuilding('');
+                    setLoanerNetWorth('');
+                }
+            }, [selectedLoan]);
+
+            const handleSetVisitTime = async () => {
+                if (!selectedLoan || !visitTime) {
+                    setModalMessage('Please select a loan and set a visit time.');
+                    return;
+                }
+                try {
+                    const response = await fetch(EMPLOYEE_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'set_visit_time',
+                            loanId: selectedLoan.id,
+                            userAccountId: selectedLoan.accountId,
+                            employeeVisitTime: visitTime,
+                            employeeUser: employeeUser
+                        })
+                    });
+                    if (response.ok) {
+                        setModalMessage('Visit time set successfully!');
+                        setVisitTimeSet(true); // Mark visit time as set
+                        fetchLoans(); // Refresh loans to update selectedLoan
+                    } else {
+                        const errorData = await response.json();
+                        setModalMessage(errorData.message || 'Failed to set visit time.');
+                    }
+                } catch (e) {
+                    setModalMessage('Connection error setting visit time.');
+                }
+            };
+
+            const handleAddMessage = async () => {
+                if (!selectedLoan || !employeeMessage) {
+                    setModalMessage('Please select a loan and enter a message.');
+                    return;
+                }
+                try {
+                    const response = await fetch(EMPLOYEE_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'add_message',
+                            loanId: selectedLoan.id,
+                            userAccountId: selectedLoan.accountId,
+                            employeeMessage: employeeMessage,
+                            employeeUser: employeeUser
+                        })
+                    });
+                    if (response.ok) {
+                        setModalMessage('Message added successfully!');
+                        setMessageSet(true); // Mark message as set
+                        fetchLoans(); // Refresh loans to update selectedLoan
+                    } else {
+                        const errorData = await response.json();
+                        setModalMessage(errorData.message || 'Failed to add message.');
+                    }
+                } catch (e) {
+                    setModalMessage('Connection error adding message.');
+                }
+            };
+
+            const fileToBase64 = (file) => {
+                return new Promise((resolve, reject) => {
+                    if (!file) return resolve(null);
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = error => reject(error);
+                });
+            };
+
+            const areAdditionalFieldsFilled = () => {
+                return (
+                    loanerPhoto &&
+                    landPhoto &&
+                    buildingPhoto &&
+                    employeePhoto &&
+                    signatureOfBankEmployee &&
+                    loanerBankId &&
+                    loanerPerDayIncome &&
+                    areaVolume &&
+                    cornerCoords &&
+                    valueOfLand &&
+                    valueOfBuilding &&
+                    loanerNetWorth
+                );
+            };
+
+            const handlePassLoan = async () => {
+                if (!selectedLoan) {
+                    setModalMessage('Please select a loan to pass.');
+                    return;
+                }
+                if (!visitTimeSet || !messageSet) {
+                    setModalMessage('Please set visit time and add a message before sending.');
+                    return;
+                }
+                if (!areAdditionalFieldsFilled()) {
+                    setModalMessage('Please fill all additional loan details before sending.');
+                    return;
+                }
+
+                setSendingLoan(true); // Start loading
+
+                const base64LoanerPhoto = await fileToBase64(loanerPhoto);
+                const base64LandPhoto = await fileToBase64(landPhoto);
+                const base64BuildingPhoto = await fileToBase64(buildingPhoto);
+                const base64EmployeePhoto = await fileToBase64(employeePhoto);
+                const base64SignatureOfBankEmployee = await fileToBase64(signatureOfBankEmployee);
+
+                try {
+                    const response = await fetch(EMPLOYEE_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'pass_loan',
+                            loanId: selectedLoan.id,
+                            userAccountId: selectedLoan.accountId,
+                            employeeUser: employeeUser,
+                            loanerPhoto: base64LoanerPhoto,
+                            landPhoto: base64LandPhoto,
+                            buildingPhoto: base64BuildingPhoto,
+                            employeePhoto: base64EmployeePhoto,
+                            signatureOfBankEmployee: base64SignatureOfBankEmployee,
+                            loanerBankId: loanerBankId,
+                            loanerPerDayIncome: loanerPerDayIncome,
+                            hasBusiness: hasBusiness,
+                            areaVolume: areaVolume,
+                            cornerCoords: cornerCoords,
+                            valueOfLand: valueOfLand,
+                            valueOfBuilding: valueOfBuilding,
+                            loanerNetWorth: loanerNetWorth
+                        })
+                    });
+                    if (response.ok) {
+                        setModalMessage('Loan passed for admin approval!');
+                        fetchLoans(); // Refresh loans
+                        setSelectedLoan(null);
+                        // Reset file inputs and other fields after successful submission
+                        setLoanerPhoto(null);
+                        setLandPhoto(null);
+                        setBuildingPhoto(null);
+                        setEmployeePhoto(null);
+                        setSignatureOfBankEmployee(null);
+                        setLoanerBankId('');
+                        setLoanerPerDayIncome('');
+                        setHasBusiness(false);
+                        setAreaVolume('');
+                        setCornerCoords('');
+                        setValueOfLand('');
+                        setValueOfBuilding('');
+                        setLoanerNetWorth('');
+                        setVisitTimeSet(false);
+                        setMessageSet(false);
+                        setShowAdditionalFields(false);
+                    } else {
+                        const errorData = await response.json();
+                        setModalMessage(errorData.message || 'Failed to pass loan.');
+                    }
+                } catch (e) {
+                    setModalMessage('Connection error passing loan.');
+                } finally {
+                    setSendingLoan(false); // End loading
                 }
             };
 
             return (
                 <div className="min-h-screen flex flex-col bg-gray-800 p-6">
+                    {sendingLoan && (
+                        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+                            <div className="loader"></div>
+                            <p className="text-white ml-4 text-lg">Sending for Admin Approval...</p>
+                        </div>
+                    )}
                     <header className="flex justify-between items-center mb-6 pb-4 border-b border-gray-700">
                         <h1 className="text-4xl font-bold text-blue-400">Employee Dashboard</h1>
                         <div className="flex items-center space-x-4">
@@ -324,74 +654,104 @@
                                     <h3 className="text-xl font-bold text-blue-300 mb-2">Employee Actions</h3>
                                     <div className="space-y-3">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-300">Set Visit Time:</label>
-                                            <div className="flex space-x-2">
-                                                <input type="datetime-local" value={visitTime} onChange={e => setVisitTime(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
-                                                <button onClick={() => setVisitTime(new Date().toISOString().slice(0, 16))} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm">Today</button>
-                                            </div>
-                                            <button onClick={handleSetVisitTime} className="mt-2 w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-md">Set Time</button>
+                                            <label className="block text-sm font-medium text-gray-300">Visit Time:</label>
+                                            {visitTimeSet && selectedLoan?.employeeVisitTime ? (
+                                                <div className="flex items-center justify-between p-2 bg-gray-700 rounded-md border border-gray-600">
+                                                    <span>{new Date(selectedLoan.employeeVisitTime).toLocaleString()}</span>
+                                                    <button onClick={() => setVisitTimeSet(false)} className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm">Change</button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="flex space-x-2">
+                                                        <input type="datetime-local" value={visitTime} onChange={e => setVisitTime(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                        <button onClick={() => setVisitTime(new Date().toISOString().slice(0, 16))} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm">Today</button>
+                                                    </div>
+                                                    <button onClick={handleSetVisitTime} className="mt-2 w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-md">Set Time</button>
+                                                </>
+                                            )}
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-300">Add Message:</label>
-                                            <textarea value={employeeMessage} onChange={e => setEmployeeMessage(e.target.value)} rows="3" className="w-full p-2 bg-gray-700 rounded-md border border-gray-600"></textarea>
-                                            <button onClick={handleAddMessage} className="mt-2 w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-md">Add Message</button>
+                                            <label className="block text-sm font-medium text-gray-300">Message:</label>
+                                            {messageSet && selectedLoan?.employeeMessage ? (
+                                                <div className="flex items-center justify-between p-2 bg-gray-700 rounded-md border border-gray-600">
+                                                    <span>{selectedLoan.employeeMessage}</span>
+                                                    <button onClick={() => setMessageSet(false)} className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm">Change</button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <textarea value={employeeMessage} onChange={e => setEmployeeMessage(e.target.value)} rows="3" className="w-full p-2 bg-gray-700 rounded-md border border-gray-600"></textarea>
+                                                    <button onClick={handleAddMessage} className="mt-2 w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-md">Add Message</button>
+                                                </>
+                                            )}
                                         </div>
-                                        <div className="space-y-3">
-                                            <h3 className="text-xl font-bold text-blue-300 mb-2">Additional Loan Details</h3>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-300">Loaner Photo URL:</label>
-                                                <input type="text" value={loanerPhoto} onChange={e => setLoanerPhoto(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                        {(visitTimeSet && messageSet && !showAdditionalFields) && (
+                                            <button onClick={() => setShowAdditionalFields(true)} className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-md">Next</button>
+                                        )}
+                                        {showAdditionalFields && (
+                                            <div className="space-y-3 mt-3">
+                                                <h3 className="text-xl font-bold text-blue-300 mb-2">Additional Loan Details</h3>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Loaner Photo:</label>
+                                                    <input type="file" onChange={e => setLoanerPhoto(e.target.files[0])} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                    {loanerPhoto && <p className="text-sm text-gray-400">Selected: {loanerPhoto.name}</p>}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Land Photo:</label>
+                                                    <input type="file" onChange={e => setLandPhoto(e.target.files[0])} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                    {landPhoto && <p className="text-sm text-gray-400">Selected: {landPhoto.name}</p>}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Building Photo:</label>
+                                                    <input type="file" onChange={e => setBuildingPhoto(e.target.files[0])} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                    {buildingPhoto && <p className="text-sm text-gray-400">Selected: {buildingPhoto.name}</p>}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Employee Photo:</label>
+                                                    <input type="file" onChange={e => setEmployeePhoto(e.target.files[0])} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                    {employeePhoto && <p className="text-sm text-gray-400">Selected: {employeePhoto.name}</p>}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Signature of Bank Employee:</label>
+                                                    <input type="file" onChange={e => setSignatureOfBankEmployee(e.target.files[0])} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                    {signatureOfBankEmployee && <p className="text-sm text-gray-400">Selected: {signatureOfBankEmployee.name}</p>}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Loaner Bank ID:</label>
+                                                    <input type="text" value={loanerBankId} onChange={e => setLoanerBankId(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Loaner Per Day Income:</label>
+                                                    <input type="number" value={loanerPerDayIncome} onChange={e => setLoanerPerDayIncome(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <input type="checkbox" checked={hasBusiness} onChange={e => setHasBusiness(e.target.checked)} className="mr-2" />
+                                                    <label className="text-sm font-medium text-gray-300">Has Business</label>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Area/Volume:</label>
+                                                    <input type="text" value={areaVolume} onChange={e => setAreaVolume(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Corner Coords:</label>
+                                                    <input type="text" value={cornerCoords} onChange={e => setCornerCoords(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Value of Land:</label>
+                                                    <input type="number" value={valueOfLand} onChange={e => setValueOfLand(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Value of Building:</label>
+                                                    <input type="number" value={valueOfBuilding} onChange={e => setValueOfBuilding(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Loaner Net Worth:</label>
+                                                    <input type="number" value={loanerNetWorth} onChange={e => setLoanerNetWorth(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <button onClick={handlePassLoan} disabled={sendingLoan || !areAdditionalFieldsFilled()} className={`w-full font-bold py-3 rounded-md ${sendingLoan || !areAdditionalFieldsFilled() ? 'bg-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
+                                                    {sendingLoan ? 'Sending...' : 'Send'}
+                                                </button>
                                             </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-300">Land Photo URL:</label>
-                                                <input type="text" value={landPhoto} onChange={e => setLandPhoto(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-300">Building Photo URL:</label>
-                                                <input type="text" value={buildingPhoto} onChange={e => setBuildingPhoto(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-300">Employee Photo URL:</label>
-                                                <input type="text" value={employeePhoto} onChange={e => setEmployeePhoto(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-300">Signature of Bank Employee URL:</label>
-                                                <input type="text" value={signatureOfBankEmployee} onChange={e => setSignatureOfBankEmployee(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-300">Loaner Bank ID:</label>
-                                                <input type="text" value={loanerBankId} onChange={e => setLoanerBankId(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-300">Loaner Per Day Income:</label>
-                                                <input type="number" value={loanerPerDayIncome} onChange={e => setLoanerPerDayIncome(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
-                                            </div>
-                                            <div className="flex items-center">
-                                                <input type="checkbox" checked={hasBusiness} onChange={e => setHasBusiness(e.target.checked)} className="mr-2" />
-                                                <label className="text-sm font-medium text-gray-300">Has Business</label>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-300">Area/Volume:</label>
-                                                <input type="text" value={areaVolume} onChange={e => setAreaVolume(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-300">Corner Coords:</label>
-                                                <input type="text" value={cornerCoords} onChange={e => setCornerCoords(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-300">Value of Land:</label>
-                                                <input type="number" value={valueOfLand} onChange={e => setValueOfLand(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-300">Value of Building:</label>
-                                                <input type="number" value={valueOfBuilding} onChange={e => setValueOfBuilding(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-300">Loaner Net Worth:</label>
-                                                <input type="number" value={loanerNetWorth} onChange={e => setLoanerNetWorth(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
-                                            </div>
-                                        </div>
-                                        <button onClick={handlePassLoan} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-md">Submit and Pass Loan for Admin Approval</button>
+                                        )}
                                     </div>
                                 </div>
                             ) : (
