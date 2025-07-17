@@ -1,1647 +1,1439 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minecraft Server Bank</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>  
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        body { font-family: var(--font-family, 'Inter'), sans-serif; margin: 0; padding: 0; box-sizing: border-box; overflow-x: hidden; background-color: var(--background-color-body, #1a202c); color: var(--text-color, #e2e8f0); }
-        .shadow-minecraft { box-shadow: 4px 4px 0px var(--shadow-color, rgba(0, 0, 0, 0.4)); border: 3px solid var(--block-border-color, #2c3e50); }
-        .hover\:shadow-minecraft-lg:hover { box-shadow: 6px 6px 0px var(--shadow-color-lg, rgba(0, 0, 0, 0.6)); }
-        .bg-minecraft-world { background-image: var(--background-image-url, linear-gradient(to bottom right, #4CAF50, #8BC34A, #FFEB3B, #FFC107)); background-size: cover; background-position: center; animation: minecraftGradient 15s ease infinite; }
-        @keyframes minecraftGradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        .animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--loading-bg-color, #1a202c); z-index: 100; display: flex; align-items: center; justify-content: center; flex-direction: column; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.7); }
-        .loading-container { perspective: 1000px; }
-        .giant-cube { width: 100px; height: 100px; position: relative; transform-style: preserve-3d; animation: rotate 8s infinite linear; }
-        @keyframes rotate { from { transform: rotateY(0deg) rotateX(0deg); } to { transform: rotateY(360deg) rotateX(360deg); } }
-        .cube { position: absolute; width: 50px; height: 50px; background: rgba(255, 165, 0, 0.8); border: 1px solid rgba(255, 255, 255, 0.5); transform-style: preserve-3d; }
-        .cube .face { position: absolute; width: 50px; height: 50px; background: inherit; border: inherit; }
-        .front  { transform: translateZ(25px); } .back   { transform: rotateY(180deg) translateZ(25px); } .right  { transform: rotateY(90deg) translateZ(25px); } .left   { transform: rotateY(-90deg) translateZ(25px); } .top    { transform: rotateX(90deg) translateZ(25px); } .bottom { transform: rotateX(-90deg) translateZ(25px); }
-        .cube-1 { animation: join-1 2.5s forwards; } .cube-2 { animation: join-2 2.5s forwards; } .cube-3 { animation: join-3 2.5s forwards; } .cube-4 { animation: join-4 2.5s forwards; } 
-        @keyframes join-1 { 0% { transform: translate(-200vw, -200vh, -200px) rotateY(-90deg); } 70%, 100% { transform: translate(-25px, -25px, 0) rotateY(0deg); } }
-        @keyframes join-2 { 0% { transform: translate(200vw, -200vh, -200px) rotateY(90deg); } 70%, 100% { transform: translate(25px, -25px, 0) rotateY(0deg); } }
-        @keyframes join-3 { 0% { transform: translate(-200vw, 200vh, -200px) rotateY(90deg); } 70%, 100% { transform: translate(-25px, 25px, 0) rotateY(0deg); } }
-        @keyframes join-4 { 0% { transform: translate(200vw, 200vh, -200px) rotateY(-90deg); } 70%, 100% { transform: translate(25px, 25px, 0) rotateY(0deg); } }
+   </head>
+<body>
+    <!-- Message Box Overlay (for custom alerts) -->
+    <div id="message-box-overlay" class="message-box-overlay">
+        <div class="message-box">
+            <h3 id="message-box-title"></h3>
+            <p id="message-box-content"></p>
+        </div>
+    </div>
 
-        /* New styles for payment loading animation */
-        .payment-loading-overlay {
-            position: absolute; /* Changed from fixed to absolute */
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7); /* Darker overlay */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 50; /* Below main loading screen, above tax content */
-            border-radius: 0.5rem; /* Match parent container */
-        }
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-spinner">
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <p>Loading Minecraft Experience...</p>
+    </div>
 
-        .payment-loading-box {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            background-color: #1a202c; /* Dark background */
-            border: 4px solid #fbbf24; /* Yellow border for processing */
-            border-radius: 0.75rem;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            transition: border-color 0.5s ease-in-out, box-shadow 0.5s ease-in-out;
-            text-align: center;
-        }
+    <!-- Authentication Screen (Initially visible, hides after login/create) -->
+    <div id="auth-screen">
+        <div id="auth-panel">
+            <h2 id="auth-welcome-message">Welcome Back!</h2>
+            <form id="auth-form-main">
+                <input type="text" id="auth-email-input" placeholder="Enter Username or Email" required>
+                <input type="password" id="auth-password-input" placeholder="Password" required>
 
-        .payment-loading-box.success {
-            border-color: #10b981; /* Green border for success */
-            box-shadow: 0 0 30px #10b981, 0 0 40px #10b981; /* Green glow */
-        }
+                <!-- New: Platform Select (moved above username) -->
+                <label for="auth-platform-select" style="display: none; text-align: left; margin-top: 5px;">Minecraft Edition:</label>
+                <select id="auth-platform-select" style="display: none;" required>
+                    <option value="">-- Select Edition --</option>
+                    <option value="java">Java Edition</option>
+                    <option value="bedrock">Bedrock Edition</option>
+                </select>
 
-        .payment-loading-box.error {
-            border-color: #ef4444; /* Red border for error */
-        }
-
-        .payment-dollar-symbol {
-            font-size: 4rem;
-            font-weight: bold;
-            color: #fcd34d; /* Gold-like color for dollar */
-            animation: dollarBounce 1s infinite ease-in-out;
-            margin-bottom: 1rem;
-        }
-
-        @keyframes dollarBounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
-        }
-
-        .payment-message-text {
-            font-size: 1.25rem;
-            color: #e2e8f0;
-            margin-top: 0.5rem;
-        }
-
-        /* Keyframes for glowing effect */
-        @keyframes glow-green {
-            0% { box-shadow: 0 0 10px #10b981; }
-            50% { box-shadow: 0 0 20px #10b981, 0 0 30px #10b981; }
-            100% { box-shadow: 0 0 10px #10b981; }
-        }
-
-        .payment-loading-box.success {
-            animation: glow-green 1.5s infinite alternate;
-        }
-    </style>
-</head>
-<body class="bg-gray-800 text-gray-100 antialiased">
-    <div id="root"></div>
-
-    <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef } = React;
-
-        // --- CONFIGURATION (Cloudflare Worker URLs) ---
-        const API_ENDPOINTS = {
-            ACCOUNTS: 'https://bank-data.1987sakshamsingh.workers.dev',
-            TAX: 'https://bank-data.1987sakshamsingh.workers.dev',
-            CONTACT: 'https://bank-data.1987sakshamsingh.workers.dev/contact',
-            BALANCES: 'https://bank-data.1987sakshamsingh.workers.dev/bal.json',
-            SHOP_TRANSACTIONS: 'https://bank-data.1987sakshamsingh.workers.dev/shop-tran.json',
-            JOB_TRANSACTIONS: 'https://bank-data.1987sakshamsingh.workers.dev/job-tran.json',
-            LOANS: 'https://bank-data.1987sakshamsingh.workers.dev/loan.json',
-            MESSAGES: 'https://bank-data.1987sakshamsingh.workers.dev/msg.json',
-            TAX_PAYMENTS: 'https://bank-data.1987sakshamsingh.workers.dev/tax-pay.json',
-        };
-
-        // --- UTILITY & HELPER FUNCTIONS ---
-        const copyToClipboard = (text, showModal) => {
-            navigator.clipboard.writeText(text).then(() => showModal('Copied!', 'Bank ID copied to clipboard!', 'success'), () => showModal('Error', 'Failed to copy Bank ID.', 'error'));
-        };
-
-        // --- UI Components ---
-        const Modal = ({ isOpen, title, message, onClose, type }) => {
-            if (!isOpen) return null;
-            const colors = { success: 'border-green-500', error: 'border-red-500', info: 'border-blue-500' };
-            return (
-                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
-                    <div className={`bg-gray-800 rounded-lg shadow-2xl p-6 max-w-sm w-full border-t-4 ${colors[type] || colors.info}`}>
-                        <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-                        <p className="text-gray-300 mb-6">{message}</p>
-                        <div className="flex justify-end"><button onClick={onClose} className="px-5 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 transition duration-200">Close</button></div>
-                    </div>
-                </div>
-            );
-        };
-
-        const LoadingScreen = ({ loginSuccess, message }) => (
-            <div className="loading-screen">
-                {loginSuccess ? 
-                    <h1 className="text-4xl font-bold animate-fade-in">{message}</h1> :
-                    <><div className="loading-container"><div className="giant-cube">{'cube-1,cube-2,cube-3,cube-4'.split(',').map(c => <div key={c} className={`cube ${c}`}><div className="face front"></div><div className="face back"></div><div className="face right"></div><div className="face left"></div><div className="face top"></div><div className="face bottom"></div></div>)}</div></div><h2 className="text-2xl font-bold mt-12 animate-pulse">{message}</h2></>
-                }
-            </div>
-        );
-
-        // --- Authentication Pages ---
-        const AuthPageLayout = ({ children, title, footerText, footerButtonText, onFooterClick }) => (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-gray-800 p-4">
-                <div className="bg-gray-800 p-8 rounded-xl w-full max-w-md shadow-minecraft">
-                    <h2 className="text-3xl font-bold text-green-400 mb-6 text-center">{title}</h2>
-                    {children}
-                    <div className="text-center mt-6"><p className="text-gray-400">{footerText}</p><button onClick={onFooterClick} className="text-green-400 hover:underline font-semibold mt-1 focus:outline-none">{footerButtonText}</button></div>
-                </div>
-            </div>
-        );
-
-        const LoginPage = ({ setCurrentPage, handleLogin }) => {
-            const [identifier, setIdentifier] = useState('');
-            const [password, setPassword] = useState('');
-            return (
-                <AuthPageLayout title="Minecraft Bank Login 🏦" footerText="Don't have an account?" footerButtonText="Create one!" onFooterClick={() => setCurrentPage('create-account')}>
-                    <form onSubmit={(e) => { e.preventDefault(); handleLogin(identifier, password); }} className="space-y-4">
-                        <input type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="Bank ID / MC Name / Email" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" />
-                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="********" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" />
-                        <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md transition duration-200 shadow-md transform hover:scale-105">Login</button>
-                    </form>
-                </AuthPageLayout>
-            );
-        };
-
-        const CreateAccountPage = ({ setCurrentPage, handleCreateAccount, showModal }) => {
-            const [formState, setFormState] = useState({ bankName: '', accountId: '', email: '', password: '', edition: 'java' });
-            const [generatedBankId, setGeneratedBankId] = useState('');
-            useEffect(() => { setGeneratedBankId(`BANK${Math.floor(100000 + Math.random() * 900000)}`); }, []);
-            const handleChange = (e) => setFormState({ ...formState, [e.target.name]: e.target.value });
-            const onSubmit = (e) => {
-                e.preventDefault();
-                const success = handleCreateAccount({ ...formState, bankId: generatedBankId });
-                if (success) showModal('Account Created!', `Your Bank ID is: ${generatedBankId}. Please copy it and keep it safe!`, 'success', () => setCurrentPage('login'));
-            };
-            return (
-                <AuthPageLayout title="Create Minecraft Bank Account 📝" footerText="Already have an account?" footerButtonText="Login here!" onFooterClick={() => setCurrentPage('login')}>
-                    <form onSubmit={onSubmit} className="space-y-4">
-                        <input name="bankName" value={formState.bankName} onChange={handleChange} placeholder="Bank Name" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" />
-                        <input name="email" type="email" value={formState.email} onChange={handleChange} placeholder="Email Address" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" />
-                        <select name="edition" value={formState.edition} onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"><option value="java">Java</option><option value="bedrock">Bedrock</option></select>
-                        <div className="flex"><input name="accountId" value={formState.accountId} onChange={handleChange} placeholder="Your in-game name" required className={`w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 ${formState.edition === 'bedrock' ? 'rounded-l-none rounded-r-md' : 'rounded-md'}`} /></div>
-                        <input name="password" type="password" value={formState.password} onChange={handleChange} placeholder="Password" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" />
-                        {generatedBankId && <div className="p-3 bg-gray-700 rounded-md border border-green-500 flex items-center justify-between"><span className="text-green-300 text-sm font-mono break-all pr-2">Your Bank ID: <span className="font-bold text-lg">{generatedBankId}</span></span><button type="button" onClick={() => copyToClipboard(generatedBankId, showModal)} className="bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-1 px-3 rounded-md">Copy</button></div>}
-                        <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md">Create Account</button>
-                    </form>
-                </AuthPageLayout>
-            );
-        };
-
-        // --- Main Application Layout ---
-        const MainLayout = ({ children, currentUserAccount, setCurrentPage, handleLogout, notification }) => {
-            const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-            return (
-                <div className="flex min-h-screen bg-gray-800 text-gray-100">
-                    <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} setCurrentPage={setCurrentPage} handleLogout={handleLogout} notification={notification} />
-                    <div className="flex-1 flex flex-col transition-all duration-300 ease-in-out">
-                        <TopBar setIsSidebarOpen={setIsSidebarOpen} currentUserAccount={currentUserAccount} />
-                        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">{children}</main>
-                    </div>
-                </div>
-            );
-        };
-
-        const TopBar = ({ setIsSidebarOpen, currentUserAccount }) => (
-            <div className="bg-gray-800 p-4 flex items-center justify-between shadow-lg sticky top-0 z-10 border-b-2 border-gray-700">
-                <button onClick={() => setIsSidebarOpen(true)} className="text-green-400 text-3xl focus:outline-none p-2 rounded-md hover:bg-gray-700">☰</button>
-                {currentUserAccount && <div className="flex items-center space-x-4"><span className="text-md font-semibold text-gray-200 hidden sm:block">{currentUserAccount.accountId}</span><div className="w-10 h-10 bg-green-700 rounded-full flex items-center justify-center text-white text-lg font-bold border-2 border-green-500 shadow-md">{currentUserAccount.accountId.charAt(0).toUpperCase()}</div></div>}
-            </div>
-        );
-
-        const Sidebar = ({ isOpen, setIsOpen, setCurrentPage, handleLogout, notification }) => {
-            const sidebarClass = isOpen ? 'translate-x-0' : '-translate-x-full';
-            const navigateAndClose = (page) => { setCurrentPage(page); setIsOpen(false); };
-            const menuItems = [
-                { page: 'home', label: 'Home', icon: '🏠' }, { page: 'account-settings', label: 'Account Settings', icon: '⚙️' },
-                { page: 'top-tax-payers', label: 'Top Tax Payers', icon: '🏆' }, { page: 'top-advance-tax-payers', label: 'Top Advance Tax Payers', icon: '🥇' },
-                { page: 'contact-us', label: 'Contact Us', icon: '📞', notification: notification }, { page: 'theme-setting', label: 'Theme Settings', icon: '🎨' },
-            ];
-            return (
-                <>
-                    {isOpen && <div className="fixed inset-0 bg-black bg-opacity-50 z-20" onClick={() => setIsOpen(false)}></div>}
-                    <div className={`fixed inset-y-0 left-0 w-64 bg-gray-800 p-6 transform ${sidebarClass} transition-transform duration-300 ease-in-out shadow-xl z-30 flex flex-col border-r-4 border-gray-700`}>
-                        <div className="flex justify-between items-center mb-10"><h2 className="text-2xl font-extrabold text-green-400">Menu</h2><button onClick={() => setIsOpen(false)} className="text-gray-400 text-3xl hover:text-white">&times;</button></div>
-                        <nav className="flex-grow space-y-2">
-                            {menuItems.map(item => <button key={item.page} onClick={() => navigateAndClose(item.page)} className="w-full text-left py-2.5 px-4 rounded-md text-md font-semibold text-gray-300 hover:bg-gray-700 hover:text-white transition duration-200 flex items-center gap-3">{item.icon} {item.label} {item.notification && <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">{item.notification}</span>}</button>)}
-                        </nav>
-                        <div className="mt-8"><button onClick={handleLogout} className="w-full text-left py-2.5 px-4 rounded-md text-md font-semibold text-gray-300 hover:bg-red-700 hover:text-white transition duration-200 flex items-center gap-3 bg-red-600">🚪 Logout</button></div>
-                    </div>
-                </>
-            );
-        };
-
-        // --- Dashboard Pages ---
-        const Dashboard = (props) => {
-            const [activePage, setActivePage] = useState('bank-status');
-            const renderActivePage = () => {
-                switch (activePage) {
-                    case 'bank-status': return <BankStatusPage {...props} />;
-                    case 'tax-page': return <TaxPage {...props} />;
-                    case 'apply-loan': return <ApplyLoanPage {...props} />;
-                    default: return <BankStatusPage {...props} />;
-                }
-            };
-            return (
-                <div className="animate-fade-in">
-                    <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                        <TopNavButton title="Bank Status" icon="🏦" isActive={activePage === 'bank-status'} onClick={() => setActivePage('bank-status')} />
-                        <TopNavButton title="View Tax" icon="🧾" isActive={activePage === 'tax-page'} onClick={() => setActivePage('tax-page')} />
-                        <TopNavButton title="Apply for Loan" icon="💰" isActive={activePage === 'apply-loan'} onClick={() => setActivePage('apply-loan')} />
-                    </div>
-                    <div className="animate-fade-in">{renderActivePage()}</div>
-                </div>
-            );
-        };
-
-        const TopNavButton = ({ title, icon, isActive, onClick }) => (
-            <button onClick={onClick} className={`flex-1 p-4 rounded-xl text-left transition-all duration-300 transform hover:-translate-y-1 shadow-minecraft hover:shadow-minecraft-lg ${isActive ? 'bg-green-600 text-white' : 'bg-gray-800 text-gray-200'}`}>
-                <div className="text-3xl mb-2">{icon}</div><span className="text-lg font-semibold">{title}</span>
-            </button>
-        );
-
-                    
-            
-
-            const BankStatusPage = ({ currentUserAccount, handleCancelLoan, handleAdminApproveLoan, handlePayLoan }) => {
-            const BankStatusPage = ({ currentUserAccount, handleCancelLoan, handleAdminApproveLoan, handlePayLoan }) => {
-                if (!currentUserAccount) return null;
-
-                const { bankName, loans = [], jobPerDayIncome = 0, businessPerDayIncome = 0, businessIncomeUnit = 'day', balance = 0, transactions = [] } = currentUserAccount;
-
-                // Derive shopTransactions and jobTransactions from currentUserAccount.transactions
-                const shopTransactions = transactions.filter(tx => tx.item !== undefined);
-                const jobTransactions = transactions.filter(tx => tx.jobName !== undefined);
-
-                const totalPerDayIncome = jobPerDayIncome + (businessIncomeUnit === 'hour' ? businessPerDayIncome * 8 : businessPerDayIncome);
-
-                // Combine all transactions from currentUserAccount and sort them
-                const allTransactions = [...transactions].sort((a, b) => new Date(b.date || b.timestamp).getTime() - new Date(a.date || a.timestamp).getTime());
-
-                return (
-                    <div className="space-y-6">
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft">
-                            <h2 className="text-xl font-bold text-green-400 mb-4">Account Overview</h2>
-                            <p className="text-gray-300"><strong>Bank Name:</strong> {bankName}</p>
-                            <p className="text-2xl font-bold">Balance: <span className="text-green-400">${balance?.toFixed(2) || '0.00'}</span></p>
-                            <p className="text-2xl font-bold">Minecraft Balance: <span className="text-green-400">${currentUserAccount.minecraftBalance?.toFixed(2) || '0.00'}</span></p>
-                            <p className="text-lg font-semibold mt-2">Total Income: <span className="text-yellow-400">${totalPerDayIncome}/day</span></p>
-                            <p className="text-sm text-gray-400">Job: ${jobPerDayIncome}/day | Business: ${businessPerDayIncome}/{businessIncomeUnit}</p>
-                        </div>
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft">
-                            <h2 className="text-xl font-bold text-green-400 mb-4">Loans ({loans.length})</h2>
-                            {loans.length > 0 ? (
-                                <div className="space-y-4">
-                                    {[...new Map(loans.map(item => [item['id'], item])).values()].map((loan) => (
-                                        <div key={loan.id} className="p-4 border border-gray-700 rounded-md bg-gray-700">
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex-grow">
-                                                    <p className="font-bold capitalize text-yellow-400">{loan.loanType} Loan</p>
-                                                    <p className="text-gray-300">Amount: ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'} | Total Due: ${parseFloat(loan.loanAmountDue)?.toFixed(2) || '0.00'}</p>
-                                                    <p className="text-gray-300">Status: <span className={`font-semibold ${loan.loanStatus === 'pending' ? 'text-yellow-400' : 'text-green-400'}`}>{loan.loanStatus === 'pending' && loan.employeeVisitTime ? 'Waiting for employee to pass' : loan.loanStatus === 'waitingForAdminApproval' ? 'Waiting for admin approval' : loan.loanStatus}</span></p>
-                                                </div>
-                                                <div className="flex flex-col items-end gap-2">
-                                                    {loan.loanStatus === 'pending' && (
-                                                        <>
-                                                            <button onClick={() => handleCancelLoan(loan.id)} className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded">Cancel</button>
-                                                        </>
-                                                    )}
-                                                    {loan.loanStatus === 'active' && (
-                                                        <button onClick={() => handlePayLoan(loan.id)} className="text-xs bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-2 rounded">Pay Full Amount</button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="mt-2 space-y-1">
-                                                <div className="flex items-center">
-                                                    {loan.employeeVisitTime ? <span className="text-green-400">✅</span> : <span className="text-gray-500">⚪</span>}
-                                                    <span className="ml-2 text-sm text-gray-400">Visit Time Set {loan.employeeVisitTime && `: ${new Date(loan.employeeVisitTime).toLocaleString()}`}</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    {loan.employeeMessage ? <span className="text-green-400">✅</span> : <span className="text-gray-500">⚪</span>}
-                                                    <span className="ml-2 text-sm text-gray-400">Employee Message Added {loan.employeeMessage && `: ${loan.employeeMessage}`}</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    {loan.loanerPhoto && loan.landPhoto && loan.buildingPhoto && loan.employeePhoto && loan.signatureOfBankEmployee && loan.loanerBankId && loan.loanerPerDayIncome && loan.areaVolume && loan.cornerCoords && loan.valueOfLand && loan.valueOfBuilding && loan.loanerNetWorth ? <span className="text-green-400">✅</span> : <span className="text-gray-500">⚪</span>}
-                                                    <span className="ml-2 text-sm text-gray-400">Employee Details Filled</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    {loan.loanStatus === 'waitingForAdminApproval' || loan.loanStatus === 'approved' ? <span className="text-green-400">✅</span> : <span className="text-gray-500">⚪</span>}
-                                                    <span className="ml-2 text-sm text-gray-400">Waiting for Admin Approval</span>
-                                                </div>
-                                            </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-gray-400">No active loans.</p>
-                            )}
-                        </div>
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft">
-                            <h2 className="text-xl font-bold text-green-400 mb-4">Transaction History</h2>
-                            {allTransactions.length > 0 ? (
-                                <div className="max-h-80 overflow-y-auto">
-                                    <table className="min-w-full text-sm text-left">
-                                        <thead className="bg-gray-700 sticky top-0">
-                                            <tr>
-                                                <th className="p-2 text-gray-300">Date</th>
-                                                <th className="p-2 text-gray-300">Type</th>
-                                                <th className="p-2 text-gray-300">Description</th>
-                                                <th className="p-2 text-right text-gray-300">Amount</th>
-                                                <th className="p-2 text-right text-gray-300">Tax</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {allTransactions.map((tx, index) => (
-                                                <tr key={index} className="border-b border-gray-700 hover:bg-gray-700/50">
-                                                    <td className="p-2 text-gray-400">{(new Date(tx.date || tx.timestamp)).toLocaleDateString()}</td>
-                                                    <td className="p-2 text-gray-300">{tx.type}</td>
-                                                    <td className="p-2 text-gray-300">{tx.item || tx.jobName || tx.description}</td>
-                                                    <td className={`p-2 text-right font-semibold ${tx.amount < 0 ? 'text-red-400' : 'text-green-400'}`}>{tx.amount.toFixed(2)}</td>
-                                                    <td className="p-2 text-right text-red-400">{tx.tax?.toFixed(2) || '0.00'}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            ) : (
-                                <p className="text-gray-400">No transactions yet.</p>
-                            )}
-                        </div>
-                    </div>
-                );
-            };
-        };
-
-                const TaxPage = ({ currentUserAccount, setCurrentUserAccount, handlePayTax, handleAdvanceTax, showModal, paymentAnimationDetails, setPaymentAnimationDetails }) => {
-            const chartRef = useRef(null);
-            const chartInstanceRef = useRef(null); // Use a ref to store the chart instance
-            const [chartDataType, setChartDataType] = useState('applied'); // Renamed from chartData to avoid confusion
-            const [customTaxAmount, setCustomTaxAmount] = useState('');
-            const [session, setSession] = useState(null);
-            const [isPaying, setIsPaying] = useState(false);
-
-            if (!currentUserAccount) return null;
-            const { taxData = {}, accountId, transactions = [], balance } = currentUserAccount;
-
-            const totalTaxPaidTillYet = (transactions || []).filter(tx => tx.description && (tx.description.includes('Tax payment') || tx.description.includes('Advance tax payment'))).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
-            
-            // Ensure taxData.players is an object, or default to an empty object
-            const playersData = taxData.players && typeof taxData.players === 'object' ? taxData.players : {};
-
-            // Get the current session from taxData, or default to 'unknown'
-            const currentSession = taxData.currentSession || 'unknown';
-
-            const sessionTaxData = playersData[accountId] && playersData[accountId].sessions && playersData[accountId].sessions[currentSession]
-                ? playersData[accountId].sessions[currentSession]
-                : { taxDue: 0, taxPaid: 0, advancePaid: 0, dailyCharges: [] };
-
-            // Ensure dailyTaxCharges is an array of objects with date and amount
-            const dailyCharges = sessionTaxData.dailyCharges || [];
-            
-            // Filter tax payments, ensuring amount is positive for display
-            const taxPayments = transactions.filter(tx => tx.description.includes('tax payment'))
-                                        .map(tx => ({ date: tx.date, amount: Math.abs(tx.amount), description: tx.description.replace(/ for session [^,]+/, '') }));
-
-            const dataToDisplay = chartDataType === 'applied' ? dailyCharges : taxPayments;
-
-            useEffect(() => {
-                if (!chartRef.current) {
-                    // If canvas ref is not available, or component unmounted, do nothing
-                    return;
-                }
-
-                // Destroy existing chart instance before creating a new one
-                if (chartInstanceRef.current) {
-                    chartInstanceRef.current.destroy();
-                    chartInstanceRef.current = null;
-                }
-
-                if (dataToDisplay.length > 0) {
-                    const ctx = chartRef.current.getContext('2d');
-                    if (!ctx) { // Defensive check for context
-                        console.error("Could not get 2D context for canvas.");
-                        return;
-                    }
-                    chartInstanceRef.current = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: dataToDisplay.map(c => new Date(c.date).toLocaleDateString()),
-                            datasets: [{
-                                label: `Daily Tax ${chartDataType === 'applied' ? 'Applied' : 'Paid'} ($)`,
-                                data: dataToDisplay.map(c => c.amount),
-                                borderColor: '#2dd4bf',
-                                backgroundColor: 'rgba(45, 212, 191, 0.2)',
-                                fill: true,
-                                tension: 0.4,
-                                pointRadius: 5,
-                                pointHoverRadius: 8,
-                                pointBackgroundColor: '#2dd4bf'
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    labels: {
-                                        color: '#d1d5db'
-                                    }
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: (context) => `Amount: ${context.raw.toFixed(2)}`,
-                                        afterLabel: (context) => dataToDisplay[context.dataIndex].description ? `Info: ${dataToDisplay[context.dataIndex].description}` : ''
-                                    }
-                                }
-                            },
-                            scales: {
-                                x: {
-                                    ticks: { color: '#9ca3af' },
-                                    grid: { color: 'rgba(107, 114, 128, 0.3)' }
-                                },
-                                y: {
-                                    ticks: { color: '#9ca3af' },
-                                    grid: { color: 'rgba(107, 114, 128, 0.3)' }
-                                }
-                            }
-                        }
-                    });
-                }
-                // Cleanup function to destroy chart on unmount or data change
-                return () => {
-                    if (chartInstanceRef.current) {
-                        chartInstanceRef.current.destroy();
-                        chartInstanceRef.current = null;
-                    }
-                };
-            }, [dataToDisplay, chartDataType]); // Re-render chart when dataToDisplay or chartDataType changes
-
-            const downloadReport = () => {
-                if (!chartRef.current) {
-                    showModal('Error', 'Chart not rendered yet. Please view the chart before downloading.', 'error');
-                    return;
-                }
-
-                const chartImage = chartRef.current.toDataURL('image/png');
-                const link = document.createElement('a');
-                link.href = chartImage;
-                link.download = `tax-chart-${accountId}-${chartDataType}.png`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                showModal('Download Complete', 'Tax chart downloaded successfully!', 'success');
-            };
-
-            const downloadFullDetails = () => {
-                const taxTransactions = transactions.filter(tx => tx.description.includes('tax payment') || tx.description.includes('Advance tax payment'));
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(taxTransactions, null, 2));
-                const downloadAnchorNode = document.createElement('a');
-                downloadAnchorNode.setAttribute("href", dataStr);
-                downloadAnchorNode.setAttribute("download", `tax-details-${accountId}.json`);
-                document.body.appendChild(downloadAnchorNode); // Required for Firefox
-                downloadAnchorNode.click();
-                downloadAnchorNode.remove();
-                showModal('Download Complete', 'Full tax details downloaded successfully!', 'success');
-            };
-
-            const onPayTax = async (amount, isFullTax = false) => {
-                if (balance < amount) {
-                    showModal('Insufficient Balance', 'Do you want to deduct the amount from your Minecraft account?', 'info');
-                    return;
-                }
-                setIsPaying(true);
-                await handlePayTax(amount, isFullTax);
-                setIsPaying(false);
-            };
-
-            const onAdvanceTax = async (amount) => {
-                if (balance < amount) {
-                    showModal('Insufficient Balance', 'Do you want to deduct the amount from your Minecraft account?', 'info');
-                    return;
-                }
-                setIsPaying(true);
-                await handleAdvanceTax(amount);
-                setIsPaying(false);
-            };
-
-            return (
-                <div className="space-y-6 relative"> {/* Added relative positioning */}
-                    {paymentAnimationDetails.show && (
-                        <PaymentLoadingAnimation
-                            amount={paymentAnimationDetails.amount}
-                            status={paymentAnimationDetails.status}
-                            paymentType={paymentAnimationDetails.paymentType}
-                            onAnimationComplete={() => setPaymentAnimationDetails({ show: false, amount: 0, status: 'processing', paymentType: '' })}
-                        />
-                    )}
-                    <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft flex items-center justify-between">
-                        <div><h2 className="text-xl font-bold text-green-400 mb-2">Tax Summary</h2><p className="text-gray-300">Total Due: <span className="font-bold text-red-400">${sessionTaxData.taxDue?.toFixed(2) || '0.00'}</span></p><p className="text-gray-300">Current Session Paid: <span className="font-bold text-green-400">${sessionTaxData.taxPaid?.toFixed(2) || '0.00'}</span></p>
-<p className="text-gray-300">Total Tax Paid (All Sessions): <span className="font-bold text-green-400">${totalTaxPaidTillYet.toFixed(2)}</span></p><p className="text-gray-300">Advance Paid: <span className="font-bold text-blue-400">${sessionTaxData.advancePaid?.toFixed(2) || '0.00'}</span></p>{sessionTaxData.taxDue > 0 ? (<><button onClick={() => onPayTax(sessionTaxData.taxDue, true)} disabled={isPaying} className="mt-4 bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-500"> {isPaying ? 'Paying...' : 'Pay Full Amount'}</button><input type="number" value={customTaxAmount} onChange={(e) => setCustomTaxAmount(e.target.value)} placeholder="Custom Amount" className="ml-2 p-2 bg-gray-700 border border-gray-600 rounded-md" /><button onClick={() => onPayTax(parseFloat(customTaxAmount), false)} disabled={isPaying} className="ml-2 bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-500"> {isPaying ? 'Paying...' : 'Make Custom Payment'}</button></>) : (<div className="mt-4"><input type="number" value={customTaxAmount} onChange={(e) => setCustomTaxAmount(e.target.value)} placeholder="Advance Amount" className="p-2 bg-gray-700 border border-gray-600 rounded-md" /><button onClick={() => onAdvanceTax(parseFloat(customTaxAmount))} disabled={isPaying} className="ml-2 bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-500"> {isPaying ? 'Paying...' : 'Pay Advance'}</button></div>)}</div>
-                        <div className="w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl font-bold shadow-md border-4 border-yellow-400 bg-minecraft-world overflow-hidden"><span className="relative z-10">{currentUserAccount.accountId.charAt(0).toUpperCase()}</span></div>
-                    </div>
-                    <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft">
-                        <div className="flex justify-between items-center mb-4"><h2 className="text-xl font-bold text-green-400">Tax Trend</h2><div className="flex gap-2"><button onClick={() => setChartDataType('applied')} className={`px-3 py-1 text-sm rounded-md ${chartDataType === 'applied' ? 'bg-green-600 text-white' : 'bg-gray-700'}`}>Applied</button><button onClick={() => setChartDataType('paid')} className={`px-3 py-1 text-sm rounded-md ${chartDataType === 'paid' ? 'bg-green-600 text-white' : 'bg-gray-700'}`}>Paid</button><button onClick={downloadReport} className="px-3 py-1 text-sm rounded-md bg-blue-600 text-white">Download Chart</button><button onClick={downloadFullDetails} className="px-3 py-1 text-sm rounded-md bg-blue-600 text-white">Download Details</button></div></div>
-                        <div className="relative h-60">{dataToDisplay.length > 0 ? <canvas ref={chartRef}></canvas> : <p className="text-gray-400">No tax data to display for this session.</p>}</div>
-                    </div>
-                </div>
-            );
-        };
-        
-        const ApplyLoanPage = ({ currentUserAccount, showModal, handleApplyLoan }) => {
-            const [loanDetails, setLoanDetails] = useState({
-                amount: '', duration: 1, type: 'personal', purpose: '',
-                coords: [{ x: '', y: '', z: '' }], // Array to hold multiple coordinate sets
-                repayment: 'daily',
-                loanerNetWorth: '',
-                valueOfLand: '', valueOfBuilding: '', areaVolume: '',
-                playerScreenshot: '', landPhoto: '', buildingPhoto: '',
-                employeePhoto: '', signatureOfBankEmployee: '',
-            });
-            const [isCompound, setIsCompound] = useState(false);
-            const [isSubmitting, setIsSubmitting] = useState(false); // New state for submission status
-            const hasIncomeProfile = (currentUserAccount.jobPerDayIncome > 0 || currentUserAccount.businessPerDayIncome > 0);
-            const loanDurationLimits = { personal: 5, home: 3, business: 6, homeStartup: 4, bizStartup: 6 };
-            const maxDuration = loanDurationLimits[loanDetails.type];
-
-            const { perPaymentAmount, principalPerPayment, interestPerPayment, totalInterestAmount, weeklyInterestRateDisplay, totalArea, landValue, buildingValue } = useMemo(() => {
-                const amount = parseFloat(loanDetails.amount) || 0;
-                const durationWeeks = parseInt(loanDetails.duration) || 0;
-                if (!amount || !durationWeeks) return { perPaymentAmount: 0, principalPerPayment: 0, interestPerPayment: 0, totalInterestAmount: 0, weeklyInterestRateDisplay: 0 };
-
-                const interestRates = {
-                    personal: 0.06,
-                    home: 0.02,
-                    business: 0.05,
-                    bizStartup: [0.02, 0.04, 0.05, 0.06, 0.08], // Weeks 1-5
-                    homeStartup: [0.015, 0.02, 0.03, 0.05, 0.07] // Weeks 1-5
-                };
-
-                let weeklyRate;
-                if (loanDetails.type.includes('Startup')) {
-                    weeklyRate = interestRates[loanDetails.type][durationWeeks - 1]; // duration is 1-indexed for weeks
-                } else {
-                    weeklyRate = interestRates[loanDetails.type];
-                }
+                <!-- Minecraft Username input - will have dot for Bedrock -->
+                <input type="text" id="auth-minecraft-username-input" placeholder="Minecraft Username" style="display: none;">
+                <input type="text" id="auth-account-name-input" placeholder="Account Name (e.g. Guild Name)" style="display: none;">
                 
-                let totalLoanAmountDue;
-                let calculatedTotalInterest = 0;
-
-                if (isCompound) {
-                    // Compound interest: calculate total amount due based on daily compounding
-                    const dailyRate = Math.pow(1 + weeklyRate, 1/7) - 1; // Convert weekly rate to daily
-                    totalLoanAmountDue = amount * Math.pow(1 + dailyRate, durationWeeks * 7);
-                    calculatedTotalInterest = totalLoanAmountDue - amount;
-                } else {
-                    // Simple interest for the whole period (duration in weeks)
-                    calculatedTotalInterest = amount * weeklyRate * durationWeeks;
-                    totalLoanAmountDue = amount + calculatedTotalInterest;
-                }
-
-                const numberOfPayments = loanDetails.repayment === 'daily' ? durationWeeks * 7 : durationWeeks;
-                const perPaymentAmount = totalLoanAmountDue / numberOfPayments;
-                const principalPerPayment = amount / numberOfPayments;
-                const interestPerPayment = calculatedTotalInterest / numberOfPayments;
-
-                const xCoords = loanDetails.coords.map(c => parseFloat(c.x)).filter(c => !isNaN(c));
-                const zCoords = loanDetails.coords.map(c => parseFloat(c.z)).filter(c => !isNaN(c));
-                const totalArea = xCoords.length > 1 && zCoords.length > 1 ? Math.abs((Math.max(...xCoords) - Math.min(...xCoords)) * (Math.max(...zCoords) - Math.min(...zCoords))) : 0;
-                const landValue = totalArea * 10; // Assuming $10 per square block
-                const buildingValue = parseFloat(loanDetails.valueOfBuilding) || 0;
-
-                return {
-                    perPaymentAmount: perPaymentAmount,
-                    principalPerPayment: principalPerPayment,
-                    interestPerPayment: interestPerPayment,
-                    totalInterestAmount: calculatedTotalInterest,
-                    weeklyInterestRateDisplay: weeklyRate * 100, // Display as percentage
-                    totalArea: totalArea,
-                    landValue: landValue,
-                    buildingValue: buildingValue
-                };
-            }, [loanDetails.amount, loanDetails.duration, loanDetails.type, loanDetails.repayment, isCompound]);
-
-            const handleChange = (e) => {
-                const { name, value, type, files } = e.target;
-                if (name.startsWith('coord')) {
-                    const [prop, index, axis] = name.split('-');
-                    const newCoords = [...loanDetails.coords];
-                    newCoords[index] = { ...newCoords[index], [axis]: value };
-                    setLoanDetails(prev => ({ ...prev, coords: newCoords }));
-                } else if (type === 'file') {
-                    setLoanDetails(prev => ({ ...prev, [name]: files[0] }));
-                } else if (name === 'duration' && parseInt(value) > maxDuration) {
-                    return;
-                } else if (name === 'type') {
-                    setLoanDetails({ ...loanDetails, duration: 1, [name]: value });
-                } else {
-                    setLoanDetails({ ...loanDetails, [name]: value });
-                }
-            };
-
-            const onSubmitLoan = async (e) => { // Made async
-                e.preventDefault();
-                if (!hasIncomeProfile) { showModal('Profile Incomplete', 'Please set your income in Account Settings before applying.', 'error'); return; }
-                setIsSubmitting(true); // Disable button on submit
-                try {
-                    const loanDataToSend = {
-                        ...loanDetails,
-                        loanerBankId: currentUserAccount.bankId,
-                        loanerUsername: currentUserAccount.accountId,
-                        loanerPerDayIncome: currentUserAccount.jobPerDayIncome + (currentUserAccount.businessIncomeUnit === 'hour' ? currentUserAccount.businessPerDayIncome * 8 : currentUserAccount.businessPerDayIncome),
-                        hasBusiness: currentUserAccount.hasBusiness,
-                        coord1: loanDetails.coords[0] ? `${loanDetails.coords[0].x},${loanDetails.coords[0].y},${loanDetails.coords[0].z}` : '',
-                        coord2: loanDetails.coords[1] ? `${loanDetails.coords[1].x},${loanDetails.coords[1].y},${loanDetails.coords[1].z}` : '',
-                        loanStatus: 'pending',
-                        applicationDate: new Date().toISOString(),
-                    };
-                    await handleApplyLoan(loanDataToSend);
-                    setLoanDetails({
-                        amount: '', duration: 1, type: 'personal', purpose: '',
-                        coord1X: '', coord1Y: '', coord1Z: '',
-                        coord2X: '', coord2Y: '', coord2Z: '',
-                        repayment: 'daily',
-                        loanerNetWorth: '',
-                        valueOfLand: '', valueOfBuilding: '', areaVolume: '',
-                        playerScreenshot: '', landPhoto: '', buildingPhoto: '',
-                        employeePhoto: '', signatureOfBankEmployee: '',
-                    });
-                } finally {
-                    setIsSubmitting(false); // Re-enable button after submission (success or failure)
-                }
-            };
-
-            const showLoanSpecificFields = loanDetails.type === 'home' || loanDetails.type === 'business' || loanDetails.type.includes('Startup');
-
-            return (
-                <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft max-w-lg mx-auto">
-                    <h2 className="text-xl font-bold text-green-400 mb-4">New Loan Application</h2>
-                    <form onSubmit={onSubmitLoan} className="space-y-4">
-                        <select name="type" value={loanDetails.type} onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md">
-                            <option value="personal">Personal</option>
-                            <option value="home">Home</option>
-                            <option value="business">Business</option>
-                            <option value="bizStartup">Business Startup</option>
-                            <option value="homeStartup">Home Startup</option>
-                        </select>
-                        <input name="amount" type="number" value={loanDetails.amount} onChange={handleChange} placeholder="Loan Amount ($)" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                        <input name="duration" type="number" value={loanDetails.duration} onChange={handleChange} placeholder={`Duration (Weeks, max ${maxDuration})`} min="1" max={maxDuration} required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                        <select name="repayment" value={loanDetails.repayment} onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md">
-                            <option value="daily">Daily</option>
-                            <option value="weekly" disabled={loanDetails.duration < 2}>Weekly (2+ weeks)</option>
-                        </select>
-                        <div className="flex items-center">
-                            <input type="checkbox" id="isCompound" name="isCompound" checked={isCompound} onChange={(e) => setIsCompound(e.target.checked)} className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" />
-                            <label htmlFor="isCompound" className="ml-2 block text-sm text-gray-300">
-                                Compound Interest
-                            </label>
-                        </div>
-                        <textarea name="purpose" value={loanDetails.purpose} onChange={handleChange} placeholder="What is the purpose of this loan?" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md h-24"></textarea>
-                        
-                        <input name="loanerNetWorth" type="number" value={loanDetails.loanerNetWorth} onChange={handleChange} placeholder="Your Net Worth ($)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-
-                        {loanDetails.type === 'personal' && (
-                            <div className="space-y-4 pt-2 border-t border-gray-700">
-                                <h3 className="text-lg font-semibold text-yellow-400">Personal Loan Details</h3>
-                                <p className="text-sm text-gray-400">Please provide the coordinates for the location related to your loan purpose.</p>
-                                <div className="grid grid-cols-3 gap-2">
-                                    <input name="coord1X" type="number" value={loanDetails.coord1X} onChange={handleChange} placeholder="X" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord1Y" type="number" value={loanDetails.coord1Y} onChange={handleChange} placeholder="Y" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord1Z" type="number" value={loanDetails.coord1Z} onChange={handleChange} placeholder="Z" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                </div>
-                                <label className="block text-gray-300">Player Screenshot:</label>
-                                <input name="playerScreenshot" type="file" onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                {loanDetails.playerScreenshot && <p className="text-sm text-gray-400">Selected: {loanDetails.playerScreenshot.name}</p>}
-                            </div>
-                        )}
-
-                        {(loanDetails.type === 'home' || loanDetails.type === 'business' || loanDetails.type.includes('Startup')) && (
-                            <div className="space-y-4 pt-2 border-t border-gray-700">
-                                <h3 className="text-lg font-semibold text-yellow-400">Property/Business Details</h3>
-                                <input name="areaVolume" type="number" value={loanDetails.areaVolume} onChange={handleChange} placeholder="Area/Volume (sq/cu blocks)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                <input name="valueOfLand" type="number" value={loanDetails.valueOfLand} onChange={handleChange} placeholder="Value of Land ($)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                <input name="valueOfBuilding" type="number" value={loanDetails.valueOfBuilding} onChange={handleChange} placeholder="Value of Building ($)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                <p className="text-sm text-gray-400">Corner Coordinates (up to 10 corners)</p>
-                                {loanDetails.coords.map((coord, index) => (
-                                    <div key={index} className="grid grid-cols-4 gap-2">
-                                        <input name={`coord-${index}-x`} type="number" value={coord.x} onChange={handleChange} placeholder="X" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                        <input name={`coord-${index}-y`} type="number" value={coord.y} onChange={handleChange} placeholder="Y" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                        <input name={`coord-${index}-z`} type="number" value={coord.z} onChange={handleChange} placeholder="Z" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                        {loanDetails.coords.length > 1 && (
-                                            <button type="button" onClick={() => setLoanDetails(prev => ({ ...prev, coords: prev.coords.filter((_, i) => i !== index) }))} className="p-3 bg-red-600 text-white rounded-md">-</button>
-                                        )}
-                                    </div>
-                                ))}
-                                {loanDetails.coords.length < 10 && (
-                                    <button type="button" onClick={() => setLoanDetails(prev => ({ ...prev, coords: [...prev.coords, { x: '', y: '', z: '' }] }))} className="w-full p-3 bg-blue-600 text-white rounded-md">Add Coordinate</button>
-                                )}
-                                <p className="text-gray-300">Calculated Area: <span className="font-bold text-yellow-400">{totalArea?.toFixed(2) || '0.00'}</span></p>
-                                <label className="block text-gray-300">Land Photo:</label>
-                                <input name="landPhoto" type="file" onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                {loanDetails.landPhoto && <p className="text-sm text-gray-400">Selected: {loanDetails.landPhoto.name}</p>}
-                                <label className="block text-gray-300">Building Photo:</label>
-                                <input name="buildingPhoto" type="file" onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                {loanDetails.buildingPhoto && <p className="text-sm text-gray-400">Selected: {loanDetails.buildingPhoto.name}</p>}
-                            </div>
-                        )}
-
-                        <div className="p-3 bg-gray-700 rounded-md text-center">
-                            <p className="text-gray-300">Total Area: <span className="font-bold text-yellow-400">{totalArea?.toFixed(2) || '0.00'}</span></p>
-                            <p className="text-gray-300">Estimated Land Value: <span className="font-bold text-yellow-400">${landValue?.toFixed(2) || '0.00'}</span></p>
-                            <p className="text-gray-300">Building Value: <span className="font-bold text-yellow-400">${buildingValue?.toFixed(2) || '0.00'}</span></p>
-                            <p className="text-gray-300">Payment per {loanDetails.repayment === 'daily' ? 'Day' : 'Week'}: <span className="font-bold text-yellow-400">${perPaymentAmount?.toFixed(2) || '0.00'}</span></p>
-                            <p className="text-gray-300 text-sm">(Principal: ${principalPerPayment?.toFixed(2) || '0.00'}, Interest: ${interestPerPayment?.toFixed(2) || '0.00'})</p>
-                            <p className="text-gray-300">Total Interest: <span className="font-bold text-red-400">${totalInterestAmount?.toFixed(2) || '0.00'}</span></p>
-                            <p className="text-xs text-gray-400">Weekly Interest Rate: {weeklyInterestRateDisplay?.toFixed(2) || '0.00'}%</p>
-                        </div>
-                        <button type="submit" disabled={isSubmitting} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md">{isSubmitting ? 'Submitting...' : 'Submit Application'}</button>
-                        {!hasIncomeProfile && <p className="text-red-400 mt-4 text-sm text-center">Your income profile is not set up. You must set your income in Account Settings to apply for a loan.</p>}
-                    </form>
+                <div class="checkbox-container" id="rules-checkbox-container" style="display: none;">
+                    <input type="checkbox" id="agree-rules-checkbox">
+                    <label for="agree-rules-checkbox">I agree to the <a href="https://minecraft2613.github.io/Minecarft-2613-Rules/" target="_blank">Minecraft Server Rules</a></label>
                 </div>
-            );
-        };
 
-        const AccountSettingsPage = ({ currentUserAccount, handleChangePassword, handleUpdateProfile }) => {
-            if (!currentUserAccount) return null;
-            const [oldPassword, setOldPassword] = useState('');
-            const [newPassword, setNewPassword] = useState('');
-            const [profile, setProfile] = useState({ 
-                jobType: currentUserAccount.jobType || '', 
-                jobPerDayIncome: currentUserAccount.jobPerDayIncome || '', 
-                businessType: currentUserAccount.businessType || '', 
-                businessPerDayIncome: currentUserAccount.businessPerDayIncome || '', 
-                businessIncomeUnit: currentUserAccount.businessIncomeUnit || 'day', 
-                hasBusiness: !!currentUserAccount.businessType 
-            });
-            const [editMode, setEditMode] = useState({ job: false, business: false, password: false });
+                <button type="submit" id="main-auth-submit-btn" style="background-color: var(--accent-blue);">Login</button>
+                <p id="auth-message-main"></p>
 
-            const handleProfileChange = (e) => setProfile({ ...profile, [e.target.name]: e.target.value });
-            const onProfileSubmit = (e) => { e.preventDefault(); handleUpdateProfile(profile); setEditMode({ ...editMode, job: false, business: false }); };
-            const onPasswordSubmit = (e) => { e.preventDefault(); handleChangePassword(oldPassword, newPassword); setOldPassword(''); setNewPassword(''); setEditMode(prev => ({...prev, password: false})); };
+                <div style="margin-top: 15px; border-top: 1px dashed #333; padding-top: 15px;">
+                    <button type="button" id="toggle-auth-mode-btn" style="background-color: var(--accent-dark-blue);">Don't have an account? Create one</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-            return (
-                <div className="space-y-8">
-                    <h1 className="text-3xl font-bold text-green-400">Account Settings</h1>
-                    <div className="flex flex-col md:flex-row gap-8">
-                        <div className="flex-shrink-0 md:w-1/3 flex flex-col items-center text-center">
-                            <div className="w-32 h-32 rounded-full flex items-center justify-center text-white text-6xl font-bold shadow-md border-4 border-green-500 bg-minecraft-world overflow-hidden"><span className="relative z-10">{currentUserAccount.accountId.charAt(0).toUpperCase()}</span></div>
-                            <h3 className="text-2xl font-bold mt-4">{currentUserAccount.accountId}</h3>
-                            <p className="text-gray-400"><strong>Email:</strong> {currentUserAccount.email}</p>
-                            <p className="text-gray-400"><strong>Bank ID:</strong> {currentUserAccount.bankId}</p>
-                            <p className="text-gray-400"><strong>Edition:</strong> {currentUserAccount.edition}</p>
-                            <p className="text-gray-400"><strong>Bank Name:</strong> {currentUserAccount.bankName}</p>
-                        </div>
-                        <div className="flex-1 space-y-6">
-                            <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft">
-                                <h2 className="text-xl font-bold text-green-400 mb-4">Income Profile</h2>
-                                <form onSubmit={onProfileSubmit} className="space-y-4">
-                                    <div>
-                                        <label className="text-gray-300">Job Type: </label>
-                                        <input name="jobType" value={profile.jobType} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    </div>
-                                    <div>
-                                        <label className="text-gray-300">Job Income per Day: </label>
-                                        <input name="jobPerDayIncome" type="number" value={profile.jobPerDayIncome} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    </div>
-                                    <div className="flex items-center gap-4 mt-4"><label className="text-gray-300">Have a business?</label><input type="checkbox" checked={profile.hasBusiness} onChange={(e) => setProfile({...profile, hasBusiness: e.target.checked})} className="h-5 w-5 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500" /></div>
-                                    {profile.hasBusiness && <>
-                                        <div>
-                                            <label className="text-gray-300">Business Type: </label>
-                                            <input name="businessType" value={profile.businessType} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                        </div>
-                                        <div>
-                                            <label className="text-gray-300">Business Income: </label>
-                                            <input name="businessPerDayIncome" type="number" value={profile.businessPerDayIncome} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                        </div>
-                                        <div>
-                                            <label className="text-gray-300">Income Unit: </label>
-                                            <select name="businessIncomeUnit" value={profile.businessIncomeUnit} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md"><option value="day">Per Day</option><option value="hour">Per Hour</option></select>
-                                        </div>
-                                    </>}
-                                    <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">Save Changes</button>
-                                </form>
+    <!-- Main Content Wrapper (Hidden until authenticated) -->
+    <div id="main-content-wrapper">
+        <header>
+            <button class="navbar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+            <h1>?? Minecraft Server</h1>
+            <!-- Top-right profile display -->
+            <div class="header-profile" id="header-profile-display">
+                <div class="profile-avatar-small" id="header-profile-avatar">
+                    <span id="header-profile-initial"></span>
+                    <img id="header-profile-image" src="" alt="Profile Pic" style="display: none;">
+                </div>
+                <div class="profile-dropdown" id="profile-dropdown-menu">
+                    <a href="#" onclick="showSection('account-settings-content'); toggleProfileDropdown(); return false;"><i class="fas fa-user-cog"></i> View Profile</a>
+                    <a href="#" onclick="showSection('change-password-content'); toggleProfileDropdown(); return false;"><i class="fas fa-key"></i> Change Password</a>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content-area">
+            <!-- Sidebar -->
+            <aside id="sidebar">
+                <button class="close-btn" onclick="toggleSidebar()"><i class="fas fa-times"></i></button>
+                <nav>
+                    <ul>
+                        <li><a href="#" data-section="server-info-content" class="active"><i class="fas fa-home"></i> Home</a></li>
+                        <li><a href="#" data-section="account-settings-content"><i class="fas fa-user-cog"></i> Account Settings</a></li>
+                        <li><a href="https://minecraft2613.github.io/taxess/" target="_blank"><i class="fas fa-money-check-alt"></i> View Your Tax</a></li>
+                        <li><a href="#" data-section="players-content"><i class="fas fa-users"></i> Players</a></li>
+                        <li><a href="#" data-section="forms-content"><i class="fas fa-file-alt"></i> Forms</a></li>
+                        <li><a href="#" data-section="contact-us-content"><i class="fas fa-envelope"></i> Contact Us</a></li>
+                        <li><a href="https://minecraft2613.github.io/Minecarft-2613-Rules/" target="_blank"><i class="fas fa-scroll"></i> Rules</a></li> <!-- External Rules Link -->
+                        <li><a href="#" data-section="theme-settings-content"><i class="fas fa-palette"></i> Theme Settings</a></li>
+                        <li><button id="sidebar-logout-btn" style="background-color: var(--button-red); margin: 20px auto; width: calc(100% - 20px);" onclick="logoutUser()"><i class="fas fa-sign-out-alt"></i> Logout</button></li>
+                    </ul>
+                </nav>
+            </aside>
+            <div class="overlay" onclick="toggleSidebar()"></div>
+
+            <!-- This div contains the always-visible navigation buttons -->
+            <div id="homepage-nav-section">
+                <h2 style="text-align: center; color: var(--accent-green);">Choose Your Path</h2>
+                <div id="main-nav-buttons">
+                    <button onclick="showSection('server-info-content')">
+                        <i class="fas fa-info-circle"></i> <!-- Old icon for Server Details -->
+                        <span class="button-text">Server Details</span>
+                    </button>
+                    <button onclick="showSection('plugins-content')">
+                        <i class="fas fa-puzzle-piece"></i>
+                        <span class="button-text">Plugins</span>
+                    </button>
+                    <button onclick="showSection('how-to-play-content')">
+                        <i class="fas fa-question-circle"></i>
+                        <span class="button-text">How to Play & Start</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- This container holds all the dynamic content sections below the main nav buttons -->
+            <div id="dynamic-content-area">
+                <!-- Server Info Content (Default active after login) -->
+                <div id="server-info-content" class="content-section active">
+                    <h2>??? Server Info & Status</h2>
+                    <p><strong><i class="fas fa-link"></i> Server IP:</strong> <span id="server-ip">mc1524209.fmcs.cloud</span> <button onclick="copyToClipboard('server-ip')">?? Copy</button></p>
+                    <p><strong><i class="fas fa-ethernet"></i> Port:</strong> <span id="server-port">38762</span> <button onclick="copyToClipboard('server-port')">?? Copy</button></p>
+                    <p>
+                        <strong><i class="fas fa-mobile-alt"></i> Quick Join (Bedrock):</strong>
+                        <a href="minecraft://?addExternalServer=MyServer|mc1524209.fmcs.cloud:47112">
+                            <button><i class="fas fa-gamepad"></i> Connect with Bedrock</button>
+                        </a>
+                    </p>
+                    <p><strong><i class="fab fa-java"></i> Java Version:</strong> <span>1.21.4-1.7(via backward & and via version)</span></p>
+                    <p><strong><i class="fas fa-cube"></i> Bedrock Version:</strong> <span>1.21.70-1.211.81(via Geyser)</span></p>
+                    <p><strong><i class="fas fa-globe"></i> Public Page:</strong> <a href="https://freemcserver.net/server/1524209" target="_blank" class="plugin-link-btn" style="background-color: var(--button-red);"><i class="fas fa-external-link-alt"></i> View Server</a></p>
+
+                    <h3 style="color: var(--accent-green); font-size: 1.8em; margin-top: 30px; text-align: center;">?? Live Server Status</h3>
+                    <p><strong>Status:</strong> <span id="server-status">Checking status...</span></p>
+                    <p><strong>Players:</strong> <span id="player-count"></span></p>
+
+                    <div id="server-control-options" style="text-align: center; margin-top: 20px;">
+                        <!-- Buttons appear here based on status -->
+                    </div>
+
+                    <h3 style="color: var(--accent-green); font-size: 1.8em; margin-top: 30px; text-align: center;">?? Online Players</h3>
+                    <ul id="online-players-list" class="player-list">
+                        <li>Loading player list...</li>
+                    </ul>
+                </div>
+
+                <!-- Plugins Content (Initially hidden, shown by button click) -->
+                <div id="plugins-content" class="content-section">
+                    <h2>?? Plugins</h2>
+                    <div class="player-sub-nav">
+                        <button data-plugin-sub-section="all-plugins" class="active">?? All Plugins</button>
+                        <button data-plugin-sub-section="non-working-plugins">?? Non-Working Plugins</button>
+                    </div>
+                    <input type="text" id="plugin-search" placeholder="Search plugins..." class="glowTarget">
+                    <ul id="plugin-list">
+                        <!-- Plugins will be dynamically loaded by JavaScript -->
+                    </ul>
+                </div>
+
+                <!-- How to Play & Start Server Content (Initially hidden, shown by button click) -->
+                <div id="how-to-play-content" class="content-section">
+                    <h2>?? How to Join & Start The Server</h2>
+                    <h3 style="color: var(--accent-green); font-size: 1.5em; margin-bottom: 20px;">How to Join</h3>
+                    <ol>
+                        <li>Open Minecraft (Bedrock users click on the <strong style="color:var(--accent-green);">Connect with Bedrock</strong> button above).</li>
+                        <li>Click on <strong>Multiplayer</strong> ? <strong>Add Server</strong>.</li>
+                        <li>Enter the Server IP: <strong style="color:var(--accent-green);">mc1524209.fmcs.cloud</strong></li>
+                        <li>Use Port: <strong style="color:var(--accent-green);">38762</strong></li>
+                        <li>Click <strong>Join Server</strong> and enjoy!</li>
+                    </ol>
+
+                    <h3 style="color: var(--accent-green); font-size: 1.5em; margin-top: 30px; margin-bottom: 20px;">How to Start Server if Offline</h3>
+                    <ol>
+                        <li>Click the relevant button in the <strong>Live Server Status</strong> section above.</li>
+                        <li>It will open FreeMcServer's public page.</li>
+                        <li>Scroll down the page.</li>
+                        <li>If it shows <strong>Stop and Expires in X mins</strong>, the server is already starting or online.</li>
+                        <li>If it shows <strong>Start</strong>, click it.</li>
+                        <li>Wait around 5 minutes.</li>
+                        <li>Then follow the steps in <strong>How to Play</strong>.</li>
+                    </ol>
+                </div>
+
+                <!-- Account Settings Content (Sidebar only access) -->
+                <div id="account-settings-content" class="content-section">
+                    <h2>?? Account Settings</h2>
+                    <div class="profile-container">
+                        <div class="profile-info-display">
+                            <h3 style="color: var(--accent-green); text-align: center; margin-bottom: 20px;">Your Profile</h3>
+                            <div class="profile-avatar">
+                                <span id="profile-initial"></span>
+                                <img id="profile-image" src="" alt="Profile Pic" style="display: none;">
+                                <input type="file" id="avatar-upload" accept="image/*">
                             </div>
-                            <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Change Password</h2><form onSubmit={onPasswordSubmit} className="space-y-4 max-w-sm"><input type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} placeholder="Old Password" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" /><input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New Password" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" /><button type="submit" className="bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700">Change Password</button></form></div></div>
+                            <p style="text-align: center; color: #aaa; font-size: 0.9em; margin-top: 5px; margin-bottom: 20px;">Click avatar to change</p>
+
+                            <div class="profile-info-text">
+                                <strong>Email:</strong> <span id="display-email"></span>
+                                <strong>Minecraft Username:</strong> <span id="display-minecraft-username"></span>
+                                <strong>Minecraft Edition:</strong> <span id="display-minecraft-edition"></span> <!-- New display for edition -->
+                                <strong>Account ID:</strong> <span id="display-account-id"></span>
+                                <strong>Account Name:</strong> <span id="display-account-name"></span>
+                            </div>
+                            <button onclick="showSection('change-password-content')" style="background-color: var(--accent-blue); margin-top: 15px;">
+                                <i class="fas fa-key"></i> Change Password
+                            </button>
+                        </div>
+
+                        <form id="profile-form">
+                            <h3 style="color: var(--accent-green); text-align: center; margin-bottom: 20px;">Update Info</h3>
+                            <label for="minecraft-username">Minecraft Username:</label>
+                            <input type="text" id="minecraft-username" placeholder="Your Minecraft Username">
+
+                            <label for="account-name">Account Name:</label>
+                            <input type="text" id="account-name" placeholder="e.g. Your Guild Name">
+
+                            <button type="submit" style="background-color: var(--accent-blue);">Save Profile</button>
+                            <p id="profile-message" style="text-align: center; margin-top: 15px; color: var(--accent-green);"></p>
+                        </form>
                     </div>
                 </div>
-            );
-        };
-        
-        const TopTaxPayersPage = ({ getAllAccounts }) => {
-            const [topTaxPayers, setTopTaxPayers] = useState([]);
-            useEffect(() => {
-                const fetchTopTaxPayers = async () => {
-                    const accounts = await getAllAccounts();
-                    const sorted = accounts.filter(acc => acc.taxData?.taxPaid !== undefined && acc.taxData.taxPaid !== null)
-                                           .sort((a, b) => (b.taxData.taxPaid || 0) - (a.taxData.taxPaid || 0))
-                                           .slice(0, 3);
-                    setTopTaxPayers(sorted);
-                };
-                fetchTopTaxPayers();
-            }, [getAllAccounts]);
 
-            return (
-                <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft animate-fade-in">
-                    <h1 className="text-3xl font-bold text-green-400 mb-6">🏆 Top 3 Tax Payers</h1>
-                    {topTaxPayers.length > 0 ? (
-                        <ul className="space-y-4">
-                            {topTaxPayers.map((player, index) => (
-                                <li key={player.bankId} className="flex items-center bg-gray-700 p-4 rounded-md shadow-md">
-                                    <span className="text-2xl font-bold mr-4">{index + 1}.</span>
-                                    <div className="flex-grow">
-                                        <p className="text-lg font-semibold">{player.accountId}</p>
-                                        <p className="text-gray-400">Paid: ${player.taxData?.taxPaid?.toFixed(2) || '0.00'}</p>
-                                    </div>
-                                </li>
-                            ))}
+                <!-- New: Change Password Section (Accessed from top-right dropdown) -->
+                <div id="change-password-content" class="content-section">
+                    <h2>?? Change Password</h2>
+                    <form id="change-password-form">
+                        <label for="current-password">Current Password:</label>
+                        <input type="password" id="current-password" required>
+
+                        <label for="new-password">New Password:</label>
+                        <input type="password" id="new-password" required>
+
+                        <label for="confirm-new-password">Confirm New Password:</label>
+                        <input type="password" id="confirm-new-password" required>
+
+                        <button type="submit" style="background-color: var(--accent-blue);">Update Password</button>
+                        <p id="change-password-message" style="text-align: center; margin-top: 15px;"></p>
+                    </form>
+                </div>
+
+
+                <!-- NEW: Players Content (Sidebar only access) -->
+                <div id="players-content" class="content-section">
+                    <h2>?? Players Leaderboard</h2>
+                    <div class="player-sub-nav">
+                        <button data-player-sub-section="top-richest" class="active">?? Top 3 Richest</button>
+                        <button data-player-sub-section="all-players">?? All Players</button>
+                        <button data-player-sub-section="top-taxed">?? Top 3 Most Taxed</button>
+                        <button data-player-sub-section="player-post">?? Player Post</button>
+                    </div>
+
+                    <div id="top-richest-content" class="player-sub-content active">
+                        <h3 style="color: var(--accent-green); text-align: center; margin-bottom: 20px;">?? Top 3 Richest Players</h3>
+                        <ul id="richest-players-list">
+                            <!-- Data populated by JS -->
                         </ul>
-                    ) : (
-                        <p className="text-gray-400">No tax data available to display top payers.</p>
-                    )}
-                </div>
-            );
-        };
+                    </div>
 
-        const TopAdvanceTaxPayersPage = ({ getAllAccounts }) => {
-            const [topAdvanceTaxPayers, setTopAdvanceTaxPayers] = useState([]);
-            useEffect(() => {
-                const fetchTopAdvanceTaxPayers = async () => {
-                    const accounts = await getAllAccounts();
-                    const sorted = accounts.filter(acc => acc.taxData?.advanceTaxPaid !== undefined && acc.taxData.advanceTaxPaid !== null)
-                                           .sort((a, b) => (b.taxData.advanceTaxPaid || 0) - (a.taxData.advanceTaxPaid || 0))
-                                           .slice(0, 3);
-                    setTopAdvanceTaxPayers(sorted);
-                };
-                fetchTopAdvanceTaxPayers();
-            }, [getAllAccounts]);
-
-            return (
-                <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft animate-fade-in">
-                    <h1 className="text-3xl font-bold text-green-400 mb-6">🥇 Top 3 Advance Tax Payers</h1>
-                    {topAdvanceTaxPayers.length > 0 ? (
-                        <ul className="space-y-4">
-                            {topAdvanceTaxPayers.map((player, index) => (
-                                <li key={player.bankId} className="flex items-center bg-gray-700 p-4 rounded-md shadow-md">
-                                    <span className="text-2xl font-bold mr-4">{index + 1}.</span>
-                                    <div className="flex-grow">
-                                        <p className="text-lg font-semibold">{player.accountId}</p>
-                                        <p className="text-gray-400">Advance Paid: ${player.taxData?.advanceTaxPaid?.toFixed(2) || '0.00'}</p>
-                                    </div>
-                                </li>
-                            ))}
+                    <div id="all-players-content" class="player-sub-content">
+                        <h3 style="color: var(--accent-green); text-align: center; margin-bottom: 20px;">All Active Players</h3>
+                        <input type="text" id="all-players-search" placeholder="Search players...">
+                        <ul id="all-players-list">
+                            <!-- Players will be rendered here with Java/Bedrock indication -->
                         </ul>
-                    ) : (
-                        <p className="text-gray-400">No advance tax data available to display top payers.</p>
-                    )}
-                </div>
-            );
-        };
-
-        const ContactUsPage = ({ showModal, currentUserAccount }) => {
-            const [messages, setMessages] = useState([]);
-            const [newMessage, setNewMessage] = useState('');
-
-            useEffect(() => {
-                const fetchMessages = async () => {
-                    try {
-                        const response = await fetch(`${API_ENDPOINTS.ACCOUNTS}/messages`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            setMessages(data.filter(m => m.username === currentUserAccount.accountId));
-                        }
-                    } catch (error) {
-                        console.error("Error fetching messages:", error);
-                    }
-                };
-
-                if (currentUserAccount) {
-                    fetchMessages();
-                }
-            }, [currentUserAccount]);
-
-            const handleSendMessage = async (e) => {
-                e.preventDefault();
-                if (!newMessage.trim()) return;
-
-                try {
-                    const response = await fetch(API_ENDPOINTS.CONTACT, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            username: currentUserAccount.accountId,
-                            problem: newMessage,
-                            platform: 'web',
-                            language: 'english'
-                         }),
-                    });
-
-                    if (response.ok) {
-                        setNewMessage('');
-                        // Refetch messages to show the new one
-                        const messagesResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/messages`);
-                        if (messagesResponse.ok) {
-                            const data = await messagesResponse.json();
-                            setMessages(data.filter(m => m.username === currentUserAccount.accountId));
-                        }
-                    } else {
-                        const errorData = await response.json();
-                        showModal('Error', errorData.message || 'Failed to send message. Please try again.', 'error');
-                    }
-                } catch (error) {
-                    console.error("Contact form submission error:", error);
-                    showModal('Error', 'Could not connect to the contact service. Please try again later.', 'error');
-                }
-            };
-
-            return (
-                <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft animate-fade-in max-w-lg mx-auto">
-                    <h1 className="text-3xl font-bold text-green-400 mb-6">📞 Contact Us</h1>
-                    <div className="space-y-4 h-96 overflow-y-auto p-4 bg-gray-700 rounded-md">
-                        {messages.map((msg) => (
-                            <div key={msg.id} className={`chat-message ${msg.sender === 'admin' ? 'text-left' : 'text-right'}`}>
-                                <div className={`inline-block p-2 rounded-lg ${msg.sender === 'admin' ? 'bg-gray-600' : 'bg-green-600'}`}>
-                                    <p className="text-sm">{msg.problem}</p>
-                                    {msg.replies && msg.replies.map((reply, index) => (
-                                        <div key={index} className="mt-2 pt-2 border-t border-gray-500">
-                                            <p className="text-xs font-bold">{reply.sender}</p>
-                                            <p className="text-xs">{reply.message}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
                     </div>
-                    <form onSubmit={handleSendMessage} className="mt-4 flex gap-2">
-                        <input 
-                            type="text" 
-                            value={newMessage} 
-                            onChange={(e) => setNewMessage(e.target.value)} 
-                            placeholder="Type your message..." 
-                            className="flex-grow p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" 
-                        />
-                        <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md">Send</button>
+
+                    <div id="top-taxed-content" class="player-sub-content">
+                        <h3 style="color: var(--accent-green); text-align: center; margin-bottom: 20px;">?? Top 3 Most Taxed Players</h3>
+                        <ul id="taxed-players-list">
+                            <!-- Data populated by JS -->
+                        </ul>
+                    </div>
+
+                    <div id="player-post-content" class="player-sub-content">
+                        <h3 style="color: var(--accent-green); text-align: center; margin-bottom: 20px;">?? Player Announcements / Posts</h3>
+                        <div class="player-post-area">
+                            <p style="color: #ccc;">No new player posts yet. Check back later!</p>
+                            <p style="font-size: 0.9em; margin-top: 15px; color: #999;">(Feature for players to submit announcements coming soon!)</p>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Forms Content (Sidebar only access) -->
+                <div id="forms-content" class="content-section">
+                    <h2>?? Forms</h2>
+                    <div style="text-align: center;">
+                        <a href="https://minecraft2613.github.io/joining-form/" style="background-color: var(--accent-dark-blue);"><i class="fas fa-hand-holding-usd"></i> Fill Joining Bonus Form</a>
+                        <p style="margin-top: 20px; color: #ccc;">More forms coming soon!</p>
+                    </div>
+                </div>
+
+                <!-- Contact Us section (formerly Issue Report) -->
+                <div id="contact-us-content" class="content-section">
+                    <h2>?? Contact Us</h2>
+                    <p style="text-align: center; color: #ccc; margin-bottom: 20px;">Have questions, feedback, or an issue? Let us know below. We'll get back to you via Discord!</p>
+                    <form id="contact-us-form">
+                        <label for="contact-minecraft-username">Your Minecraft Username:</label>
+                        <input type="text" id="contact-minecraft-username" placeholder="Your Minecraft Username" required><br>
+
+                        <label for="contact-discord-id">Your Discord ID (e.g., user#1234):</label>
+                        <input type="text" id="contact-discord-id" placeholder="Your Discord#ID" required><br>
+
+                        <label for="contact-message">Your message:</label>
+                        <textarea id="contact-message" placeholder="Please describe your message or issue..." rows="5" required></textarea><br>
+                        <button type="submit" style="background-color: var(--accent-dark-blue);"><i class="fas fa-paper-plane"></i> Send Message</button>
                     </form>
+                    <p id="contact-us-status" class="custom-message"></p>
                 </div>
-            );
-        };
 
-        const ThemeSettingsPage = ({ showModal }) => {
-            const [theme, setTheme] = useState(() => {
-                const savedTheme = localStorage.getItem('appTheme');
-                return savedTheme ? JSON.parse(savedTheme) : {
-                    primaryColor: '#4CAF50',
-                    secondaryColor: '#8BC34A',
-                    shadowColor: 'rgba(0, 0, 0, 0.4)',
-                    animationSpeed: '1s',
-                    brightness: '100%',
-                    fontFamily: 'Inter',
-                    buttonStyle: 'rounded',
-                    glowColor: '#00ff00',
-                    blockColor: '#1f2937',
-                    backgroundColorBody: '#f4f7fc',
-                    backgroundImageUrl: 'none',
-                    textColor: '#1a202c',
-                    blockBorderColor: '#2c3e50',
-                    loadingBgColor: '#1a202c',
-                };
-            });
+                <!-- Rules Section -->
+                <div id="rules-content" class="content-section">
+                    <h2>?? Server Rules</h2>
+                    <ul>
+                        <li><strong>Rule 1: Be Respectful.</strong> Treat all players with kindness and respect. Harassment, hate speech, and discrimination will not be tolerated.</li>
+                        <li><strong>Rule 2: No Griefing or Stealing.</strong> Do not destroy or modify other players' builds or steal their items.</li>
+                        <li><strong>Rule 3: No Cheating or Exploiting.</strong> Do not use any hacks, clients, or exploits that give you an unfair advantage.</li>
+                        <li><strong>Rule 4: Keep Chat Appropriate.</strong> Avoid excessive profanity, spamming, and inappropriate content in chat.</li>
+                        <li><strong>Rule 5: Land Claim.</strong> Protect your builds by claiming land. Unclaimed builds are subject to removal.</li>
+                        <li><strong>Rule 6: PvP Consent.</strong> PvP is only allowed with mutual consent from all parties involved.</li>
+                        <li><strong>Rule 7: Report Issues.</strong> If you encounter a bug, a rule-breaker, or need help, report it to staff.</li>
+                        <li><strong>Rule 8: Follow Staff Instructions.</strong> Respect decisions made by server staff.</li>
+                    </ul>
+                    <p style="text-align: center; margin-top: 20px; color: #999;">For a detailed list of rules, please visit our <a href="https://minecraft2613.github.io/Minecarft-2613-Rules/" target="_blank">full rules page</a>.</p>
+                </div>
 
-            useEffect(() => {
-                applyTheme(theme);
-            }, [theme]);
+                <!-- Theme Settings Content (Sidebar only access) -->
+                <div id="theme-settings-content" class="content-section">
+                    <h2>?? Theme Settings</h2>
+                    <div id="themePanel">
+                        <label for="boxColor">Box Background Color</label>
+                        <input type="color" id="boxColor">
 
-            const applyTheme = (currentTheme) => {
-                const root = document.documentElement;
-                root.style.setProperty('--primary-color', currentTheme.primaryColor);
-                root.style.setProperty('--secondary-color', currentTheme.secondaryColor);
-                root.style.setProperty('--shadow-color', currentTheme.shadowColor);
-                root.style.setProperty('--shadow-color-lg', currentTheme.shadowColor.replace('0.4', '0.6'));
-                root.style.setProperty('--animation-speed', currentTheme.animationSpeed);
-                root.style.setProperty('--brightness', currentTheme.brightness);
-                root.style.setProperty('--font-family', currentTheme.fontFamily);
-                root.style.setProperty('--button-border-radius', currentTheme.buttonStyle === 'rounded' ? '0.375rem' : '0');
-                root.style.setProperty('--glow-color', currentTheme.glowColor);
-                root.style.setProperty('--block-color', currentTheme.blockColor);
-                root.style.setProperty('--background-color-body', currentTheme.backgroundColorBody);
-                root.style.setProperty('--background-image-url', currentTheme.backgroundImageUrl === 'none' ? 'none' : `url('${currentTheme.backgroundImageUrl}')`);
-                root.style.setProperty('--text-color', currentTheme.textColor);
-                root.style.setProperty('--block-border-color', currentTheme.blockBorderColor);
-                root.style.setProperty('--loading-bg-color', currentTheme.loadingBgColor);
+                        <label for="glowColor">Glow Color</label>
+                        <input type="color" id="glowColor">
 
-                // Apply to body directly for immediate effect on background
-                document.body.style.backgroundColor = currentTheme.backgroundColorBody;
-                document.body.style.color = currentTheme.textColor;
-            };
+                        <label><input type="checkbox" id="glowToggle"> Enable Glow</label>
 
-            const handleChange = (e) => {
-                const { name, value } = e.target;
-                let newValue = value;
-                if (name === 'animationSpeed') newValue = `${value}s`;
-                if (name === 'brightness') newValue = `${value}%`;
-                setTheme(prev => ({ ...prev, [name]: newValue }));
-            };
+                        <label for="glowSpeed">Glow Speed (seconds)</label>
+                        <input type="range" id="glowSpeed" min="1" max="10" value="3">
 
-            const saveTheme = () => {
-                localStorage.setItem('appTheme', JSON.stringify(theme));
-                showModal('Theme Saved', 'Your theme settings have been saved!', 'success');
-            };
+                        <label for="glowBrightness">Glow Brightness</label>
+                        <input type="range" id="glowBrightness" min="0" max="1" step="0.1" value="0.6">
 
-            const resetTheme = () => {
-                const defaultTheme = {
-                    primaryColor: '#4CAF50',
-                    secondaryColor: '#8BC34A',
-                    shadowColor: 'rgba(0, 0, 0, 0.4)',
-                    animationSpeed: '1s',
-                    brightness: '100%',
-                    fontFamily: 'Inter',
-                    buttonStyle: 'rounded',
-                    glowColor: '#00ff00',
-                    blockColor: '#1f2937',
-                    backgroundColorBody: '#f4f7fc',
-                    backgroundImageUrl: 'none',
-                    textColor: '#1a202c',
-                    blockBorderColor: '#2c3e50',
-                    loadingBgColor: '#1a202c',
-                };
-                setTheme(defaultTheme);
-                localStorage.removeItem('appTheme');
-                showModal('Theme Reset', 'Theme settings have been reset to default.', 'info');
-            };
+                        <label for="bgTheme">Background Theme (CSS gradient or image URL)</label>
+                        <input type="text" id="bgTheme" placeholder="e.g. linear-gradient(...) or url(...)">
 
-            return (
-                <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft animate-fade-in">
-                    <h1 className="text-3xl font-bold text-green-400 mb-6">Theme Settings</h1>
-                    <div className="space-y-4">
-                        <div><label className="block text-gray-300">Primary Color:</label><input type="color" name="primaryColor" value={theme.primaryColor} onChange={handleChange} className="w-full h-10" /></div>
-                        <div><label className="block text-gray-300">Secondary Color:</label><input type="color" name="secondaryColor" value={theme.secondaryColor} onChange={handleChange} className="w-full h-10" /></div>
-                        <div><label className="block text-gray-300">Shadow Color:</label><input type="color" name="shadowColor" value={theme.shadowColor} onChange={handleChange} className="w-full h-10" /></div>
-                        <div><label className="block text-gray-300">Glow Color:</label><input type="color" name="glowColor" value={theme.glowColor} onChange={handleChange} className="w-full h-10" /></div>
-                        <div><label className="block text-gray-300">Block Color:</label><input type="color" name="blockColor" value={theme.blockColor} onChange={handleChange} className="w-full h-10" /></div>
-                        <div><label className="block text-gray-300">Background Color:</label><input type="color" name="backgroundColorBody" value={theme.backgroundColorBody} onChange={handleChange} className="w-full h-10" /></div>
-                        <div><label className="block text-gray-300">Text Color:</label><input type="color" name="textColor" value={theme.textColor} onChange={handleChange} className="w-full h-10" /></div>
-                        <div><label className="block text-gray-300">Block Border Color:</label><input type="color" name="blockBorderColor" value={theme.blockBorderColor} onChange={handleChange} className="w-full h-10" /></div>
-                        <div><label className="block text-gray-300">Loading Screen Background Color:</label><input type="color" name="loadingBgColor" value={theme.loadingBgColor} onChange={handleChange} className="w-full h-10" /></div>
-                        <div><label className="block text-gray-300">Background Image URL:</label><input type="text" name="backgroundImageUrl" value={theme.backgroundImageUrl} onChange={handleChange} placeholder="Enter image URL or 'none'" className="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" /></div>
-                        <div><label className="block text-gray-300">Animation Speed (s):</label><input type="range" name="animationSpeed" min="0.1" max="5" step="0.1" value={parseFloat(theme.animationSpeed)} onChange={handleChange} className="w-full" /><span className="text-gray-400">{theme.animationSpeed}</span></div>
-                        <div><label className="block text-gray-300">Brightness (%):</label><input type="range" name="brightness" min="50" max="150" step="1" value={parseFloat(theme.brightness)} onChange={handleChange} className="w-full" /><span className="text-gray-400">{theme.brightness}</span></div>
-                        <div><label className="block text-gray-300">Font Family:</label><input type="text" name="fontFamily" value={theme.fontFamily} onChange={handleChange} placeholder="e.g., Inter" className="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" /></div>
-                        <div><label className="block text-gray-300">Button Style:</label><select name="buttonStyle" value={theme.buttonStyle} onChange={handleChange} className="w-full p-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-md"><option value="rounded">Rounded</option><option value="square">Square</option></select></div>
-                        <button onClick={saveTheme} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md mr-2">Save Theme</button>
-                        <button onClick={resetTheme} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md">Reset Theme</button>
+                        <label for="textLightColor">Text Light Color</label>
+                        <input type="color" id="textLightColor">
+
+                        <label for="accentGreenColor">Accent Green Color</label>
+                        <input type="color" id="accentGreenColor">
+
+                        <label for="accentBlueColor">Accent Blue Color</label>
+                        <input type="color" id="accentBlueColor">
+
+                        <div style="text-align:center; margin-top: 25px;">
+                            <button onclick="saveTheme()">?? Save</button>
+                            <button onclick="resetTheme()">?? Reset</button>
+                        </div>
                     </div>
                 </div>
-            );
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 Minecraft Server. Hosted via <a href="https://freemcserver.net" target="_blank">FreeMcServer.net</a></p>
+        </footer>
+    </div>
+
+    <script>
+        // --- Custom Message Box (Replaces alert()) ---
+        const messageBoxOverlay = document.getElementById('message-box-overlay');
+        const messageBoxTitle = document.getElementById('message-box-title');
+        const messageBoxContent = document.getElementById('message-box-content');
+
+        // Function to show custom alert that auto-dismisses
+        function showCustomAlert(title, message, duration = 3000) { // Default 3 seconds
+            messageBoxTitle.textContent = title;
+            messageBoxContent.textContent = message;
+            messageBoxOverlay.classList.add('active');
+
+            setTimeout(() => {
+                messageBoxOverlay.classList.remove('active');
+            }, duration);
+        }
+
+        // Intercept standard alert calls to use custom box (for development/testing)
+        const originalAlert = window.alert;
+        window.alert = function(message) {
+            showCustomAlert('Alert', message);
         };
 
-        
-
-        // --- Main App Component ---
-        const App = () => {
-            const [currentPage, setCurrentPage] = useState('home'); // Start with home page for player view
-            const [currentUserAccount, setCurrentUserAccount] = useState(null);
-            const [session, setSession] = useState(null);
-            const [loading, setLoading] = useState(true);
-            const [loginSuccess, setLoginSuccess] = useState(false);
-            const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'info', callback: null });
-            const [notification, setNotification] = useState(null);
-            const [paymentAnimationDetails, setPaymentAnimationDetails] = useState({ show: false, amount: 0, status: 'processing', paymentType: '' });
-
-            const showModal = (title, message, type = 'info', callback = null) => setModal({ isOpen: true, title, message, type, callback });
-            const closeModal = () => { if (modal.callback) modal.callback(); setModal({ isOpen: false, title: '', message: '', type: 'info', callback: null }); };
-
-            const getAllAccounts = async () => {
-                try {
-                    const response = await fetch(`${API_ENDPOINTS.ACCOUNTS}/accounts`);
-                    if (!response.ok) throw new Error('Failed to fetch accounts');
-                    return await response.json();
-                } catch (error) {
-                    console.error("Error fetching accounts:", error);
-                    showModal('Error', 'Could not load accounts from server.', 'error');
-                    return [];
-                }
-            };
-            const saveAllAccounts = async (accounts) => {
-                // This function is now handled by the Cloudflare Worker on update-account/create-account
-                // For initial setup, we might still use it to populate the GitHub JSON if it's empty
-                // but subsequent saves will go through the worker.
-                console.log("Save all accounts called. This should ideally go through a worker.", accounts);
-            };
-
-            // Initial app load effect
-            useEffect(() => {
-                const initializeApp = async () => {
-                    let accounts = await getAllAccounts();
-                    if (accounts.length === 0) {
-                        // Populate initial data if no accounts exist on GitHub
-                        const initialAccount = {
-                            bankName: 'Gemini Test Bank', accountId: 'tester', email: 'tester@gemini.com', password: '26', edition: 'java', bankId: 'BANK006443',
-                            balance: 10000, jobType: 'Diamond Miner', jobPerDayIncome: 250, businessType: 'Potion Shop', businessPerDayIncome: 150, businessIncomeUnit: 'day',
-                            loans: [], transactions: []
-                        };
-                        // This initial save would go through the worker as well in a real app
-                        // For this simulation, we'll just add it to the in-memory accounts for now
-                        // and rely on the create-account endpoint for persistence.
-                        accounts.push(initialAccount);
-                        // In a real app, you'd call the worker to create this initial account
-                        // await fetch(`${API_ENDPOINTS.ACCOUNTS}/create-account`, { method: 'POST', body: JSON.stringify(initialAccount) });
-                    }
-                    // Simulate initial loading time
-                    setLoading(false);
-                    setCurrentUserAccount(accounts[0]); // Set the first account as the current user for direct access
-                    setCurrentPage('home');
-                };
-                initializeApp();
-            }, []);
-
-            const handleLogin = async (identifier, password) => {
-                setLoading(true);
-                setLoginSuccess(false); 
-
-                try {
-                    const response = await fetch(`${API_ENDPOINTS.ACCOUNTS}/login`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ identifier, password })
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        // Trigger tax processing in the worker
-                        const processTaxResponse = await fetch(`${API_ENDPOINTS.TAX}/process-tax`, { method: 'POST' });
-                        const processTaxData = await processTaxResponse.json();
-                        console.log("Processed Tax Data from Worker:", processTaxData);
-
-                        // Fetch tax data after successful login and processing
-                        const taxResponse = await fetch(`${API_ENDPOINTS.TAX}/tax-data`);
-                        const taxData = taxResponse.ok ? await taxResponse.json() : {};
-
-                        // Fetch loan data
-                        const [
-                            balancesResponse,
-                            shopTransactionsResponse,
-                            jobTransactionsResponse,
-                            loansResponse,
-                            messagesResponse,
-                            taxPaymentsResponse
-                        ] = await Promise.all([
-                            fetch(API_ENDPOINTS.BALANCES),
-                            fetch(API_ENDPOINTS.SHOP_TRANSACTIONS),
-                            fetch(API_ENDPOINTS.JOB_TRANSACTIONS),
-                            fetch(API_ENDPOINTS.LOANS),
-                            fetch(API_ENDPOINTS.MESSAGES),
-                            fetch(API_ENDPOINTS.TAX_PAYMENTS)
-                        ]);
-
-                        const balancesData = balancesResponse.ok ? await balancesResponse.json() : [];
-                        const shopTransactionsData = shopTransactionsResponse.ok ? await shopTransactionsResponse.json() : [];
-                        const jobTransactionsData = jobTransactionsResponse.ok ? await jobTransactionsResponse.json() : [];
-                        const loansData = loansResponse.ok ? await loansResponse.json() : [];
-                        const messagesData = messagesResponse.ok ? await messagesResponse.json() : [];
-                        const taxPaymentsData = taxPaymentsResponse.ok ? await taxPaymentsResponse.json() : [];
-
-                        const userLoans = loansData.filter(loan => loan.accountId === data.account.accountId);
-                        const userBalances = balancesData.find(bal => bal.player === data.account.accountId);
-                        const userShopTransactions = shopTransactionsData.filter(tx => tx.player === data.account.accountId);
-                        const userJobTransactions = jobTransactionsData.filter(tx => tx.player === data.account.accountId);
-                        const userMessages = messagesData.filter(msg => msg.username === data.account.accountId);
-                        const userTaxPayments = taxPaymentsData.filter(tx => tx.player === data.account.accountId);
-
-                        setLoginSuccess(true);
-                        setTimeout(() => {
-                            setLoading(false);
-                            setCurrentUserAccount({
-                                ...data.account,
-                                taxData: taxData,
-                                loans: userLoans,
-                                minecraftBalance: userBalances ? userBalances.balance : 0,
-                                shopTransactions: userShopTransactions,
-                                jobTransactions: userJobTransactions,
-                                messages: userMessages,
-                                taxPayments: userTaxPayments
-                            });
-                            setCurrentPage('home');
-                            setLoginSuccess(false);
-                        }, 1500);
-                    } else {
-                        const errorData = await response.json();
-                        setLoading(false);
-                        showModal('Login Failed', errorData.message || 'Invalid credentials. Please try again.', 'error');
-                    }
-                } catch (error) {
-                    console.error("Login API error:", error);
-                    setLoading(false);
-                    showModal('Error', 'Could not connect to the server. Please try again later.', 'error');
-                }
-            };
-
-            const handleCreateAccount = async (newData) => {
-                try {
-                    const response = await fetch(`${API_ENDPOINTS.ACCOUNTS}/create-account`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(newData),
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        // No need to update local storage here, worker handles persistence
-                        return true;
-                    } else {
-                        const errorData = await response.json();
-                        showModal('Creation Failed', errorData.message || 'Failed to create account.', 'error');
-                        return false;
-                    }
-                } catch (error) {
-                    console.error("Create account API error:", error);
-                    showModal('Error', 'Could not connect to the server to create account.', 'error');
-                    return false;
-                }
-            };
-
-            const handleLogout = () => { setCurrentUserAccount(null); setSession(null); setCurrentPage('login'); showModal('Logged Out', 'You have been successfully logged out.', 'info'); };
-            
-            const updateCurrentUser = async (updatedAccount) => {
-                try {
-                    const response = await fetch(`${API_ENDPOINTS.ACCOUNTS}/update-account`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(updatedAccount),
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        setCurrentUserAccount(data.account); // Update with fresh data from worker
-                        return true;
-                    } else {
-                        const errorData = await response.json();
-                        showModal('Update Failed', errorData.message || 'Failed to update account.', 'error');
-                        return false;
-                    }
-                } catch (error) {
-                    console.error("Update account API error:", error);
-                    showModal('Error', 'Could not connect to the server to update account.', 'error');
-                    return false;
-                }
-            };
-
-            const handleUpdateProfile = async (profileData) => {
-                const updatedAccount = { ...currentUserAccount, ...profileData };
-                const success = await updateCurrentUser(updatedAccount);
-                if (success) {
-                    showModal('Success', 'Your profile has been updated.', 'success');
-                } else {
-                    showModal('Error', 'Failed to update profile.', 'error');
-                }
-            };
-
-            const handleChangePassword = async (oldPass, newPass) => {
-                if (currentUserAccount.password !== oldPass) { showModal('Error', 'Old password is incorrect.', 'error'); return; }
-                const updatedAccount = { ...currentUserAccount, password: newPass };
-                await updateCurrentUser(updatedAccount);
-                showModal('Success', 'Password changed successfully!', 'success');
-            };
-
-         const handlePayTax = async (amount, isFullTax = false) => {
-    if (currentUserAccount.balance < amount) {
-        showModal('Error', 'Insufficient balance.', 'error');
-        return;
-    }
-
-    setPaymentAnimationDetails({ show: true, amount: amount, status: 'processing', paymentType: isFullTax ? 'fullTax' : 'customTax' });
-
-    try {
-        const response = await fetch(`${API_ENDPOINTS.TAX}/pay-tax`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                player: currentUserAccount.accountId,
-                amount
-            }),
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            const updatedAccount = {
-                ...currentUserAccount,
-                balance: currentUserAccount.balance - amount,
-                taxData: data.taxData,
-                transactions: [
-                    ...currentUserAccount.transactions,
-                    {
-                        type: 'debit',
-                        amount: -amount,
-                        date: new Date().toISOString(),
-                        description: `Tax payment`
-                    }
-                ]
-            };
-            setCurrentUserAccount(updatedAccount); // Immediately update the state
-            setPaymentAnimationDetails({ show: true, amount: amount, status: 'success', paymentType: isFullTax ? 'fullTax' : 'customTax' });
-        } else {
-            const errorData = await response.json();
-            setPaymentAnimationDetails({ show: true, amount: amount, status: 'error' });
-            showModal('Error', errorData.message || 'Failed to pay tax.', 'error');
-        }
-    } catch (error) {
-        console.error("Pay tax API error:", error);
-        setPaymentAnimationDetails({ show: true, amount: amount, status: 'error' });
-        showModal('Error', 'Could not connect to the tax service.', 'error');
-    }
-};
-
-
-const handleAdvanceTax = async (amount) => {
-    if (currentUserAccount.balance < amount) {
-        showModal('Error', 'Insufficient balance.', 'error');
-        return;
-    }
-
-    setPaymentAnimationDetails({ show: true, amount: amount, status: 'processing', paymentType: 'advanceTax' });
-
-    try {
-        const response = await fetch(`${API_ENDPOINTS.TAX}/advance-tax`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                player: currentUserAccount.accountId,
-                amount
-            }),
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            const updatedAccount = {
-                ...currentUserAccount,
-                balance: currentUserAccount.balance - amount,
-                taxData: data.taxData,
-                transactions: [
-                    ...currentUserAccount.transactions,
-                    {
-                        type: 'debit',
-                        amount: -amount,
-                        date: new Date().toISOString(),
-                        description: `Advance tax payment`
-                    }
-                ]
-            };
-            setCurrentUserAccount(updatedAccount); // Immediately update the state
-            setPaymentAnimationDetails({ show: true, amount: amount, status: 'success', paymentType: 'advanceTax' });
-        } else {
-            const errorData = await response.json();
-            setPaymentAnimationDetails({ show: true, amount: amount, status: 'error' });
-            showModal('Error', errorData.message || 'Failed to pay advance tax.', 'error');
-        }
-    } catch (error) {
-        console.error("Advance tax API error:", error);
-        setPaymentAnimationDetails({ show: true, amount: amount, status: 'error' });
-        showModal('Error', 'Could not connect to the tax service.', 'error');
-    }
-};
-
-
-            const handleApplyLoan = async ({ amount, duration, type, purpose, coord1, coord2, playerScreenshot, landPhoto, valueOfLand, valueOfBuilding, areaVolume, loanerNetWorth }) => {
-                amount = parseFloat(amount); // Ensure amount is a number
-                const jobIncome = currentUserAccount.jobPerDayIncome || 0;
-                const bizIncome = currentUserAccount.businessPerDayIncome || 0;
-                const maxDailyRepayment = (jobIncome * 0.55) + (bizIncome * (currentUserAccount.businessIncomeUnit === 'hour' ? 0.70 * 8 : 0.70));
-                
-                const interestRates = {
-                    personal: 0.06,
-                    home: 0.02,
-                    business: 0.05,
-                    bizStartup: [0.02, 0.04, 0.05, 0.06, 0.08], // Weeks 1-5
-                    homeStartup: [0.015, 0.02, 0.03, 0.05, 0.07] // Weeks 1-5
-                };
-
-                let weeklyRate;
-                if (type.includes('Startup')) {
-                    weeklyRate = interestRates[type][duration - 1]; // duration is 1-indexed for weeks
-                } else {
-                    weeklyRate = interestRates[type];
-                }
-                
-                let totalDue, dailyRepayment;
-                const dailyRate = Math.pow(1 + weeklyRate, 1/7) - 1;
-                totalDue = amount * Math.pow(1 + dailyRate, duration * 7);
-                dailyRepayment = totalDue / (duration * 7);
-
-                // Fetch all loans to check against existing daily repayment
-                const allLoansResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/admin`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'get_all_data' })
+        // --- Loading Screen Logic ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const loadingScreen = document.getElementById('loading-screen');
+            console.log('DOMContentLoaded: Hiding loading screen after 1.5s.');
+            setTimeout(() => {
+                loadingScreen.classList.add('hidden');
+                loadingScreen.addEventListener('transitionend', () => {
+                    loadingScreen.remove(); // Remove from DOM after animation
+                    console.log('Loading screen removed.');
                 });
-                const allLoansData = await allLoansResponse.json();
-                const allLoans = allLoansData.loans || [];
+            }, 1500); // Display loading for 1.5 seconds
+        });
 
-                const existingDailyRepayment = allLoans.filter(loan => loan.accountId === currentUserAccount.accountId && loan.loanStatus === 'active').reduce((sum, loan) => sum + loan.dailyRepayment, 0);
+        // --- Simulated Cloudflare API Layer for User Data ---
+        // !!! IMPORTANT: THIS IS A SIMULATION FOR LOCAL TESTING !!!
+        // FOR PRODUCTION, YOU WOULD DEPLOY A CLOUDFLARE WORKER AND USE KV NAMESPACES.
 
-                if (existingDailyRepayment + dailyRepayment > maxDailyRepayment) {
-                    showModal('Loan Rejected', `Your income is too low. Your max daily repayment is ${maxDailyRepayment.toFixed(2)}, but this loan would bring it to ${(existingDailyRepayment + dailyRepayment).toFixed(2)}.`, 'error');
+        const CLOUDFLARE_KV_SIMULATION_KEY = 'cloudflare_kv_sim'; // Master key for simulated KV store
+
+        // Helper to get the full simulated KV store
+        function getSimulatedKV() {
+            try {
+                const data = localStorage.getItem(CLOUDFLARE_KV_SIMULATION_KEY);
+                return JSON.parse(data) || {};
+            } catch (e) {
+                console.error("Error parsing simulated KV data from localStorage:", e);
+                localStorage.removeItem(CLOUDFLARE_KV_SIMULATION_KEY); // Clear corrupted data
+                return {};
+            }
+        }
+
+        // Helper to put data into the simulated KV store
+        function putSimulatedKV(key, value) {
+            const kv = getSimulatedKV();
+            kv[key] = value;
+            localStorage.setItem(CLOUDFLARE_KV_SIMULATION_KEY, JSON.stringify(kv));
+            console.log(`Simulated KV: Put key "${key}".`);
+        }
+
+        // Helper to get data from the simulated KV store
+        function getSimulatedKVItem(key) {
+            const kv = getSimulatedKV();
+            const item = kv[key];
+            console.log(`Simulated KV: Get key "${key}" -`, item ? 'found' : 'not found');
+            return item;
+        }
+
+        // Simulated API Endpoint for User Operations
+        const simulatedCloudflareApi = {
+            async login(email, password) {
+                return new Promise(resolve => {
+                    setTimeout(() => { // Simulate network delay
+                        const userJson = getSimulatedKVItem(email.toLowerCase());
+                        const user = userJson ? JSON.parse(userJson) : null;
+                        if (user && user.password === password) { // In real app, hash and compare passwords securely!
+                            console.log('Simulated API Login Success for:', email);
+                            resolve({ success: true, user: user.profile, email: user.email, uid: user.uid });
+                        } else {
+                            console.log('Simulated API Login Failed for:', email);
+                            resolve({ success: false, message: 'Invalid username/email or password.' });
+                        }
+                    }, 500);
+                });
+            },
+            async register(email, password, minecraftUsername, accountName, minecraftEdition) { // Added minecraftEdition
+                return new Promise(resolve => {
+                    setTimeout(() => { // Simulate network delay
+                        const lowerCaseEmail = email.toLowerCase();
+                        if (getSimulatedKVItem(lowerCaseEmail)) {
+                            console.log('Simulated API Register Failed: User exists', email);
+                            resolve({ success: false, message: 'Account with this email already exists.' });
+                            return;
+                        }
+                        const uid = generateUID(lowerCaseEmail);
+                        const newUser = {
+                            email: lowerCaseEmail,
+                            password: password, // Still plaintext for testing
+                            uid: uid,
+                            profile: {
+                                minecraftUsername: minecraftUsername,
+                                minecraftEdition: minecraftEdition, // Store edition
+                                accountId: uid,
+                                accountName: accountName,
+                                avatar: ''
+                            }
+                        };
+                        putSimulatedKV(lowerCaseEmail, JSON.stringify(newUser));
+                        console.log('Simulated API Register Success for:', email);
+                        resolve({ success: true, user: newUser.profile, email: newUser.email, uid: newUser.uid });
+                    }, 500);
+                });
+            },
+            async updateProfile(email, newProfileData) {
+                return new Promise(resolve => {
+                    setTimeout(() => { // Simulate network delay
+                        const userJson = getSimulatedKVItem(email.toLowerCase());
+                        if (!userJson) {
+                            console.log('Simulated API Update Profile Failed: User not found', email);
+                            resolve({ success: false, message: 'User not found.' });
+                            return;
+                        }
+                        const user = JSON.parse(userJson);
+                        // Merge newProfileData, ensuring tickets array is not overwritten
+                        user.profile = { ...user.profile, ...newProfileData };
+                        putSimulatedKV(email.toLowerCase(), JSON.stringify(user));
+                        console.log('Simulated API Update Profile Success for:', email);
+                        resolve({ success: true, user: user.profile });
+                    }, 500);
+                });
+            },
+            async changePassword(email, currentPassword, newPassword) {
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        const userJson = getSimulatedKVItem(email.toLowerCase());
+                        if (!userJson) {
+                            resolve({ success: false, message: 'User not found.' });
+                            return;
+                        }
+                        const user = JSON.parse(userJson);
+                        if (user.password !== currentPassword) { // Direct comparison for simulation
+                            resolve({ success: false, message: 'Incorrect current password.' });
+                            return;
+                        }
+                        user.password = newPassword; // Update password (still plaintext)
+                        putSimulatedKV(email.toLowerCase(), JSON.stringify(user));
+                        resolve({ success: true, message: 'Password updated successfully!' });
+                    }, 500);
+                });
+            }
+        };
+
+
+        // --- User Authentication and Profile Management ---
+        const AUTH_SCREEN = document.getElementById('auth-screen');
+        const MAIN_AUTH_FORM = document.getElementById('auth-form-main');
+        const MAIN_AUTH_SUBMIT_BTN = document.getElementById('main-auth-submit-btn'); // Unified submit button
+        const TOGGLE_AUTH_MODE_BTN = document.getElementById('toggle-auth-mode-btn'); // Toggle between login/create
+        const MAIN_AUTH_EMAIL_INPUT = document.getElementById('auth-email-input');
+        const MAIN_AUTH_PASSWORD_INPUT = document.getElementById('auth-password-input');
+        const AUTH_MINECRAFT_USERNAME_INPUT = document.getElementById('auth-minecraft-username-input');
+        const AUTH_ACCOUNT_NAME_INPUT = document.getElementById('auth-account-name-input');
+        const AUTH_PLATFORM_SELECT = document.getElementById('auth-platform-select'); // New platform select
+        const RULES_CHECKBOX_CONTAINER = document.getElementById('rules-checkbox-container');
+        const AGREE_RULES_CHECKBOX = document.getElementById('agree-rules-checkbox');
+        const MAIN_AUTH_MESSAGE_ELEM = document.getElementById('auth-message-main');
+        const AUTH_WELCOME_MESSAGE = document.getElementById('auth-welcome-message');
+
+
+        const PROFILE_FORM = document.getElementById('profile-form');
+        const DISPLAY_EMAIL = document.getElementById('display-email');
+        const DISPLAY_MINECRAFT_USERNAME = document.getElementById('display-minecraft-username');
+        const DISPLAY_MINECRAFT_EDITION = document.getElementById('display-minecraft-edition'); // New display for edition
+        const DISPLAY_ACCOUNT_ID = document.getElementById('display-account-id');
+        const DISPLAY_ACCOUNT_NAME = document.getElementById('display-account-name');
+
+        const MINECRAFT_USERNAME_INPUT = document.getElementById('minecraft-username');
+        const ACCOUNT_NAME_INPUT = document.getElementById('account-name');
+
+        const PROFILE_MESSAGE_ELEM = document.getElementById('profile-message');
+        const AVATAR_UPLOAD_INPUT = document.getElementById('avatar-upload');
+        const PROFILE_IMAGE_ELEM = document.getElementById('profile-image');
+        const PROFILE_INITIAL_ELEM = document.getElementById('profile-initial');
+        const SIDEBAR_LOGOUT_BTN = document.getElementById('sidebar-logout-btn');
+
+        const HEADER_PROFILE_DISPLAY = document.getElementById('header-profile-display');
+        const HEADER_PROFILE_AVATAR = document.getElementById('header-profile-avatar');
+        const HEADER_PROFILE_INITIAL = document.getElementById('header-profile-initial');
+        const HEADER_PROFILE_IMAGE = document.getElementById('header-profile-image');
+        const PROFILE_DROPDOWN_MENU = document.getElementById('profile-dropdown-menu');
+
+        const CHANGE_PASSWORD_FORM = document.getElementById('change-password-form');
+        const CURRENT_PASSWORD_INPUT = document.getElementById('current-password');
+        const NEW_PASSWORD_INPUT = document.getElementById('new-password');
+        const CONFIRM_NEW_PASSWORD_INPUT = document.getElementById('confirm-new-password');
+        const CHANGE_PASSWORD_MESSAGE = document.getElementById('change-password-message');
+
+
+        let currentUser = null; // Stores email, uid
+        let userProfile = null; // Stores detailed profile data
+
+        // Simple UID generator (for demo purposes)
+        function generateUID(email) {
+            return 'user_' + btoa(email).replace(/=/g, '').substring(0, 10) + '_' + Date.now().toString().slice(-4);
+        }
+
+        // --- Auth Mode Toggle (Login / Create Account) ---
+        let isCreateMode = false; // Initial state: Login
+
+        function setAuthMode(mode) {
+            isCreateMode = mode;
+            MAIN_AUTH_MESSAGE_ELEM.textContent = ''; // Clear messages
+
+            // Hide all create-account-specific fields first
+            AUTH_MINECRAFT_USERNAME_INPUT.style.display = 'none';
+            AUTH_ACCOUNT_NAME_INPUT.style.display = 'none';
+            AUTH_PLATFORM_SELECT.style.display = 'none';
+            document.querySelector('label[for="auth-platform-select"]').style.display = 'none'; // Hide label too
+            RULES_CHECKBOX_CONTAINER.style.display = 'none';
+            AUTH_MINECRAFT_USERNAME_INPUT.removeEventListener('input', forceDotPrefix); // Remove listener when not in bedrock create mode
+
+
+            if (isCreateMode) {
+                AUTH_WELCOME_MESSAGE.textContent = 'Thanks for Joining!';
+                AUTH_MINECRAFT_USERNAME_INPUT.style.display = 'block';
+                AUTH_ACCOUNT_NAME_INPUT.style.display = 'block';
+                AUTH_PLATFORM_SELECT.style.display = 'block';
+                document.querySelector('label[for="auth-platform-select"]').style.display = 'block';
+                RULES_CHECKBOX_CONTAINER.style.display = 'flex'; // Show rules checkbox
+                MAIN_AUTH_SUBMIT_BTN.textContent = 'Register Account';
+                TOGGLE_AUTH_MODE_BTN.textContent = 'Have an account? Login'; // Changed text
+            } else {
+                AUTH_WELCOME_MESSAGE.textContent = 'Welcome Back!';
+                MAIN_AUTH_SUBMIT_BTN.textContent = 'Login';
+                TOGGLE_AUTH_MODE_BTN.textContent = 'Don\'t have an account? Create one'; // Changed text
+            }
+            // Clear inputs when switching modes
+            MAIN_AUTH_EMAIL_INPUT.value = '';
+            MAIN_AUTH_PASSWORD_INPUT.value = '';
+            AUTH_MINECRAFT_USERNAME_INPUT.value = '';
+            AUTH_ACCOUNT_NAME_INPUT.value = '';
+            AUTH_PLATFORM_SELECT.value = ''; // Reset platform select
+            AGREE_RULES_CHECKBOX.checked = false;
+        }
+
+        // Event listener for platform selection
+        AUTH_PLATFORM_SELECT.addEventListener('change', () => {
+            if (AUTH_PLATFORM_SELECT.value === 'bedrock') {
+                // Prepend and make non-removable dot for Bedrock
+                AUTH_MINECRAFT_USERNAME_INPUT.value = '.';
+                AUTH_MINECRAFT_USERNAME_INPUT.addEventListener('input', forceDotPrefix);
+            } else {
+                AUTH_MINECRAFT_USERNAME_INPUT.removeEventListener('input', forceDotPrefix);
+                AUTH_MINECRAFT_USERNAME_INPUT.value = ''; // Clear if not bedrock
+            }
+        });
+
+        // Function to force the dot prefix for Bedrock usernames
+        function forceDotPrefix() {
+            if (AUTH_PLATFORM_SELECT.value === 'bedrock' && !AUTH_MINECRAFT_USERNAME_INPUT.value.startsWith('.')) {
+                AUTH_MINECRAFT_USERNAME_INPUT.value = '.' + AUTH_MINECRAFT_USERNAME_INPUT.value.replace(/^\.+/, ''); // Ensure only one dot at start
+            }
+        }
+
+
+        TOGGLE_AUTH_MODE_BTN.addEventListener('click', (e) => {
+            e.preventDefault();
+            setAuthMode(!isCreateMode);
+        });
+
+        MAIN_AUTH_SUBMIT_BTN.addEventListener('click', async (e) => {
+            e.preventDefault();
+            MAIN_AUTH_MESSAGE_ELEM.textContent = '';
+
+            const email = MAIN_AUTH_EMAIL_INPUT.value;
+            const password = MAIN_AUTH_PASSWORD_INPUT.value;
+
+            if (isCreateMode) {
+                // Register logic
+                const minecraftUsername = AUTH_MINECRAFT_USERNAME_INPUT.value.trim();
+                const accountName = AUTH_ACCOUNT_NAME_INPUT.value.trim();
+                const minecraftEdition = AUTH_PLATFORM_SELECT.value; // Get selected edition
+
+                if (!email || !password || !minecraftUsername || !accountName || !minecraftEdition) {
+                    showCustomMessage(MAIN_AUTH_MESSAGE_ELEM, 'Please fill all required fields for registration (including Minecraft Edition).', 'error');
+                    return;
+                }
+                if (!AGREE_RULES_CHECKBOX.checked) {
+                    showCustomMessage(MAIN_AUTH_MESSAGE_ELEM, 'You must agree to the Minecraft Server Rules to create an account.', 'error');
                     return;
                 }
 
-                const newLoan = { id: `LOAN${Date.now()}`, accountId: currentUserAccount.accountId, loanAmount: amount, loanAmountDue: totalDue, loanPaid: 0, dailyRepayment, durationWeeks: duration, loanType: type, loanStatus: 'pending', applicationDate: new Date().toISOString(), purpose, coord1, coord2, playerScreenshot, landPhoto, valueOfLand, valueOfBuilding, areaVolume, loanerNetWorth };
-                
-                try {
-                    const response = await fetch(`${API_ENDPOINTS.ACCOUNTS}/apply-loan`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(newLoan),
-                    });
+                const response = await simulatedCloudflareApi.register(email, password, minecraftUsername, accountName, minecraftEdition); // Pass edition
 
-                    if (response.ok) {
-                        showModal('Application Submitted', `Your ${type} loan application for ${amount.toFixed(2)} has been submitted. A bank employee will visit your area for verification.`, 'success');
-                        // Refresh current user account to reflect the new loan (status pending)
-                        const updatedAccountResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/accounts/${currentUserAccount.accountId}`);
-                        if (updatedAccountResponse.ok) {
-                            const updatedAccountData = await updatedAccountResponse.json();
-                            setCurrentUserAccount(updatedAccountData.account);
-                        }
+                if (response.success) {
+                    currentUser = { email: response.email, uid: response.uid };
+                    userProfile = response.user;
+                    sessionStorage.setItem('current_auth_email', email);
+                    handleSuccessfulAuth();
+                    showCustomMessage(MAIN_AUTH_MESSAGE_ELEM, 'Account created successfully!', 'success');
+                } else {
+                    showCustomMessage(MAIN_AUTH_MESSAGE_ELEM, response.message, 'error');
+                }
+
+            } else {
+                // Login logic
+                const response = await simulatedCloudflareApi.login(email, password);
+
+                if (response.success) {
+                    currentUser = { email: response.email, uid: response.uid };
+                    userProfile = response.user;
+                    sessionStorage.setItem('current_auth_email', email);
+                    handleSuccessfulAuth();
+                    showCustomMessage(MAIN_AUTH_MESSAGE_ELEM, 'Login successful!', 'success');
+                } else {
+                    showCustomMessage(MAIN_AUTH_MESSAGE_ELEM, response.message, 'error');
+                }
+            }
+        });
+
+
+        // What happens after successful login/create
+        function handleSuccessfulAuth() {
+            AUTH_SCREEN.style.display = 'none';
+            document.getElementById('main-content-wrapper').style.display = 'block';
+            console.log('Auth successful: showing main content.');
+            renderProfile(); // Populate profile fields and header profile
+            renderPlugins(pluginsData); // Initial render of sorted plugins
+            showSection('server-info-content'); // Default to SERVER DETAILS on home
+            fetchServerStatus(); // Fetch server status immediately
+        }
+
+        // Render profile details in Account Settings and header
+        function renderProfile() {
+            if (currentUser && userProfile) {
+                // Display fields in Account Settings
+                DISPLAY_EMAIL.textContent = currentUser.email;
+                DISPLAY_MINECRAFT_USERNAME.textContent = userProfile.minecraftUsername || 'N/A';
+                DISPLAY_MINECRAFT_EDITION.textContent = (userProfile.minecraftEdition === 'java' ? 'Java Edition' : (userProfile.minecraftEdition === 'bedrock' ? 'Bedrock Edition' : 'N/A')); // Display edition
+                DISPLAY_ACCOUNT_ID.textContent = currentUser.uid || 'N/A';
+                DISPLAY_ACCOUNT_NAME.textContent = userProfile.accountName || 'N/A';
+
+                // Input fields (for editing) in Account Settings
+                MINECRAFT_USERNAME_INPUT.value = userProfile.minecraftUsername || '';
+                ACCOUNT_NAME_INPUT.value = userProfile.accountName || '';
+
+                // Render header profile picture
+                updateAvatarDisplay(userProfile.avatar, currentUser.email);
+            }
+        }
+
+        // Update avatar display (large for profile section, small for header)
+        function updateAvatarDisplay(avatarDataUrl, email) {
+            // Main profile avatar
+            const mainProfileImage = document.getElementById('profile-image');
+            const mainProfileInitial = document.getElementById('profile-initial');
+            if (avatarDataUrl) {
+                mainProfileImage.src = avatarDataUrl;
+                mainProfileImage.style.display = 'block';
+                mainProfileInitial.style.display = 'none';
+            } else {
+                mainProfileImage.style.display = 'none';
+                mainProfileInitial.style.display = 'flex';
+                mainProfileInitial.textContent = email ? email.charAt(0).toUpperCase() : '?';
+            }
+
+            // Header profile avatar
+            if (HEADER_PROFILE_IMAGE && HEADER_PROFILE_INITIAL) {
+                if (avatarDataUrl) {
+                    HEADER_PROFILE_IMAGE.src = avatarDataUrl;
+                    HEADER_PROFILE_IMAGE.style.display = 'block';
+                    HEADER_PROFILE_INITIAL.style.display = 'none';
+                } else {
+                    HEADER_PROFILE_IMAGE.style.display = 'none';
+                    HEADER_PROFILE_INITIAL.style.display = 'flex';
+                    HEADER_PROFILE_INITIAL.textContent = email ? email.charAt(0).toUpperCase() : '?';
+                }
+            }
+        }
+
+        // Handle profile form submission (saving to simulated Cloudflare KV)
+        PROFILE_FORM.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser || !userProfile) {
+                showCustomMessage(PROFILE_MESSAGE_ELEM, 'Please log in first.', 'error');
+                return;
+            }
+
+            const updatedProfile = {
+                minecraftUsername: MINECRAFT_USERNAME_INPUT.value,
+                accountName: ACCOUNT_NAME_INPUT.value,
+                avatar: userProfile.avatar // Retain current avatar unless changed via file input
+            };
+
+            const response = await simulatedCloudflareApi.updateProfile(currentUser.email, updatedProfile);
+
+            if (response.success) {
+                userProfile = response.user; // Update local profile with confirmed changes
+                renderProfile(); // Re-render to update display fields and header
+                showCustomMessage(PROFILE_MESSAGE_ELEM, 'Profile saved successfully!', 'success');
+            } else {
+                showCustomMessage(PROFILE_MESSAGE_ELEM, response.message, 'error');
+            }
+        });
+
+        // Handle avatar upload (saving to simulated Cloudflare KV)
+        AVATAR_UPLOAD_INPUT.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file && currentUser && userProfile) {
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    const avatarDataUrl = event.target.result; // Data URL of the image
+                    const updatedProfile = { ...userProfile, avatar: avatarDataUrl }; // Update avatar in profile
+
+                    const response = await simulatedCloudflareApi.updateProfile(currentUser.email, updatedProfile);
+
+                    if (response.success) {
+                        userProfile = response.user; // Update local profile
+                        updateAvatarDisplay(userProfile.avatar, currentUser.email);
+                        showCustomMessage(PROFILE_MESSAGE_ELEM, 'Profile picture updated!', 'success');
                     } else {
-                        const errorData = await response.json();
-                        showModal('Error', errorData.message || 'Failed to submit loan application.', 'error');
+                        showCustomMessage(PROFILE_MESSAGE_ELEM, response.message, 'error');
                     }
-                } catch (error) {
-                    console.error("Loan application API error:", error);
-                    showModal('Error', 'Could not connect to the loan service.', 'error');
+                };
+                reader.readAsDataURL(file); // Read file as Data URL
+            } else if (!currentUser) {
+                showCustomMessage(PROFILE_MESSAGE_ELEM, 'Please log in to upload an avatar.', 'error');
+            }
+        });
+
+        // Toggle profile dropdown in header
+        if (HEADER_PROFILE_AVATAR) {
+            HEADER_PROFILE_AVATAR.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent click from closing immediately
+                PROFILE_DROPDOWN_MENU.classList.toggle('active');
+            });
+            // Close dropdown if clicked outside
+            document.addEventListener('click', (e) => {
+                if (!HEADER_PROFILE_DISPLAY.contains(e.target)) {
+                    PROFILE_DROPDOWN_MENU.classList.remove('active');
                 }
-            };
+            });
+        }
+        function toggleProfileDropdown() {
+             PROFILE_DROPDOWN_MENU.classList.toggle('active');
+        }
 
-            const handleCancelLoan = async (loanId) => {
-                const updatedLoans = currentUserAccount.loans.filter(loan => loan.id !== loanId);
-                const updatedAccount = { ...currentUserAccount, loans: updatedLoans, transactions: [...currentUserAccount.transactions, { type: 'info', amount: 0, date: new Date().toISOString(), description: `Loan application ${loanId} cancelled` }] };
-                await updateCurrentUser(updatedAccount);
-                showModal('Success', 'Loan application has been cancelled.', 'success');
-            };
+        // Handle Change Password Form
+        CHANGE_PASSWORD_FORM.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            CHANGE_PASSWORD_MESSAGE.textContent = '';
+            const currentPassword = CURRENT_PASSWORD_INPUT.value;
+            const newPassword = NEW_PASSWORD_INPUT.value;
+            const confirmNewPassword = CONFIRM_NEW_PASSWORD_INPUT.value;
 
-            const handleAdminApproveLoan = async (loanId) => {
-                const loans = currentUserAccount.loans.map(loan => loan.id === loanId ? { ...loan, loanStatus: 'active' } : loan);
-                const approvedLoan = loans.find(loan => loan.id === loanId);
-                const updatedAccount = { ...currentUserAccount, loans, balance: currentUserAccount.balance + approvedLoan.loanAmount, transactions: [...currentUserAccount.transactions, { type: 'credit', amount: approvedLoan.loanAmount, date: new Date().toISOString(), description: `Loan ${loanId} approved` }] };
-                const success = await updateCurrentUser(updatedAccount);
-                if (success) {
-                    showModal('Admin Action', 'Loan has been approved!', 'success');
+            if (!currentPassword || !newPassword || !confirmNewPassword) {
+                showCustomMessage(CHANGE_PASSWORD_MESSAGE, 'All password fields are required.', 'error');
+                return;
+            }
+            if (newPassword.length < 6) { // Example strength check
+                showCustomMessage(CHANGE_PASSWORD_MESSAGE, 'New password must be at least 6 characters long.', 'error');
+                return;
+            }
+            if (newPassword !== confirmNewPassword) {
+                showCustomMessage(CHANGE_PASSWORD_MESSAGE, 'New password and confirmation do not match.', 'error');
+                return;
+            }
+
+            const response = await simulatedCloudflareApi.changePassword(currentUser.email, currentPassword, newPassword);
+
+            if (response.success) {
+                showCustomMessage(CHANGE_PASSWORD_MESSAGE, response.message, 'success');
+                // Clear fields on success
+                CURRENT_PASSWORD_INPUT.value = '';
+                NEW_PASSWORD_INPUT.value = '';
+                CONFIRM_NEW_PASSWORD_INPUT.value = '';
+            } else {
+                showCustomMessage(CHANGE_PASSWORD_MESSAGE, response.message, 'error');
+            }
+        });
+
+
+        // Logout function
+        function logoutUser() {
+            currentUser = null;
+            userProfile = null;
+            sessionStorage.removeItem('current_auth_email'); // Clear auth session
+            console.log('User logged out. Clearing session.');
+
+            AUTH_SCREEN.style.display = 'flex'; // Show auth screen
+            document.getElementById('main-content-wrapper').style.display = 'none'; // Hide main content
+            showCustomMessage(MAIN_AUTH_MESSAGE_ELEM, 'You have been logged out.', 'success');
+            // Reset auth form fields and set to login mode
+            setAuthMode(false); // Reset to login mode
+            toggleSidebar(); // Close sidebar if open
+        }
+        SIDEBAR_LOGOUT_BTN.addEventListener('click', logoutUser);
+
+
+        // --- UI Navigation & Sidebar Logic ---
+        const SIDEBAR = document.getElementById('sidebar');
+        const MAIN_CONTENT_WRAPPER = document.getElementById('main-content-wrapper');
+        const OVERLAY = document.querySelector('.overlay');
+        const SIDEBAR_NAV_LINKS = document.querySelectorAll('#sidebar nav a');
+        const HOMEPAGE_NAV_SECTION = document.getElementById('homepage-nav-section'); // The section with the 3 main buttons
+        const DYNAMIC_CONTENT_AREA = document.getElementById('dynamic-content-area'); // The container for content below buttons
+        const ALL_CONTENT_SECTIONS = document.querySelectorAll('#dynamic-content-area > .content-section'); // All sections that live *inside* dynamic-content-area
+
+        function toggleSidebar() {
+            SIDEBAR.classList.toggle('open');
+            MAIN_CONTENT_WRAPPER.classList.toggle('sidebar-open');
+            OVERLAY.classList.toggle('active');
+        }
+
+        // Function to show a specific content section and hide others
+        function showSection(sectionId) {
+            ALL_CONTENT_SECTIONS.forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Adjust homepage nav section visibility based on the type of content
+            if (['server-info-content', 'plugins-content', 'how-to-play-content'].includes(sectionId)) {
+                HOMEPAGE_NAV_SECTION.style.display = 'flex'; // Show the main buttons
+                document.getElementById(sectionId).classList.add('active'); // Show the requested content below
+            } else {
+                HOMEPAGE_NAV_SECTION.style.display = 'none'; // Hide the main buttons
+                document.getElementById(sectionId).classList.add('active'); // Show the requested content
+            }
+
+            // Update active class in sidebar nav
+            SIDEBAR_NAV_LINKS.forEach(link => {
+                link.classList.remove('active');
+                if (link.dataset.section === sectionId) {
+                    link.classList.add('active');
+                }
+                // Special case for 'Home' in sidebar: activate if any of the main 3 are active
+                if (link.dataset.section === "server-info-content" && ['server-info-content', 'plugins-content', 'how-to-play-content'].includes(sectionId)) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        // Add click listeners to sidebar navigation links
+        SIDEBAR_NAV_LINKS.forEach(link => {
+            // Check if the link should open an external URL (like Discord/Instagram)
+            if (link.href && link.target === '_blank') {
+                link.addEventListener('click', (e) => {
+                    // Do nothing, let the browser handle the target="_blank"
+                });
+            } else if (link.dataset.section) {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showSection(link.dataset.section);
+                    toggleSidebar(); // Close sidebar after navigation
+                });
+            }
+        });
+
+
+        // --- Server Status Script (Directly provided logic) ---
+        const serverIP = "mc1524209.fmcs.cloud"; // Your FreeMcServer IP
+
+        async function fetchServerStatus() {
+            const statusDiv = document.getElementById("server-status");
+            const playersDiv = document.getElementById("player-count");
+            const onlinePlayersList = document.getElementById("online-players-list");
+            const serverControlOptions = document.getElementById('server-control-options');
+            serverControlOptions.innerHTML = ''; // Clear previous buttons
+
+            // Update static IP/Port displays (always the same)
+            document.getElementById("server-ip").textContent = serverIP;
+            document.getElementById("server-port").textContent = "38762"; // Hardcoded as requested
+
+            try {
+                const res = await fetch(`https://api.mcsrvstat.us/2/${serverIP}`);
+                const data = await res.json();
+
+                if (!data || typeof data.online === "undefined") {
+                    statusDiv.innerHTML = "?? Error checking server status.";
+                    statusDiv.className = "status-offline";
+                    playersDiv.innerHTML = "";
+                    onlinePlayersList.innerHTML = '<li>Error: Could not retrieve server status.</li>';
+                    serverControlOptions.innerHTML = `<a href="https://freemcserver.net/server/1524209" target="_blank"><button style="background-color: var(--button-primary);"><i class="fas fa-play"></i> Start Server</button></a>`;
+                    return;
+                }
+
+                if (!data.online) {
+                    statusDiv.innerHTML = "?? Offline";
+                    statusDiv.className = "status-offline";
+                    playersDiv.innerHTML = "";
+                    onlinePlayersList.innerHTML = '<li>Server is offline. Invalid player names (server does not exist to provide names).</li>';
+                    serverControlOptions.innerHTML = `<a href="https://freemcserver.net/server/1524209" target="_blank"><button style="background-color: var(--button-primary);"><i class="fas fa-play"></i> Start Server</button></a>`;
                 } else {
-                    showModal('Error', 'Failed to update account after loan approval.', 'error');
-                }
-            };
+                    statusDiv.innerHTML = "?? Online";
+                    statusDiv.className = "status-online";
+                    playersDiv.innerHTML = `?? ${data.players.online}/${data.players.max} Players`;
+                    serverControlOptions.innerHTML = `<button style="background-color: var(--button-red);" disabled><i class="fas fa-stop"></i> Server Running</button>`;
 
-            const handlePayLoan = async (loanId, customAmount = null) => {
-                const loan = currentUserAccount.loans.find(l => l.id === loanId);
-                if (!loan) return;
-
-                // Auto-cancel if 24 hours passed and loan is pending/active and not fully paid
-                const timeSinceApplication = Date.now() - new Date(loan.applicationDate).getTime();
-                const twentyFourHours = 24 * 3600 * 1000;
-
-                if (timeSinceApplication >= twentyFourHours && loan.loanStatus !== 'paid' && loan.loanPaid < loan.loanAmountDue) {
-                    // Call worker to cancel loan
-                    await fetch(`${API_ENDPOINTS.ACCOUNTS}/admin`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'cancel_loan', userAccountId: currentUserAccount.accountId, loanId: loan.id })
-                    });
-                    showModal('Loan Auto-Cancelled', `Loan ${loan.id} has been automatically cancelled as it was not fully paid within 24 hours.`, 'error');
-                    // Refresh user data to reflect cancellation
-                    const updatedAccountResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/accounts/${currentUserAccount.accountId}`);
-                    if (updatedAccountResponse.ok) {
-                        const updatedAccountData = await updatedAccountResponse.json();
-                        setCurrentUserAccount(updatedAccountData.account);
-                    }
-                    return; // Stop further processing for this loan
-                }
-
-                let amountToPay = customAmount !== null ? customAmount : (loan.loanAmountDue - loan.loanPaid);
-                if (amountToPay <= 0) { showModal('Info', 'No amount to pay for this loan.', 'info'); return; }
-
-                let effectiveAmountToPay = amountToPay;
-
-                // Apply interest reduction rules only if paying the full remaining amount
-                if (customAmount === null || customAmount >= (loan.loanAmountDue - loan.loanPaid)) {
-                    if (timeSinceApplication < 6 * 3600 * 1000) { // 6 hours
-                        effectiveAmountToPay = loan.loanAmount; // Only principal
-                    } else if (timeSinceApplication < 24 * 3600 * 1000) { // 24 hours
-                        const interest = loan.loanAmountDue - loan.loanAmount;
-                        effectiveAmountToPay = loan.loanAmount + (interest * 0.45); // 55% interest reduction
-                    }
-                }
-
-                if (currentUserAccount.balance < effectiveAmountToPay) { showModal('Error', 'Insufficient balance to pay the loan.', 'error'); return; }
-
-                const newLoanPaid = loan.loanPaid + effectiveAmountToPay;
-                let newLoanStatus = loan.loanStatus;
-                let transactionDescription = `Loan payment for ${loan.id}`; 
-
-                if (newLoanPaid >= loan.loanAmountDue) {
-                    newLoanStatus = 'closed';
-                    transactionDescription = `Paid off loan ${loan.id}`; 
-                    showModal('Loan Paid!', 'Loan has been fully paid off!', 'success');
-                } else {
-                    showModal('Payment Successful!', `Paid ${effectiveAmountToPay.toFixed(2)} towards loan ${loan.id}.`, 'success');
-                }
-                
-                try {
-                    const response = await fetch(`${API_ENDPOINTS.ACCOUNTS}/pay-loan`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            userAccountId: currentUserAccount.accountId,
-                            loanId: loan.id,
-                            amountToPay: effectiveAmountToPay,
-                            newLoanPaid: newLoanPaid,
-                            newLoanStatus: newLoanStatus,
-                            transactionDescription: transactionDescription
-                        }),
-                    });
-
-                    if (response.ok) {
-                        const updatedData = await response.json();
-                        setCurrentUserAccount(updatedData.accounts.find(acc => acc.accountId === currentUserAccount.accountId));
+                    // Display online players
+                    let playersListHtml = '';
+                    if (data.players && data.players.list && data.players.list.length > 0) {
+                        playersListHtml = data.players.list.map(p => `<li><span>${p}</span></li>`).join('');
                     } else {
-                        const errorData = await response.json();
-                        showModal('Error', errorData.message || 'Failed to process loan payment.', 'error');
+                        playersListHtml = '<li>No players currently online.</li>';
                     }
-                } catch (error) {
-                    console.error("Pay loan API error:", error);
-                    showModal('Error', 'Could not connect to the loan payment service.', 'error');
+                    onlinePlayersList.innerHTML = playersListHtml;
                 }
-            };
+            } catch (error) {
+                console.error("Fetch error:", error);
+                statusDiv.innerHTML = "?? Network Error: Cannot reach API.";
+                statusDiv.className = "status-offline";
+                playersDiv.innerHTML = "";
+                onlinePlayersList.innerHTML = '<li>Network error. Please check your connection.</li>';
+                serverControlOptions.innerHTML = `<a href="https://freemcserver.net/server/1524209" target="_blank"><button style="background-color: var(--button-primary);"><i class="fas fa-play"></i> Start Server</button></a>`;
+            }
+        }
 
-            const renderPage = () => {
-                if (loading) return <LoadingScreen loginSuccess={loginSuccess} message={loginSuccess ? 'Login Successful!' : 'Loading Bank Data...'} />;
-                const commonProps = { currentUserAccount, setCurrentUserAccount, setCurrentPage, showModal, handleLogout, handleChangePassword, handleUpdateProfile, handlePayTax, handleAdvanceTax, handleApplyLoan, handleCancelLoan, handleAdminApproveLoan, handlePayLoan, session, paymentAnimationDetails, setPaymentAnimationDetails };
-                if (!currentUserAccount) {
-                    switch (currentPage) {
-                        case 'create-account': return <CreateAccountPage {...commonProps} handleCreateAccount={handleCreateAccount} />;
-                        default: return <LoginPage {...commonProps} handleLogin={handleLogin} />;
-                    }
-                }
-                let pageComponent;
-                switch (currentPage) {
-                    case 'account-settings': pageComponent = <AccountSettingsPage {...commonProps} />; break;
-                    case 'top-tax-payers': pageComponent = <TopTaxPayersPage {...commonProps} getAllAccounts={getAllAccounts} />; break;
-                    case 'top-advance-tax-payers': pageComponent = <TopAdvanceTaxPayersPage {...commonProps} getAllAccounts={getAllAccounts} />; break;
-                    case 'contact-us': pageComponent = <ContactUsPage {...commonProps} setNotification={setNotification} />; break;
-                    case 'theme-setting': pageComponent = <ThemeSettingsPage {...commonProps} />; break;
-                    case 'tax-page': pageComponent = <TaxPage {...commonProps} paymentAnimationDetails={paymentAnimationDetails} setPaymentAnimationDetails={setPaymentAnimationDetails} />; break;
-                    default: pageComponent = <Dashboard {...commonProps} />;
-                }
-                return <MainLayout {...commonProps} notification={notification}>{pageComponent}</MainLayout>;
-            };
+        fetchServerStatus(); // Initial call
+        setInterval(fetchServerStatus, 5000); // Repeat every 5 seconds
 
-            return <>{renderPage()}{paymentAnimationDetails.show && <PaymentLoadingAnimation {...paymentAnimationDetails} onAnimationComplete={() => setPaymentAnimationDetails({ show: false, amount: 0, status: 'processing', paymentType: '' })} /> }<Modal {...modal} onClose={closeModal} /></>;
-        };
 
-        const PaymentLoadingAnimation = ({ amount, status, onAnimationComplete, paymentType }) => {
-            const [message, setMessage] = useState('Processing payment...');
-            const [boxClass, setBoxClass] = useState('');
+        // --- Copy-to-Clipboard ---
+        function copyToClipboard(id) {
+            const text = document.getElementById(id).innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                showCustomAlert('Copied!', 'Text copied to clipboard: ' + text);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                showCustomAlert('Error', 'Failed to copy text.');
+            });
+        }
 
-            useEffect(() => {
-                let timer;
-                if (status === 'success') {
-                    let successMessage = `Payment successful!`;
-                    if (paymentType === 'fullTax') {
-                        successMessage += ` Thanks for paying the tax.`;
-                    }
-                    else if (paymentType === 'advanceTax') {
-                        successMessage += ` Thanks for paying the tax advance.`;
-                    }
-                    setMessage(successMessage);
-                    setBoxClass('success');
-                    timer = setTimeout(() => onAnimationComplete(), Math.random() * (1500 - 500) + 500); // Random duration between 0.5 and 1.5 seconds
-                } else if (status === 'error') {
-                    setMessage('Payment failed. Please try again.');
-                    setBoxClass('error');
-                    timer = setTimeout(() => onAnimationComplete(), 3000); // Display error for 3 seconds
+        // --- Plugin Data & Render Logic ---
+        const pluginsData = [
+            { name: "EssentialsX", description: "Core plugin for server management, homes, warps, kits, and more.", videoLink: "https://www.youtube.com/embed/dQw4w9WgXcQ", detailsLink: "https://essentialsx.net/wiki.html", status: "working" },
+            { name: "LuckPerms", description: "Powerful permissions plugin with a web editor.", videoLink: "", detailsLink: "https://luckperms.net/", status: "working" },
+            { name: "WorldEdit", description: "Fast and easy to use in-game world editor.", videoLink: "https://www.youtube.com/embed/aYd2I9B5G60", detailsLink: "https://enginehub.org/worldedit/", status: "working" },
+            { name: "GriefPrevention", description: "Prevents griefing and protects player builds with land claims.", videoLink: "https://www.youtube.com/embed/p_G-o2r9D2s", detailsLink: "https://www.spigotmc.org/resources/griefprevention.1884/", status: "working" },
+            { name: "PlaceholderAPI", description: "Adds placeholders to plugins, allowing dynamic text display.", videoLink: "", detailsLink: "https://www.spigotmc.org/resources/placeholderapi.6245/", status: "working" },
+            { name: "Vault", description: "A permissions, chat, & economy API to allow plugins to hook into.", videoLink: "https://www.youtube.com/embed/lIeXvD3xG4w", detailsLink: "https://www.spigotmc.org/resources/vault.34315/", status: "working" },
+            { name: "EconomyTaxerWeb", description: "This custom plugin is not made by CraftOne. Unsupported version by Ansh_2613 and i._Sakshamm.", videoLink: "", detailsLink: "", status: "non-working", problem: "This custom plugin is not made by CraftOne. Unsupported version by Ansh_2613 and i._Sakshamm." }, // Updated problem
+            { name: "Movecraft", description: "Allows players to build and pilot custom ships and vehicles.", videoLink: "https://www.youtube.com/embed/some_movecraft_video", detailsLink: "https://www.spigotmc.org/resources/movecraft.20364/", status: "non-working", problem: "Unsupported version." } // Updated problem
+            // Add more plugins here with their status
+        ];
+
+        const pluginSubNavButtons = document.querySelectorAll('#plugins-content .player-sub-nav button');
+        let currentPluginFilter = "all-plugins"; // Default filter
+
+        function renderPlugins(pluginsToRender) {
+            const pluginListElement = document.getElementById("plugin-list");
+            pluginListElement.innerHTML = ''; // Clear existing list
+
+            let filteredPlugins = pluginsToRender;
+
+            if (currentPluginFilter === "non-working-plugins") {
+                filteredPlugins = pluginsToRender.filter(p => p.status === "non-working").sort((a,b) => a.name.localeCompare(b.name));
+            } else { // "all-plugins" - sort working first, then non-working
+                const workingPlugins = pluginsToRender.filter(p => p.status === "working").sort((a,b) => a.name.localeCompare(b.name));
+                const nonWorkingPlugins = pluginsToRender.filter(p => p.status === "non-working").sort((a,b) => a.name.localeCompare(b.name));
+                filteredPlugins = [...workingPlugins, ...nonWorkingPlugins];
+            }
+
+
+            if (filteredPlugins.length === 0) {
+                pluginListElement.innerHTML = '<li style="text-align: center; color: #ccc; padding: 20px;">No plugins found matching your criteria.</li>';
+                return;
+            }
+
+            filteredPlugins.forEach(plugin => {
+                const li = document.createElement("li");
+                let videoHtml = '';
+                if (plugin.videoLink) {
+                    videoHtml = `
+                        <div class="plugin-video">
+                            <iframe src="${plugin.videoLink}"
+                                    title="${plugin.name} Tutorial"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowfullscreen>
+                            </iframe>
+                        </div>`;
                 } else {
-                    setMessage(`Processing payment of ${amount?.toFixed(2) || '0.00'}...`);
-                    setBoxClass('');
+                    videoHtml = `
+                        <div class="plugin-video placeholder">
+                            No tutorial video available for this plugin.
+                        </div>`;
                 }
-                return () => clearTimeout(timer);
-            }, [status, amount, onAnimationComplete, paymentType]);
 
-            return (
-                <div className="payment-loading-overlay">
-                    <div className={`payment-loading-box ${boxClass}`}>
-                        <div className="payment-dollar-symbol">$</div>
-                        <div className="payment-message-text">{message}</div>
+                let problemMessageHtml = '';
+                if (plugin.status === "non-working" && plugin.problem) {
+                    problemMessageHtml = `<p class="problem-message">Problem: ${plugin.problem}</p>`;
+                    li.classList.add('non-working-plugin'); // Add class for styling
+                }
+
+                li.innerHTML = `
+                    <h3>${plugin.name}</h3>
+                    <p class="description">${plugin.description}</p>
+                    ${problemMessageHtml}
+                    ${videoHtml}
+                    <div class="plugin-links">
+                        ${plugin.detailsLink ? `<a class="plugin-link-btn" href="${plugin.detailsLink}" target="_blank">
+                            <i class="fas fa-info-circle"></i> Details
+                        </a>` : ''}
                     </div>
-                </div>
-            );
-        };
+                `;
+                pluginListElement.appendChild(li);
+            });
+        }
 
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+        // Plugin sub-navigation click handlers
+        pluginSubNavButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                pluginSubNavButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                currentPluginFilter = button.dataset.pluginSubSection;
+                renderPlugins(pluginsData); // Re-render with new filter
+            });
+        });
+
+
+        // Plugin Search Filter (filters the currently displayed set)
+        const searchInput = document.getElementById("plugin-search");
+        searchInput.addEventListener("input", function () {
+            const filter = this.value.toLowerCase();
+            let pluginsToSearch = pluginsData;
+            // The sorting logic in renderPlugins already handles the "all-plugins" view
+            // and the "non-working-plugins" filter.
+            // We only need to pass the full pluginsData to renderPlugins and let it sort/filter.
+
+            const filteredPlugins = pluginsToSearch.filter(plugin =>
+                plugin.name.toLowerCase().includes(filter) ||
+                plugin.description.toLowerCase().includes(filter)
+            );
+            renderPlugins(filteredPlugins); // Always re-render based on current filter and search
+        });
+
+        // --- Players Section Logic (ONLY PLAYERS FROM IMAGE) ---
+        const playerSubNavButtons = document.querySelectorAll('#players-content .player-sub-nav button');
+        const playerSubContents = document.querySelectorAll('#players-content .player-sub-content');
+        const allPlayersList = document.getElementById('all-players-list');
+        const allPlayersSearch = document.getElementById('all-players-search');
+        const richestPlayersList = document.getElementById('richest-players-list');
+        const taxedPlayersList = document.getElementById('taxed-players-list');
+
+        let allPlayersData = [];
+
+        async function fetchPlayers() {
+            try {
+                const res = await fetch('players.json');
+                allPlayersData = await res.json();
+                // Initial render after fetching
+                showPlayerSubSection('top-richest-content');
+            } catch (error) {
+                console.error('Error fetching player data:', error);
+                allPlayersList.innerHTML = '<li>Error loading player data.</li>';
+            }
+        }
+
+        // This data now STRICTLY reflects players from the image with CORRECTED balances
+
+        // Ensure these are derived *after* allPlayersData is complete and sorted.
+        const topRichestData = [...allPlayersData].sort((a, b) => b.balance - a.balance).slice(0, 3);
+        const topTaxedData = [...allPlayersData].sort((a, b) => b.taxPaid - a.taxPaid).slice(0, 3);
+
+
+        function showPlayerSubSection(sectionId) {
+            playerSubContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            playerSubNavButtons.forEach(button => {
+                button.classList.remove('active');
+            });
+
+            document.getElementById(sectionId).classList.add('active');
+            document.querySelector(`[data-player-sub-section="${sectionId.replace('-content', '')}"]`).classList.add('active');
+
+            if (sectionId === 'all-players-content') {
+                renderAllPlayers(allPlayersData); // Render all players on activation
+            } else if (sectionId === 'top-richest-content') {
+                renderRichestPlayers();
+            } else if (sectionId === 'top-taxed-content') {
+                renderTaxedPlayers();
+            }
+        }
+
+        function renderAllPlayers(playersToRender) {
+            allPlayersList.innerHTML = '';
+            if (playersToRender.length === 0) {
+                allPlayersList.innerHTML = '<li>No players found.</li>';
+                return;
+            }
+            playersToRender.forEach(player => {
+                const li = document.createElement('li');
+                // Displaying only name, status, and edition as requested
+                li.innerHTML = `<strong>${player.name}:</strong> <span>${player.status}, Edition: ${player.edition}</span>`;
+                allPlayersList.appendChild(li);
+            });
+        }
+
+        function renderRichestPlayers() {
+            richestPlayersList.innerHTML = '';
+            topRichestData.forEach((player, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>${index + 1}. ${player.name}:</strong> <span>$${player.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`;
+                richestPlayersList.appendChild(li);
+            });
+        }
+
+        function renderTaxedPlayers() {
+            taxedPlayersList.innerHTML = '';
+            topTaxedData.forEach((player, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>${index + 1}. ${player.name}:</strong> <span>$${player.taxPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`;
+                taxedPlayersList.appendChild(li);
+            });
+        }
+
+
+        playerSubNavButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetSection = button.dataset.playerSubSection + '-content';
+                showPlayerSubSection(targetSection);
+            });
+        });
+
+        // Player search functionality
+        allPlayersSearch.addEventListener('input', function() {
+            const filter = this.value.toLowerCase();
+            const filteredPlayers = allPlayersData.filter(player =>
+                player.name.toLowerCase().includes(filter)
+            );
+            renderAllPlayers(filteredPlayers);
+        });
+
+
+        // --- Contact Us Form Submission ---
+        const contactUsForm = document.getElementById("contact-us-form");
+        const contactUsStatus = document.getElementById("contact-us-status");
+
+        contactUsForm.addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            const minecraftUsername = document.getElementById("contact-minecraft-username").value.trim();
+            const discordId = document.getElementById("contact-discord-id").value.trim();
+            const message = document.getElementById("contact-message").value.trim();
+
+            if (!minecraftUsername || !discordId || !message) {
+                contactUsStatus.innerText = "?? Please fill in all required fields.";
+                contactUsStatus.classList.add('error');
+                return;
+            }
+
+            const fullMessage = `?? **NEW CONTACT US MESSAGE** ??
+**Submitted By Email:** ${currentUser ? currentUser.email : 'Not Logged In'} (UID: ${currentUser ? currentUser.uid : 'N/A'})
+**Minecraft User:** ${minecraftUsername}
+**Discord ID:** ${discordId}
+**Message:**
+${message}`;
+
+            fetch("https://discordapp.com/api/webhooks/1383347956182290462/b1k7PVanxmP6InWfH9k4Npj7WNP9dUM-nD6xXRZGZwFOsODahyDoBnxlmNdGCCyLDetz", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ content: fullMessage })
+            })
+            .then(res => {
+                if (res.ok) {
+                    contactUsStatus.innerText = "? Message sent successfully! We'll get back to you soon.";
+                    contactUsStatus.classList.remove('error');
+                    contactUsForm.reset();
+                } else {
+                    contactUsStatus.innerText = "? Failed to send. Try again later.";
+                    contactUsStatus.classList.add('error');
+                }
+            })
+            .catch(error => {
+                console.error("Contact form error:", error);
+                contactUsStatus.innerText = "? Error sending message.";
+                contactUsStatus.classList.add('error');
+            });
+        });
+
+
+        // --- Theme Panel Logic ---
+        function applyTheme() {
+            const root = document.documentElement.style;
+            const savedBoxColor = localStorage.getItem("--box-color");
+            const savedGlowColor = localStorage.getItem("saved-glow-color");
+            const savedGlowSpeed = localStorage.getItem("--glow-speed");
+            const savedGlowBrightness = localStorage.getItem("--glow-brightness");
+            const savedBgTheme = localStorage.getItem("--bg-theme");
+            const savedGlowEnabled = localStorage.getItem("--glow-enabled");
+            const savedTextLight = localStorage.getItem("--text-light");
+            const savedAccentGreen = localStorage.getItem("--accent-green");
+            const savedAccentBlue = localStorage.getItem("--accent-blue");
+
+
+            if (savedBoxColor) root.setProperty('--box-color', savedBoxColor);
+            if (savedGlowSpeed) root.setProperty('--glow-speed', savedGlowSpeed);
+            if (savedGlowBrightness) root.setProperty('--glow-brightness', savedGlowBrightness);
+            if (savedBgTheme) root.setProperty('--bg-theme', savedBgTheme);
+            if (savedTextLight) root.setProperty('--text-light', savedTextLight);
+            if (savedAccentGreen) root.setProperty('--accent-green', savedAccentGreen);
+            if (savedAccentBlue) root.setProperty('--accent-blue', savedAccentBlue);
+
+            // Apply glow based on toggle state
+            const glowToggleCheckbox = document.getElementById("glowToggle");
+            if (glowToggleCheckbox) {
+                glowToggleCheckbox.checked = (savedGlowEnabled === "true");
+                root.setProperty('--glow-color', (savedGlowEnabled === "true" && savedGlowColor) ? savedGlowColor : "transparent");
+            } else {
+                root.setProperty('--glow-color', (savedGlowEnabled === "true" && savedGlowColor) ? savedGlowColor : "transparent");
+            }
+
+
+            // Set input values to current theme values
+            document.getElementById("boxColor").value = savedBoxColor || getComputedStyle(document.documentElement).getPropertyValue('--box-color');
+            document.getElementById("glowColor").value = savedGlowColor || getComputedStyle(document.documentElement).getPropertyValue('--accent-green');
+            document.getElementById("glowSpeed").value = parseFloat((savedGlowSpeed || '3s').replace('s', ''));
+            document.getElementById("glowBrightness").value = parseFloat(savedGlowBrightness || '0.6');
+            document.getElementById("bgTheme").value = (savedBgTheme && !savedBgTheme.startsWith("url('") && !savedBgTheme.startsWith("linear-gradient")) ? savedBgTheme : ''; // Clear if complex gradient/url for input
+            document.getElementById("textLightColor").value = savedTextLight || getComputedStyle(document.documentElement).getPropertyValue('--text-light');
+            document.getElementById("accentGreenColor").value = savedAccentGreen || getComputedStyle(document.documentElement).getPropertyValue('--accent-green');
+            document.getElementById("accentBlueColor").value = savedAccentBlue || getComputedStyle(document.documentElement).getPropertyValue('--accent-blue');
+        }
+
+        function saveTheme() {
+            const root = document.documentElement.style;
+            const box = document.getElementById("boxColor").value;
+            const glow = document.getElementById("glowColor").value;
+            const speed = document.getElementById("glowSpeed").value + "s";
+            const brightness = document.getElementById("glowBrightness").value;
+            let bg = document.getElementById("bgTheme").value.trim();
+            const enableGlow = document.getElementById("glowToggle").checked;
+            const textLight = document.getElementById("textLightColor").value;
+            const accentGreen = document.getElementById("accentGreenColor").value;
+            const accentBlue = document.getElementById("accentBlueColor").value;
+
+
+            localStorage.setItem("--box-color", box);
+            localStorage.setItem("saved-glow-color", glow); /* Store the glow color separately */
+            localStorage.setItem("--glow-speed", speed);
+            localStorage.setItem("--glow-brightness", brightness);
+            localStorage.setItem("--bg-theme", bg);
+            localStorage.setItem("--glow-enabled", enableGlow);
+            localStorage.setItem("--text-light", textLight);
+            localStorage.setItem("--accent-green", accentGreen);
+            localStorage.setItem("--accent-blue", accentBlue);
+
+
+            root.setProperty("--box-color", box);
+            root.setProperty("--glow-color", enableGlow ? glow : "transparent");
+            root.setProperty("--glow-speed", speed);
+            root.setProperty("--glow-brightness", brightness);
+            root.setProperty("--bg-theme", bg);
+            root.setProperty("--text-light", textLight);
+            root.setProperty("--accent-green", accentGreen);
+            root.setProperty("--accent-blue", accentBlue);
+
+
+            showCustomMessage(document.getElementById('theme-settings-content').querySelector('h2'), "?? Theme saved!", "success");
+        }
+
+        function resetTheme() {
+            const defaults = {
+                "--box-color": "#0d0d0d",
+                "saved-glow-color": "#00ffcc",
+                "--glow-speed": "3s",
+                "--glow-brightness": "0.6",
+                "--bg-theme": "linear-gradient(-45deg, #0a0a0a, #111111, #1a1a1a, #0d0d0d)",
+                "--glow-enabled": "false",
+                "--text-light": "#e0e0e0",
+                "--accent-green": "#00ffcc",
+                "--accent-blue": "#42a5f5"
+            };
+
+            for (let key in defaults) {
+                localStorage.setItem(key, defaults[key]);
+            }
+            applyTheme(); // Re-apply the default theme
+            showCustomMessage(document.getElementById('theme-settings-content').querySelector('h2'), "?? Theme reset to default and glow disabled.", "success");
+        }
+
+
+        // --- Custom Message Display for small inline messages (not the full modal alert) ---
+        function showCustomMessage(element, message, type) {
+            let msgElement = null;
+            // Find the closest parent that can contain a message, or create one
+            const closestForm = element.closest('form');
+            if (closestForm) {
+                msgElement = closestForm.querySelector('.custom-message');
+                if (!msgElement) {
+                    msgElement = document.createElement('p');
+                    msgElement.classList.add('custom-message');
+                    closestForm.appendChild(msgElement);
+                }
+            } else {
+                // For existing message areas like #auth-message-main or section titles
+                if (element.tagName === 'H2' || element.tagName === 'P') {
+                    msgElement = element;
+                } else {
+                     // Fallback, append to body or a general area if specific parent not found
+                    msgElement = document.querySelector('#dynamic-content-area') || document.body;
+                    const existingTempMsg = msgElement.querySelector('.custom-message.temp');
+                    if(existingTempMsg) existingTempMsg.remove();
+                    const newTempMsg = document.createElement('p');
+                    newTempMsg.classList.add('custom-message', 'temp');
+                    msgElement.appendChild(newTempMsg);
+                    msgElement = newTempMsg;
+                }
+            }
+
+            if (msgElement) {
+                msgElement.textContent = message;
+                msgElement.className = `custom-message ${type}`; // 'error' or 'success'
+                setTimeout(() => {
+                    msgElement.textContent = '';
+                    msgElement.classList.remove('error', 'success');
+                    if (msgElement.classList.contains('temp')) {
+                        msgElement.remove(); // Remove temporary messages
+                    }
+                }, 3000); // Clear message after 3 seconds
+            }
+        }
+
+
+        // --- Initial Load & Authentication Check ---
+        window.addEventListener("DOMContentLoaded", () => {
+            applyTheme(); // Apply saved theme on load
+            console.log('DOM Content Loaded. Checking authentication status...');
+
+            const mainContentWrapper = document.getElementById("main-content-wrapper");
+            const authScreen = document.getElementById("auth-screen");
+
+            const storedAuthEmail = sessionStorage.getItem('current_auth_email');
+            if (storedAuthEmail) {
+                console.log('Found stored email in session. Attempting re-login...');
+                const userJson = getSimulatedKVItem(storedAuthEmail);
+                if (userJson) {
+                    const user = JSON.parse(userJson);
+                    currentUser = { email: user.email, uid: user.uid };
+                    userProfile = user.profile;
+                    console.log('Re-login successful with stored email. User:', currentUser.email);
+                    handleSuccessfulAuth();
+                } else {
+                    console.log('Stored email not found in simulated KV. Showing auth screen.');
+                    sessionStorage.removeItem('current_auth_email'); // Clear invalid session
+                    setAuthMode(false); // Default to login mode
+                    authScreen.style.display = "flex";
+                    mainContentWrapper.style.display = "none";
+                }
+            } else {
+                console.log('No stored email found. Showing auth screen.');
+                setAuthMode(false); // Default to login mode
+                authScreen.style.display = "flex";
+                mainContentWrapper.style.display = "none";
+            }
+
+            // Initial render of plugins (alphabetical order with non-working at bottom)
+            renderPlugins(pluginsData);
+            // Initial render for players section (default to richest)
+            fetchPlayers();
+        });
+
     </script>
 </body>
 </html>
