@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -25,7 +27,7 @@
         .cube { position: absolute; width: 50px; height: 50px; background: rgba(255, 165, 0, 0.8); border: 1px solid rgba(255, 255, 255, 0.5); transform-style: preserve-3d; }
         .cube .face { position: absolute; width: 50px; height: 50px; background: inherit; border: inherit; }
         .front  { transform: translateZ(25px); } .back   { transform: rotateY(180deg) translateZ(25px); } .right  { transform: rotateY(90deg) translateZ(25px); } .left   { transform: rotateY(-90deg) translateZ(25px); } .top    { transform: rotateX(90deg) translateZ(25px); } .bottom { transform: rotateX(-90deg) translateZ(25px); }
-        .cube-1 { animation: join-1 2.5s forwards; } .cube-2 { animation: join-2 2.5s forwards; } .cube-3 { animation: join-3 2.5s forwards; } .cube-4 { animation: join-4 2.5s forwards; } 
+        .cube-1 { animation: join-1 2.5s forwards; } .cube-2 { animation: join-2 2.5s forwards; } .cube-3 { animation: join-3 2.5s forwards; } .cube-4 { animation: join-4 2.5s forwards; }
         @keyframes join-1 { 0% { transform: translate(-200vw, -200vh, -200px) rotateY(-90deg); } 70%, 100% { transform: translate(-25px, -25px, 0) rotateY(0deg); } }
         @keyframes join-2 { 0% { transform: translate(200vw, -200vh, -200px) rotateY(90deg); } 70%, 100% { transform: translate(25px, -25px, 0) rotateY(0deg); } }
         @keyframes join-3 { 0% { transform: translate(-200vw, 200vh, -200px) rotateY(90deg); } 70%, 100% { transform: translate(-25px, 25px, 0) rotateY(0deg); } }
@@ -110,7 +112,7 @@
         const API_ENDPOINTS = {
             ACCOUNTS: 'https://bank-data.1987sakshamsingh.workers.dev',
             TAX: 'https://bank-data.1987sakshamsingh.workers.dev',
-            CONTACT: 'https://bank-data.1987sakshamsingh.workers.dev/contact',
+            CONTACT: 'https://bank-data.1987sakshamsingh.workers.dev',
         };
 
         // --- UTILITY & HELPER FUNCTIONS ---
@@ -152,7 +154,6 @@
                 </div>
             </div>
         );
-        };
 
         const LoginPage = ({ setCurrentPage, handleLogin }) => {
             const [identifier, setIdentifier] = useState('');
@@ -194,11 +195,11 @@
         };
 
         // --- Main Application Layout ---
-        const MainLayout = ({ children, currentUserAccount, setCurrentPage, handleLogout, notification }) => {
+        const MainLayout = ({ children, currentUserAccount, setCurrentPage, handleLogout }) => {
             const [isSidebarOpen, setIsSidebarOpen] = useState(false);
             return (
                 <div className="flex min-h-screen bg-gray-800 text-gray-100">
-                    <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} setCurrentPage={setCurrentPage} handleLogout={handleLogout} notification={notification} />
+                    <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} setCurrentPage={setCurrentPage} handleLogout={handleLogout} />
                     <div className="flex-1 flex flex-col transition-all duration-300 ease-in-out">
                         <TopBar setIsSidebarOpen={setIsSidebarOpen} currentUserAccount={currentUserAccount} />
                         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">{children}</main>
@@ -214,21 +215,21 @@
             </div>
         );
 
-        const Sidebar = ({ isOpen, setIsOpen, setCurrentPage, handleLogout, notification }) => {
+        const Sidebar = ({ isOpen, setIsOpen, setCurrentPage, handleLogout }) => {
             const sidebarClass = isOpen ? 'translate-x-0' : '-translate-x-full';
             const navigateAndClose = (page) => { setCurrentPage(page); setIsOpen(false); };
             const menuItems = [
                 { page: 'home', label: 'Home', icon: '🏠' }, { page: 'account-settings', label: 'Account Settings', icon: '⚙️' },
                 { page: 'top-tax-payers', label: 'Top Tax Payers', icon: '🏆' }, { page: 'top-advance-tax-payers', label: 'Top Advance Tax Payers', icon: '🥇' },
-                { page: 'contact-us', label: 'Contact Us', icon: '📞', notification: notification }, { page: 'theme-setting', label: 'Theme Settings', icon: '🎨' },
+                { page: 'contact-us', label: 'Contact Us', icon: '📞' }, { page: 'theme-setting', label: 'Theme Settings', icon: '🎨' },
             ];
             return (
                 <>
-                    {isOpen && <div className="fixed inset-0 bg-black bg-opacity-50 z-20" onClick={() => setIsOpen(false)}></div>}
+                    {isOpen && <div className="fixed inset-0 bg-black opacity-50 z-20" onClick={() => setIsOpen(false)}></div>}
                     <div className={`fixed inset-y-0 left-0 w-64 bg-gray-800 p-6 transform ${sidebarClass} transition-transform duration-300 ease-in-out shadow-xl z-30 flex flex-col border-r-4 border-gray-700`}>
                         <div className="flex justify-between items-center mb-10"><h2 className="text-2xl font-extrabold text-green-400">Menu</h2><button onClick={() => setIsOpen(false)} className="text-gray-400 text-3xl hover:text-white">&times;</button></div>
                         <nav className="flex-grow space-y-2">
-                            {menuItems.map(item => <button key={item.page} onClick={() => navigateAndClose(item.page)} className="w-full text-left py-2.5 px-4 rounded-md text-md font-semibold text-gray-300 hover:bg-gray-700 hover:text-white transition duration-200 flex items-center gap-3">{item.icon} {item.label} {item.notification && <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">{item.notification}</span>}</button>)}
+                            {menuItems.map(item => <button key={item.page} onClick={() => navigateAndClose(item.page)} className="w-full text-left py-2.5 px-4 rounded-md text-md font-semibold text-gray-300 hover:bg-gray-700 hover:text-white transition duration-200 flex items-center gap-3">{item.icon} {item.label}</button>)}
                         </nav>
                         <div className="mt-8"><button onClick={handleLogout} className="w-full text-left py-2.5 px-4 rounded-md text-md font-semibold text-gray-300 hover:bg-red-700 hover:text-white transition duration-200 flex items-center gap-3 bg-red-600">🚪 Logout</button></div>
                     </div>
@@ -266,69 +267,14 @@
         );
 
         const BankStatusPage = ({ currentUserAccount, handleCancelLoan, handleAdminApproveLoan, handlePayLoan }) => {
-            const BankStatusPage = ({ currentUserAccount, handleCancelLoan, handleAdminApproveLoan, handlePayLoan }) => {
-            const [balance, setBalance] = useState(0);
-            const [shopTransactions, setShopTransactions] = useState([]);
-            const [jobTransactions, setJobTransactions] = useState([]);
-
-            useEffect(() => {
-                const fetchData = async () => {
-                    if (currentUserAccount && currentUserAccount.accountId) {
-                        // Fetch balance
-                        try {
-                            const balResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/bal.json`);
-                            if (balResponse.ok) {
-                                const balData = await balResponse.json();
-                                const playerBal = balData.find(entry => entry.player === currentUserAccount.accountId);
-                                setBalance(playerBal ? playerBal.balance : 0);
-                            } else {
-                                console.error("Failed to fetch balance:", balResponse.statusText);
-                            }
-                        } catch (error) {
-                            console.error("Error fetching balance:", error);
-                        }
-
-                        // Fetch shop transactions
-                        try {
-                            const shopTranResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/shop-tran.json`);
-                            if (shopTranResponse.ok) {
-                                const shopTranData = await shopTranResponse.json();
-                                setShopTransactions(shopTranData.filter(tx => tx.player === currentUserAccount.accountId));
-                            } else {
-                                console.error("Failed to fetch shop transactions:", shopTranResponse.statusText);
-                            }
-                        } catch (error) {
-                            console.error("Error fetching shop transactions:", error);
-                        }
-
-                        // Fetch job transactions
-                        try {
-                            const jobTranResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/job-tran.json`);
-                            if (jobTranResponse.ok) {
-                                const jobTranData = await jobTranResponse.json();
-                                setJobTransactions(jobTranData.filter(tx => tx.player === currentUserAccount.accountId));
-                            } else {
-                                console.error("Failed to fetch job transactions:", jobTranResponse.statusText);
-                            }
-                        } catch (error) {
-                            console.error("Error fetching job transactions:", error);
-                        }
-                    }
-                };
-                fetchData();
-            }, [currentUserAccount]);
-
             if (!currentUserAccount) return null;
-            const { bankName, loans = [], jobPerDayIncome = 0, businessPerDayIncome = 0, businessIncomeUnit = 'day' } = currentUserAccount;
-            const totalPerDayIncome = jobPerDayIncome + (businessIncomeUnit === 'hour' ? businessPerDayIncome * 8 : businessPerDayIncome);
-
-            const allTransactions = [...shopTransactions, ...jobTransactions].sort((a, b) => b.timestamp - a.timestamp);
-
+            const { bankName, balance, loans = [], transactions = [], jobPerDayIncome = 0, businessPerDayIncome = 0, businessIncomeUnit = 'day' } = currentUserAccount;
+            const totalPerDayIncome = jobPerDayIncome + (businessIncomeUnit === 'hour' ? businessPerDayIncome * 8 : businessPerDayIncome); // Assuming 8 hours/day for business
             return (
                 <div className="space-y-6">
                     <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Account Overview</h2><p className="text-gray-300"><strong>Bank Name:</strong> {bankName}</p><p className="text-2xl font-bold">Balance: <span className="text-green-400">${balance?.toFixed(2) || '0.00'}</span></p><p className="text-lg font-semibold mt-2">Total Income: <span className="text-yellow-400">${totalPerDayIncome}/day</span></p><p className="text-sm text-gray-400">Job: ${jobPerDayIncome}/day | Business: ${businessPerDayIncome}/{businessIncomeUnit}</p></div>
-                    <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Loans ({loans.length})</h2>{loans.length > 0 ? <div className="space-y-4">{[...new Map(loans.map(item => [item['id'], item])).values()].map((loan) => <div key={loan.id} className="p-4 border border-gray-700 rounded-md bg-gray-700"><div className="flex justify-between items-start"><div className="flex-grow"><p className="font-bold capitalize text-yellow-400">{loan.loanType} Loan</p><p className="text-gray-300">Amount: ${loan.loanAmount?.toFixed(2) || '0.00'} | Total Due: ${loan.loanAmountDue?.toFixed(2) || '0.00'}</p><p className="text-gray-300">Status: <span className={`font-semibold ${loan.loanStatus === 'pending' ? 'text-yellow-400' : 'text-green-400'}`}>{loan.loanStatus === 'pending' && loan.employeeVisitTime ? 'Waiting for employee to pass' : loan.loanStatus === 'waitingForAdminApproval' ? 'Waiting for admin approval' : loan.loanStatus}</span></p></div><div className="flex flex-col items-end gap-2">{loan.loanStatus === 'pending' && <>                                            <button onClick={() => handleCancelLoan(loan.id)} className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded">Cancel</button></>}{loan.loanStatus === 'active' && <button onClick={() => handlePayLoan(loan.id)} className="text-xs bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-2 rounded">Pay Full Amount</button>}</div></div></div>)}</div> : <p className="text-gray-400">No active loans.</p>}</div>
-                    <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Transaction History</h2>{allTransactions.length > 0 ? <div className="max-h-80 overflow-y-auto"><table className="min-w-full text-sm text-left"><thead className="bg-gray-700 sticky top-0"><tr><th className="p-2 text-gray-300">Date</th><th className="p-2 text-gray-300">Type</th><th className="p-2 text-gray-300">Description</th><th className="p-2 text-right text-gray-300">Amount</th><th className="p-2 text-right text-gray-300">Tax</th></tr></thead><tbody>{allTransactions.map((tx, index) => <tr key={index} className="border-b border-gray-700 hover:bg-gray-700/50"><td className="p-2 text-gray-400">{(new Date(tx.timestamp)).toLocaleDateString()}</td><td className="p-2 text-gray-300">{tx.type}</td><td className="p-2 text-gray-300">{tx.item || tx.jobName}</td><td className={`p-2 text-right font-semibold ${tx.amount < 0 ? 'text-red-400' : 'text-green-400'}`}>{tx.amount.toFixed(2)}</td><td className="p-2 text-right text-red-400">{tx.tax?.toFixed(2) || '0.00'}</td></tr>)}</tbody></table></div> : <p className="text-gray-400">No transactions yet.</p>}</div>
+                    <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Loans ({loans.length})</h2>{loans.length > 0 ? <div className="space-y-4">{loans.map((loan) => <div key={loan.id} className="p-4 border border-gray-700 rounded-md bg-gray-700"><div className="flex justify-between items-start"><div className="flex-grow"><p className="font-bold capitalize text-yellow-400">{loan.loanType} Loan</p><p className="text-gray-300">Amount: ${loan.loanAmount.toFixed(2)} | Total Due: ${loan.loanAmountDue.toFixed(2)}</p><p className="text-gray-300">Status: <span className={`font-semibold ${loan.loanStatus === 'pending' ? 'text-yellow-400' : 'text-green-400'}`}>{loan.loanStatus}</span></p></div><div className="flex flex-col items-end gap-2">{loan.loanStatus === 'pending' && <><button onClick={() => handleCancelLoan(loan.id)} className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded">Cancel</button><button onClick={() => handleAdminApproveLoan(loan.id)} className="text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded">Admin Approve</button></>}{loan.loanStatus === 'active' && <button onClick={() => handlePayLoan(loan.id)} className="text-xs bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-2 rounded">Pay Full Amount</button>}</div></div></div>)}</div> : <p className="text-gray-400">No active loans.</p>}</div>
+                    <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Transaction History</h2>{transactions.length > 0 ? <div className="max-h-80 overflow-y-auto"><table className="min-w-full text-sm text-left"><thead className="bg-gray-700 sticky top-0"><tr><th className="p-2 text-gray-300">Date</th><th className="p-2 text-gray-300">Description</th><th className="p-2 text-right text-gray-300">Amount</th></tr></thead><tbody>{transactions.slice().reverse().map((tx, index) => <tr key={index} className="border-b border-gray-700 hover:bg-gray-700/50"><td className="p-2 text-gray-400">{new Date(tx.date).toLocaleDateString()}</td><td className="p-2 text-gray-300">{tx.description}</td><td className={`p-2 text-right font-semibold ${tx.amount < 0 ? 'text-red-400' : 'text-green-400'}`}>{tx.amount < 0 ? '-' : '+'}${Math.abs(tx.amount).toFixed(2)}</td></tr>)}</tbody></table></div> : <p className="text-gray-400">No transactions yet.</p>}</div>
                 </div>
             );
         };
@@ -344,17 +290,12 @@
             if (!currentUserAccount) return null;
             const { taxData = {}, accountId, transactions = [], balance } = currentUserAccount;
 
-            const totalTaxPaidTillYet = (transactions || []).filter(tx => tx.description && (tx.description.includes('Tax payment') || tx.description.includes('Advance tax payment'))).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+            const totalTaxPaidTillYet = transactions.filter(tx => tx.description.includes('tax payment')).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
             
-            // Ensure taxData.players is an object, or default to an empty object
-            const playersData = taxData.players && typeof taxData.players === 'object' ? taxData.players : {};
-
             // Get the current session from taxData, or default to 'unknown'
             const currentSession = taxData.currentSession || 'unknown';
 
-            const sessionTaxData = playersData[accountId] && playersData[accountId].sessions && playersData[accountId].sessions[currentSession]
-                ? playersData[accountId].sessions[currentSession]
-                : { taxDue: 0, taxPaid: 0, advancePaid: 0, dailyCharges: [] };
+            const sessionTaxData = taxData.players && taxData.players[accountId] && taxData.players[accountId].sessions[currentSession] ? taxData.players[accountId].sessions[currentSession] : { taxDue: 0, taxPaid: 0, advancePaid: 0, dailyCharges: [] };
 
             // Ensure dailyTaxCharges is an array of objects with date and amount
             const dailyCharges = sessionTaxData.dailyCharges || [];
@@ -438,7 +379,7 @@
             }, [dataToDisplay, chartDataType]); // Re-render chart when dataToDisplay or chartDataType changes
 
             const downloadReport = () => {
-                if (!chartRef.current) {
+                if (!chartRef.current || !chartInstanceRef.current) {
                     showModal('Error', 'Chart not rendered yet. Please view the chart before downloading.', 'error');
                     return;
                 }
@@ -447,9 +388,9 @@
                 const link = document.createElement('a');
                 link.href = chartImage;
                 link.download = `tax-chart-${accountId}-${chartDataType}.png`;
-                document.body.appendChild(link);
+                document.body.appendChild(link); // Append to body to make it clickable
                 link.click();
-                document.body.removeChild(link);
+                document.body.removeChild(link); // Clean up
                 showModal('Download Complete', 'Tax chart downloaded successfully!', 'success');
             };
 
@@ -471,7 +412,7 @@
                     return;
                 }
                 setIsPaying(true);
-                await handlePayTax(amount, isFullTax);
+                await handlePayTax(amount, isFullTax, currentSession);
                 setIsPaying(false);
             };
 
@@ -481,7 +422,7 @@
                     return;
                 }
                 setIsPaying(true);
-                await handleAdvanceTax(amount);
+                await handleAdvanceTax(amount, currentSession);
                 setIsPaying(false);
             };
 
@@ -496,8 +437,8 @@
                         />
                     )}
                     <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft flex items-center justify-between">
-                        <div><h2 className="text-xl font-bold text-green-400 mb-2">Tax Summary</h2><p className="text-gray-300">Total Due: <span className="font-bold text-red-400">${sessionTaxData.taxDue?.toFixed(2) || '0.00'}</span></p><p className="text-gray-300">Current Session Paid: <span className="font-bold text-green-400">${sessionTaxData.taxPaid?.toFixed(2) || '0.00'}</span></p>
-<p className="text-gray-300">Total Tax Paid (All Sessions): <span className="font-bold text-green-400">${totalTaxPaidTillYet.toFixed(2)}</span></p><p className="text-gray-300">Advance Paid: <span className="font-bold text-blue-400">${sessionTaxData.advancePaid?.toFixed(2) || '0.00'}</span></p>{sessionTaxData.taxDue > 0 ? (<><button onClick={() => onPayTax(sessionTaxData.taxDue, true)} disabled={isPaying} className="mt-4 bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-500"> {isPaying ? 'Paying...' : 'Pay Full Amount'}</button><input type="number" value={customTaxAmount} onChange={(e) => setCustomTaxAmount(e.target.value)} placeholder="Custom Amount" className="ml-2 p-2 bg-gray-700 border border-gray-600 rounded-md" /><button onClick={() => onPayTax(parseFloat(customTaxAmount), false)} disabled={isPaying} className="ml-2 bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-500"> {isPaying ? 'Paying...' : 'Make Custom Payment'}</button></>) : (<div className="mt-4"><input type="number" value={customTaxAmount} onChange={(e) => setCustomTaxAmount(e.target.value)} placeholder="Advance Amount" className="p-2 bg-gray-700 border border-gray-600 rounded-md" /><button onClick={() => onAdvanceTax(parseFloat(customTaxAmount))} disabled={isPaying} className="ml-2 bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-500"> {isPaying ? 'Paying...' : 'Pay Advance'}</button></div>)}</div>
+                        <div><h2 className="text-xl font-bold text-green-400 mb-2">Tax Summary (Session: {currentSession})</h2><p className="text-gray-300">Total Due: <span className="font-bold text-red-400">${sessionTaxData.taxDue?.toFixed(2) || '0.00'}</span></p><p className="text-gray-300">Current Session Paid: <span className="font-bold text-green-400">${sessionTaxData.taxPaid?.toFixed(2) || '0.00'}</span></p>
+<p className="text-gray-300">Total Tax Paid (All Sessions): <span className="font-bold text-green-400">${totalTaxPaidTillYet.toFixed(2)}</span></p><p className="text-gray-300">Total Tax Paid: <span className="font-bold text-green-400">${totalTaxPaidTillYet.toFixed(2)}</span></p><p className="text-gray-300">Advance Paid: <span className="font-bold text-blue-400">${sessionTaxData.advancePaid?.toFixed(2) || '0.00'}</span></p>{sessionTaxData.taxDue > 0 ? (<><button onClick={() => onPayTax(sessionTaxData.taxDue, true)} disabled={isPaying} className="mt-4 bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-500"> {isPaying ? 'Paying...' : 'Pay Full Amount'}</button><input type="number" value={customTaxAmount} onChange={(e) => setCustomTaxAmount(e.target.value)} placeholder="Custom Amount" className="ml-2 p-2 bg-gray-700 border border-gray-600 rounded-md" /><button onClick={() => onPayTax(parseFloat(customTaxAmount), false)} disabled={isPaying} className="ml-2 bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-500"> {isPaying ? 'Paying...' : 'Make Custom Payment'}</button></>) : (<div className="mt-4"><input type="number" value={customTaxAmount} onChange={(e) => setCustomTaxAmount(e.target.value)} placeholder="Advance Amount" className="p-2 bg-gray-700 border border-gray-600 rounded-md" /><button onClick={() => onAdvanceTax(parseFloat(customTaxAmount))} disabled={isPaying} className="ml-2 bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-500"> {isPaying ? 'Paying...' : 'Pay Advance'}</button></div>)}</div>
                         <div className="w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl font-bold shadow-md border-4 border-yellow-400 bg-minecraft-world overflow-hidden"><span className="relative z-10">{currentUserAccount.accountId.charAt(0).toUpperCase()}</span></div>
                     </div>
                     <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft">
@@ -509,40 +450,19 @@
         };
         
         const ApplyLoanPage = ({ currentUserAccount, showModal, handleApplyLoan }) => {
-            const [loanDetails, setLoanDetails] = useState({
-                amount: '', duration: 1, type: 'personal', purpose: '',
-                coords: [{ x: '', y: '', z: '' }], // Array to hold multiple coordinate sets
-                repayment: 'daily',
-                loanerNetWorth: '',
-                valueOfLand: '', valueOfBuilding: '', areaVolume: '',
-                playerScreenshot: '', landPhoto: '', buildingPhoto: '',
-                employeePhoto: '', signatureOfBankEmployee: '',
-            });
-            const [isCompound, setIsCompound] = useState(false);
-            const [isSubmitting, setIsSubmitting] = useState(false); // New state for submission status
+            const [loanDetails, setLoanDetails] = useState({ amount: '', duration: 1, type: 'personal', purpose: '', coord1: '', coord2: '', repayment: 'daily' });
             const hasIncomeProfile = (currentUserAccount.jobPerDayIncome > 0 || currentUserAccount.businessPerDayIncome > 0);
             const loanDurationLimits = { personal: 5, home: 3, business: 6, homeStartup: 4, bizStartup: 6 };
             const maxDuration = loanDurationLimits[loanDetails.type];
 
-            const { perPaymentAmount, principalPerPayment, interestPerPayment, totalInterestAmount, weeklyInterestRateDisplay, totalArea, landValue, buildingValue } = useMemo(() => {
+            const { perPaymentAmount, principalPerPayment, interestPerPayment, totalInterestAmount, weeklyInterestRateDisplay } = useMemo(() => {
                 const amount = parseFloat(loanDetails.amount) || 0;
                 const durationWeeks = parseInt(loanDetails.duration) || 0;
                 if (!amount || !durationWeeks) return { perPaymentAmount: 0, principalPerPayment: 0, interestPerPayment: 0, totalInterestAmount: 0, weeklyInterestRateDisplay: 0 };
 
-                const interestRates = {
-                    personal: 0.06,
-                    home: 0.02,
-                    business: 0.05,
-                    bizStartup: [0.02, 0.04, 0.05, 0.06, 0.08], // Weeks 1-5
-                    homeStartup: [0.015, 0.02, 0.03, 0.05, 0.07] // Weeks 1-5
-                };
-
-                let weeklyRate;
-                if (loanDetails.type.includes('Startup')) {
-                    weeklyRate = interestRates[loanDetails.type][durationWeeks - 1]; // duration is 1-indexed for weeks
-                } else {
-                    weeklyRate = interestRates[loanDetails.type];
-                }
+                const weeklyInterestRates = { personal: 0.06, home: 0.02, business: 0.05, bizStartup: 0.05, homeStartup: 0.04 }; // These are WEEKLY rates
+                const isCompound = !loanDetails.type.includes('Startup');
+                const weeklyRate = weeklyInterestRates[loanDetails.type];
                 
                 let totalLoanAmountDue;
                 let calculatedTotalInterest = 0;
@@ -563,72 +483,27 @@
                 const principalPerPayment = amount / numberOfPayments;
                 const interestPerPayment = calculatedTotalInterest / numberOfPayments;
 
-                const xCoords = loanDetails.coords.map(c => parseFloat(c.x)).filter(c => !isNaN(c));
-                const zCoords = loanDetails.coords.map(c => parseFloat(c.z)).filter(c => !isNaN(c));
-                const totalArea = xCoords.length > 1 && zCoords.length > 1 ? Math.abs((Math.max(...xCoords) - Math.min(...xCoords)) * (Math.max(...zCoords) - Math.min(...zCoords))) : 0;
-                const landValue = totalArea * 10; // Assuming $10 per square block
-                const buildingValue = parseFloat(loanDetails.valueOfBuilding) || 0;
-
                 return {
                     perPaymentAmount: perPaymentAmount,
                     principalPerPayment: principalPerPayment,
                     interestPerPayment: interestPerPayment,
                     totalInterestAmount: calculatedTotalInterest,
-                    weeklyInterestRateDisplay: weeklyRate * 100, // Display as percentage
-                    totalArea: totalArea,
-                    landValue: landValue,
-                    buildingValue: buildingValue
+                    weeklyInterestRateDisplay: weeklyRate * 100 // Display as percentage
                 };
-            }, [loanDetails.amount, loanDetails.duration, loanDetails.type, loanDetails.repayment, isCompound]);
+            }, [loanDetails.amount, loanDetails.duration, loanDetails.type, loanDetails.repayment]);
 
             const handleChange = (e) => {
-                const { name, value, type, files } = e.target;
-                if (name.startsWith('coord')) {
-                    const [prop, index, axis] = name.split('-');
-                    const newCoords = [...loanDetails.coords];
-                    newCoords[index] = { ...newCoords[index], [axis]: value };
-                    setLoanDetails(prev => ({ ...prev, coords: newCoords }));
-                } else if (type === 'file') {
-                    setLoanDetails(prev => ({ ...prev, [name]: files[0] }));
-                } else if (name === 'duration' && parseInt(value) > maxDuration) {
-                    return;
-                } else if (name === 'type') {
-                    setLoanDetails({ ...loanDetails, duration: 1, [name]: value });
-                } else {
-                    setLoanDetails({ ...loanDetails, [name]: value });
-                }
+                const { name, value } = e.target;
+                if (name === 'duration' && parseInt(value) > maxDuration) return;
+                if (name === 'type') setLoanDetails({ ...loanDetails, duration: 1, [name]: value });
+                else setLoanDetails({ ...loanDetails, [name]: value });
             };
 
-            const onSubmitLoan = async (e) => { // Made async
+            const onSubmitLoan = (e) => {
                 e.preventDefault();
                 if (!hasIncomeProfile) { showModal('Profile Incomplete', 'Please set your income in Account Settings before applying.', 'error'); return; }
-                setIsSubmitting(true); // Disable button on submit
-                try {
-                    const loanDataToSend = {
-                        ...loanDetails,
-                        loanerBankId: currentUserAccount.bankId,
-                        loanerUsername: currentUserAccount.accountId,
-                        loanerPerDayIncome: currentUserAccount.jobPerDayIncome + (currentUserAccount.businessIncomeUnit === 'hour' ? currentUserAccount.businessPerDayIncome * 8 : currentUserAccount.businessPerDayIncome),
-                        hasBusiness: currentUserAccount.hasBusiness,
-                        coord1: loanDetails.coords[0] ? `${loanDetails.coords[0].x},${loanDetails.coords[0].y},${loanDetails.coords[0].z}` : '',
-                        coord2: loanDetails.coords[1] ? `${loanDetails.coords[1].x},${loanDetails.coords[1].y},${loanDetails.coords[1].z}` : '',
-                        loanStatus: 'pending',
-                        applicationDate: new Date().toISOString(),
-                    };
-                    await handleApplyLoan(loanDataToSend);
-                    setLoanDetails({
-                        amount: '', duration: 1, type: 'personal', purpose: '',
-                        coord1X: '', coord1Y: '', coord1Z: '',
-                        coord2X: '', coord2Y: '', coord2Z: '',
-                        repayment: 'daily',
-                        loanerNetWorth: '',
-                        valueOfLand: '', valueOfBuilding: '', areaVolume: '',
-                        playerScreenshot: '', landPhoto: '', buildingPhoto: '',
-                        employeePhoto: '', signatureOfBankEmployee: '',
-                    });
-                } finally {
-                    setIsSubmitting(false); // Re-enable button after submission (success or failure)
-                }
+                handleApplyLoan({ ...loanDetails, amount: parseFloat(loanDetails.amount), duration: parseInt(loanDetails.duration) });
+                setLoanDetails({ amount: '', duration: 1, type: 'personal', purpose: '', coord1: '', coord2: '', repayment: 'daily' });
             };
 
             const showLoanSpecificFields = loanDetails.type === 'home' || loanDetails.type === 'business' || loanDetails.type.includes('Startup');
@@ -641,8 +516,6 @@
                             <option value="personal">Personal</option>
                             <option value="home">Home</option>
                             <option value="business">Business</option>
-                            <option value="bizStartup">Business Startup</option>
-                            <option value="homeStartup">Home Startup</option>
                         </select>
                         <input name="amount" type="number" value={loanDetails.amount} onChange={handleChange} placeholder="Loan Amount ($)" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                         <input name="duration" type="number" value={loanDetails.duration} onChange={handleChange} placeholder={`Duration (Weeks, max ${maxDuration})`} min="1" max={maxDuration} required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
@@ -650,71 +523,31 @@
                             <option value="daily">Daily</option>
                             <option value="weekly" disabled={loanDetails.duration < 2}>Weekly (2+ weeks)</option>
                         </select>
-                        <div className="flex items-center">
-                            <input type="checkbox" id="isCompound" name="isCompound" checked={isCompound} onChange={(e) => setIsCompound(e.target.checked)} className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" />
-                            <label htmlFor="isCompound" className="ml-2 block text-sm text-gray-300">
-                                Compound Interest
-                            </label>
-                        </div>
                         <textarea name="purpose" value={loanDetails.purpose} onChange={handleChange} placeholder="What is the purpose of this loan?" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md h-24"></textarea>
                         
-                        <input name="loanerNetWorth" type="number" value={loanDetails.loanerNetWorth} onChange={handleChange} placeholder="Your Net Worth ($)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-
                         {loanDetails.type === 'personal' && (
                             <div className="space-y-4 pt-2 border-t border-gray-700">
                                 <h3 className="text-lg font-semibold text-yellow-400">Personal Loan Details</h3>
                                 <p className="text-sm text-gray-400">Please provide the coordinates for the location related to your loan purpose.</p>
-                                <div className="grid grid-cols-3 gap-2">
-                                    <input name="coord1X" type="number" value={loanDetails.coord1X} onChange={handleChange} placeholder="X" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord1Y" type="number" value={loanDetails.coord1Y} onChange={handleChange} placeholder="Y" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord1Z" type="number" value={loanDetails.coord1Z} onChange={handleChange} placeholder="Z" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                </div>
-                                <label class="block text-gray-300">Player Screenshot:</label>
-                                <input name="playerScreenshot" type="file" onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                {loanDetails.playerScreenshot && <p className="text-sm text-gray-400">Selected: {loanDetails.playerScreenshot.name}</p>}
+                                <input name="coord1" value={loanDetails.coord1} onChange={handleChange} placeholder="X, Y, Z Coordinates" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                             </div>
                         )}
 
-                        {(loanDetails.type === 'home' || loanDetails.type === 'business' || loanDetails.type.includes('Startup')) && (
+                        {showLoanSpecificFields && (
                             <div className="space-y-4 pt-2 border-t border-gray-700">
-                                <h3 class="text-lg font-semibold text-yellow-400">Property/Business Details</h3>
-                                <input name="areaVolume" type="number" value={loanDetails.areaVolume} onChange={handleChange} placeholder="Area/Volume (sq/cu blocks)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                <input name="valueOfLand" type="number" value={loanDetails.valueOfLand} onChange={handleChange} placeholder="Value of Land ($)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                <input name="valueOfBuilding" type="number" value={loanDetails.valueOfBuilding} onChange={handleChange} placeholder="Value of Building ($)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                <p class="text-sm text-gray-400">Corner Coordinates (up to 10 corners)</p>
-                                {loanDetails.coords.map((coord, index) => (
-                                    <div key={index} className="grid grid-cols-4 gap-2">
-                                        <input name={`coord-${index}-x`} type="number" value={coord.x} onChange={handleChange} placeholder="X" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                        <input name={`coord-${index}-y`} type="number" value={coord.y} onChange={handleChange} placeholder="Y" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                        <input name={`coord-${index}-z`} type="number" value={coord.z} onChange={handleChange} placeholder="Z" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                        {loanDetails.coords.length > 1 && (
-                                            <button type="button" onClick={() => setLoanDetails(prev => ({ ...prev, coords: prev.coords.filter((_, i) => i !== index) }))} className="p-3 bg-red-600 text-white rounded-md">-</button>
-                                        )}
-                                    </div>
-                                ))}
-                                {loanDetails.coords.length < 10 && (
-                                    <button type="button" onClick={() => setLoanDetails(prev => ({ ...prev, coords: [...prev.coords, { x: '', y: '', z: '' }] }))} className="w-full p-3 bg-blue-600 text-white rounded-md">Add Coordinate</button>
-                                )}
-                                <p className="text-gray-300">Calculated Area: <span className="font-bold text-yellow-400">{totalArea?.toFixed(2) || '0.00'}</span></p>
-                                <label class="block text-gray-300">Land Photo:</label>
-                                <input name="landPhoto" type="file" onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                {loanDetails.landPhoto && <p className="text-sm text-gray-400">Selected: {loanDetails.landPhoto.name}</p>}
-                                <label class="block text-gray-300">Building Photo:</label>
-                                <input name="buildingPhoto" type="file" onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                {loanDetails.buildingPhoto && <p className="text-sm text-gray-400">Selected: {loanDetails.buildingPhoto.name}</p>}
+                                <h3 className="text-lg font-semibold text-yellow-400">Property/Business Details</h3>
+                                <input name="coord1" value={loanDetails.coord1} onChange={handleChange} placeholder="Start Coordinates (X, Y, Z)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                <input name="coord2" value={loanDetails.coord2} onChange={handleChange} placeholder="End Coordinates (X, Y, Z)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                             </div>
                         )}
 
                         <div className="p-3 bg-gray-700 rounded-md text-center">
-                            <p className="text-gray-300">Total Area: <span className="font-bold text-yellow-400">{totalArea?.toFixed(2) || '0.00'}</span></p>
-                            <p className="text-gray-300">Estimated Land Value: <span className="font-bold text-yellow-400">${landValue?.toFixed(2) || '0.00'}</span></p>
-                            <p className="text-gray-300">Building Value: <span className="font-bold text-yellow-400">${buildingValue?.toFixed(2) || '0.00'}</span></p>
-                            <p className="text-gray-300">Payment per {loanDetails.repayment === 'daily' ? 'Day' : 'Week'}: <span className="font-bold text-yellow-400">${perPaymentAmount?.toFixed(2) || '0.00'}</span></p>
-                            <p className="text-gray-300 text-sm">(Principal: ${principalPerPayment?.toFixed(2) || '0.00'}, Interest: ${interestPerPayment?.toFixed(2) || '0.00'})</p>
-                            <p className="text-gray-300">Total Interest: <span className="font-bold text-red-400">${totalInterestAmount?.toFixed(2) || '0.00'}</span></p>
-                            <p className="text-xs text-gray-400">Weekly Interest Rate: {weeklyInterestRateDisplay?.toFixed(2) || '0.00'}%</p>
+                            <p className="text-gray-300">Payment per {loanDetails.repayment === 'daily' ? 'Day' : 'Week'}: <span className="font-bold text-yellow-400">${perPaymentAmount.toFixed(2)}</span></p>
+                            <p className="text-gray-300 text-sm">(Principal: ${principalPerPayment.toFixed(2)}, Interest: ${interestPerPayment.toFixed(2)})</p>
+                            <p className="text-gray-300">Total Interest: <span className="font-bold text-red-400">${totalInterestAmount.toFixed(2)}</span></p>
+                            <p className="text-xs text-gray-400">Weekly Interest Rate: {weeklyInterestRateDisplay.toFixed(2)}%</p>
                         </div>
-                        <button type="submit" disabled={isSubmitting} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md">{isSubmitting ? 'Submitting...' : 'Submit Application'}</button>
+                        <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md">Submit Application</button>
                         {!hasIncomeProfile && <p className="text-red-400 mt-4 text-sm text-center">Your income profile is not set up. You must set your income in Account Settings to apply for a loan.</p>}
                     </form>
                 </div>
@@ -757,28 +590,30 @@
                                 <form onSubmit={onProfileSubmit} className="space-y-4">
                                     <div>
                                         <label className="text-gray-300">Job Type: </label>
-                                        <input name="jobType" value={profile.jobType} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                        {editMode.job ? <input name="jobType" value={profile.jobType} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" /> : <span className="text-gray-200">{profile.jobType || 'N/A'}</span>}
+                                        <button type="button" onClick={() => setEditMode(prev => ({ ...prev, job: !prev.job }))} className="ml-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-md">{editMode.job ? 'Cancel' : 'Edit'}</button>
                                     </div>
                                     <div>
                                         <label className="text-gray-300">Job Income per Day: </label>
-                                        <input name="jobPerDayIncome" type="number" value={profile.jobPerDayIncome} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                        {editMode.job ? <input name="jobPerDayIncome" type="number" value={profile.jobPerDayIncome} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" /> : <span className="text-gray-200">${profile.jobPerDayIncome || '0'}/day</span>}
                                     </div>
                                     <div className="flex items-center gap-4 mt-4"><label className="text-gray-300">Have a business?</label><input type="checkbox" checked={profile.hasBusiness} onChange={(e) => setProfile({...profile, hasBusiness: e.target.checked})} className="h-5 w-5 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500" /></div>
                                     {profile.hasBusiness && <>
                                         <div>
                                             <label className="text-gray-300">Business Type: </label>
-                                            <input name="businessType" value={profile.businessType} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                            {editMode.business ? <input name="businessType" value={profile.businessType} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" /> : <span className="text-gray-200">{profile.businessType || 'N/A'}</span>}
+                                            <button type="button" onClick={() => setEditMode(prev => ({ ...prev, business: !prev.business }))} className="ml-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-md">{editMode.business ? 'Cancel' : 'Edit'}</button>
                                         </div>
                                         <div>
                                             <label className="text-gray-300">Business Income: </label>
-                                            <input name="businessPerDayIncome" type="number" value={profile.businessPerDayIncome} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                            {editMode.business ? <input name="businessPerDayIncome" type="number" value={profile.businessPerDayIncome} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" /> : <span className="text-gray-200">${profile.businessPerDayIncome || '0'}/{profile.businessIncomeUnit}</span>}
                                         </div>
                                         <div>
                                             <label className="text-gray-300">Income Unit: </label>
-                                            <select name="businessIncomeUnit" value={profile.businessIncomeUnit} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md"><option value="day">Per Day</option><option value="hour">Per Hour</option></select>
+                                            {editMode.business ? <select name="businessIncomeUnit" value={profile.businessIncomeUnit} onChange={handleProfileChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md"><option value="day">Per Day</option><option value="hour">Per Hour</option></select> : <span className="text-gray-200">{profile.businessIncomeUnit}</span>}
                                         </div>
                                     </>}
-                                    <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">Save Changes</button>
+                                    {(editMode.job || editMode.business) && <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">Save Changes</button>}
                                 </form>
                             </div>
                             <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Change Password</h2><form onSubmit={onPasswordSubmit} className="space-y-4 max-w-sm"><input type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} placeholder="Old Password" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" /><input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New Password" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" /><button type="submit" className="bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700">Change Password</button></form></div></div>
@@ -790,14 +625,9 @@
         const TopTaxPayersPage = ({ getAllAccounts }) => {
             const [topTaxPayers, setTopTaxPayers] = useState([]);
             useEffect(() => {
-                const fetchTopTaxPayers = async () => {
-                    const accounts = await getAllAccounts();
-                    const sorted = accounts.filter(acc => acc.taxData?.taxPaid !== undefined && acc.taxData.taxPaid !== null)
-                                           .sort((a, b) => (b.taxData.taxPaid || 0) - (a.taxData.taxPaid || 0))
-                                           .slice(0, 3);
-                    setTopTaxPayers(sorted);
-                };
-                fetchTopTaxPayers();
+                const accounts = getAllAccounts();
+                const sorted = accounts.sort((a, b) => (b.taxData?.taxPaid || 0) - (a.taxData?.taxPaid || 0)).slice(0, 3);
+                setTopTaxPayers(sorted);
             }, [getAllAccounts]);
 
             return (
@@ -825,14 +655,9 @@
         const TopAdvanceTaxPayersPage = ({ getAllAccounts }) => {
             const [topAdvanceTaxPayers, setTopAdvanceTaxPayers] = useState([]);
             useEffect(() => {
-                const fetchTopAdvanceTaxPayers = async () => {
-                    const accounts = await getAllAccounts();
-                    const sorted = accounts.filter(acc => acc.taxData?.advanceTaxPaid !== undefined && acc.taxData.advanceTaxPaid !== null)
-                                           .sort((a, b) => (b.taxData.advanceTaxPaid || 0) - (a.taxData.advanceTaxPaid || 0))
-                                           .slice(0, 3);
-                    setTopAdvanceTaxPayers(sorted);
-                };
-                fetchTopAdvanceTaxPayers();
+                const accounts = getAllAccounts();
+                const sorted = accounts.sort((a, b) => (b.taxData?.advanceTaxPaid || 0) - (a.taxData?.advanceTaxPaid || 0)).slice(0, 3);
+                setTopAdvanceTaxPayers(sorted);
             }, [getAllAccounts]);
 
             return (
@@ -857,52 +682,30 @@
             );
         };
 
-        const ContactUsPage = ({ showModal, currentUserAccount }) => {
-            const [messages, setMessages] = useState([]);
-            const [newMessage, setNewMessage] = useState('');
+        const ContactUsPage = ({ showModal }) => {
+            const [formData, setFormData] = useState({
+                platform: 'discord',
+                username: '',
+                language: 'english',
+                problem: '',
+            });
 
-            useEffect(() => {
-                const fetchMessages = async () => {
-                    try {
-                        const response = await fetch(`${API_ENDPOINTS.ACCOUNTS}/messages`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            setMessages(data.filter(m => m.username === currentUserAccount.accountId));
-                        }
-                    } catch (error) {
-                        console.error("Error fetching messages:", error);
-                    }
-                };
+            const handleChange = (e) => {
+                setFormData({ ...formData, [e.target.name]: e.target.value });
+            };
 
-                if (currentUserAccount) {
-                    fetchMessages();
-                }
-            }, [currentUserAccount]);
-
-            const handleSendMessage = async (e) => {
+            const handleSubmit = async (e) => {
                 e.preventDefault();
-                if (!newMessage.trim()) return;
-
                 try {
                     const response = await fetch(API_ENDPOINTS.CONTACT, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            username: currentUserAccount.accountId,
-                            problem: newMessage,
-                            platform: 'web',
-                            language: 'english'
-                         }),
+                        body: JSON.stringify(formData),
                     });
 
                     if (response.ok) {
-                        setNewMessage('');
-                        // Refetch messages to show the new one
-                        const messagesResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/messages`);
-                        if (messagesResponse.ok) {
-                            const data = await messagesResponse.json();
-                            setMessages(data.filter(m => m.username === currentUserAccount.accountId));
-                        }
+                        showModal('Message Sent!', 'Your message has been sent. We will get back to you soon!', 'success');
+                        setFormData({ platform: 'discord', username: '', language: 'english', problem: '' });
                     } else {
                         const errorData = await response.json();
                         showModal('Error', errorData.message || 'Failed to send message. Please try again.', 'error');
@@ -916,30 +719,30 @@
             return (
                 <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft animate-fade-in max-w-lg mx-auto">
                     <h1 className="text-3xl font-bold text-green-400 mb-6">📞 Contact Us</h1>
-                    <div className="space-y-4 h-96 overflow-y-auto p-4 bg-gray-700 rounded-md">
-                        {messages.map((msg) => (
-                            <div key={msg.id} className={`chat-message ${msg.sender === 'admin' ? 'text-left' : 'text-right'}`}>
-                                <div className={`inline-block p-2 rounded-lg ${msg.sender === 'admin' ? 'bg-gray-600' : 'bg-green-600'}`}>
-                                    <p className="text-sm">{msg.problem}</p>
-                                    {msg.replies && msg.replies.map((reply, index) => (
-                                        <div key={index} className="mt-2 pt-2 border-t border-gray-500">
-                                            <p className="text-xs font-bold">{reply.sender}</p>
-                                            <p className="text-xs">{reply.message}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                    <form onSubmit={handleSendMessage} className="mt-4 flex gap-2">
-                        <input 
-                            type="text" 
-                            value={newMessage} 
-                            onChange={(e) => setNewMessage(e.target.value)} 
-                            placeholder="Type your message..." 
-                            className="flex-grow p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" 
-                        />
-                        <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md">Send</button>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label htmlFor="platform" className="block text-gray-300 text-sm font-bold mb-2">Platform:</label>
+                            <select name="platform" value={formData.platform} onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                <option value="discord">Discord</option>
+                                <option value="instagram">Instagram</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label htmlFor="username" className="block text-gray-300 text-sm font-bold mb-2">Your Username:</label>
+                            <input type="text" name="username" value={formData.username} onChange={handleChange} placeholder="Your social username" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" />
+                        </div>
+                        <div>
+                            <label htmlFor="language" className="block text-gray-300 text-sm font-bold mb-2">Preferred Language:</label>
+                            <select name="language" value={formData.language} onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                <option value="english">English</option>
+                                <option value="hindi">Hindi</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label htmlFor="problem" className="block text-gray-300 text-sm font-bold mb-2">Describe your problem:</label>
+                            <textarea name="problem" value={formData.problem} onChange={handleChange} placeholder="e.g., Account issue, Bug report, Suggestion" rows="5" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
+                        </div>
+                        <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md transition duration-200 shadow-md transform hover:scale-105">Submit</button>
                     </form>
                 </div>
             );
@@ -1057,13 +860,12 @@
 
         // --- Main App Component ---
         const App = () => {
-            const [currentPage, setCurrentPage] = useState('home'); // Start with home page for player view
+            const [currentPage, setCurrentPage] = useState('loading'); // Start with loading page
             const [currentUserAccount, setCurrentUserAccount] = useState(null);
             const [session, setSession] = useState(null);
             const [loading, setLoading] = useState(true);
             const [loginSuccess, setLoginSuccess] = useState(false);
             const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'info', callback: null });
-            const [notification, setNotification] = useState(null);
             const [paymentAnimationDetails, setPaymentAnimationDetails] = useState({ show: false, amount: 0, status: 'processing', paymentType: '' });
 
             const showModal = (title, message, type = 'info', callback = null) => setModal({ isOpen: true, title, message, type, callback });
@@ -1096,6 +898,7 @@
                         const initialAccount = {
                             bankName: 'Gemini Test Bank', accountId: 'tester', email: 'tester@gemini.com', password: '26', edition: 'java', bankId: 'BANK006443',
                             balance: 10000, jobType: 'Diamond Miner', jobPerDayIncome: 250, businessType: 'Potion Shop', businessPerDayIncome: 150, businessIncomeUnit: 'day',
+                            taxData: { totalTax: 390, taxPaid: 0, advanceTaxPaid: 0, dailyTaxCharges: [30, 50, 20, 60, 80, 50, 100].map((amount, i) => ({ date: new Date(Date.now() - (6-i) * 86400000).toISOString(), amount })) },
                             loans: [], transactions: []
                         };
                         // This initial save would go through the worker as well in a real app
@@ -1106,9 +909,10 @@
                         // await fetch(`${API_ENDPOINTS.ACCOUNTS}/create-account`, { method: 'POST', body: JSON.stringify(initialAccount) });
                     }
                     // Simulate initial loading time
-                    setLoading(false);
-                    setCurrentUserAccount(accounts[0]); // Set the first account as the current user for direct access
-                    setCurrentPage('home');
+                    setTimeout(() => {
+                        setLoading(false);
+                        setCurrentPage('login');
+                    }, 2500);
                 };
                 initializeApp();
             }, []);
@@ -1215,12 +1019,8 @@
 
             const handleUpdateProfile = async (profileData) => {
                 const updatedAccount = { ...currentUserAccount, ...profileData };
-                const success = await updateCurrentUser(updatedAccount);
-                if (success) {
-                    showModal('Success', 'Your profile has been updated.', 'success');
-                } else {
-                    showModal('Error', 'Failed to update profile.', 'error');
-                }
+                await updateCurrentUser(updatedAccount);
+                showModal('Success', 'Your profile has been updated.', 'success');
             };
 
             const handleChangePassword = async (oldPass, newPass) => {
@@ -1328,26 +1128,12 @@ const handleAdvanceTax = async (amount) => {
 };
 
 
-            const handleApplyLoan = async ({ amount, duration, type, purpose, coord1, coord2, playerScreenshot, landPhoto, valueOfLand, valueOfBuilding, areaVolume, loanerNetWorth }) => {
-                amount = parseFloat(amount); // Ensure amount is a number
+            const handleApplyLoan = async ({ amount, duration, type, ...details }) => {
                 const jobIncome = currentUserAccount.jobPerDayIncome || 0;
                 const bizIncome = currentUserAccount.businessPerDayIncome || 0;
                 const maxDailyRepayment = (jobIncome * 0.55) + (bizIncome * (currentUserAccount.businessIncomeUnit === 'hour' ? 0.70 * 8 : 0.70));
-                
-                const interestRates = {
-                    personal: 0.06,
-                    home: 0.02,
-                    business: 0.05,
-                    bizStartup: [0.02, 0.04, 0.05, 0.06, 0.08], // Weeks 1-5
-                    homeStartup: [0.015, 0.02, 0.03, 0.05, 0.07] // Weeks 1-5
-                };
-
-                let weeklyRate;
-                if (type.includes('Startup')) {
-                    weeklyRate = interestRates[type][duration - 1]; // duration is 1-indexed for weeks
-                } else {
-                    weeklyRate = interestRates[type];
-                }
+                const interestRates = { personal: 0.06, home: 0.02, business: 0.05 };
+                const weeklyRate = interestRates[type];
                 
                 let totalDue, dailyRepayment;
                 const dailyRate = Math.pow(1 + weeklyRate, 1/7) - 1;
@@ -1355,9 +1141,9 @@ const handleAdvanceTax = async (amount) => {
                 dailyRepayment = totalDue / (duration * 7);
 
                 // Fetch all loans to check against existing daily repayment
-                const allLoansResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/admin`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                const allLoansResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/admin`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ action: 'get_all_data' })
                 });
                 const allLoansData = await allLoansResponse.json();
@@ -1370,7 +1156,7 @@ const handleAdvanceTax = async (amount) => {
                     return;
                 }
 
-                const newLoan = { id: `LOAN${Date.now()}`, accountId: currentUserAccount.accountId, loanAmount: amount, loanAmountDue: totalDue, loanPaid: 0, dailyRepayment, durationWeeks: duration, loanType: type, loanStatus: 'pending', applicationDate: new Date().toISOString(), purpose, coord1, coord2, playerScreenshot, landPhoto, valueOfLand, valueOfBuilding, areaVolume, loanerNetWorth };
+                const newLoan = { id: `LOAN${Date.now()}`, accountId: currentUserAccount.accountId, loanAmount: amount, loanAmountDue: totalDue, loanPaid: 0, dailyRepayment, durationWeeks: duration, loanType: type, loanStatus: 'pending', applicationDate: new Date().toISOString(), ...details };
                 
                 try {
                     const response = await fetch(`${API_ENDPOINTS.ACCOUNTS}/apply-loan`, {
@@ -1511,12 +1297,12 @@ const handleAdvanceTax = async (amount) => {
                     case 'account-settings': pageComponent = <AccountSettingsPage {...commonProps} />; break;
                     case 'top-tax-payers': pageComponent = <TopTaxPayersPage {...commonProps} getAllAccounts={getAllAccounts} />; break;
                     case 'top-advance-tax-payers': pageComponent = <TopAdvanceTaxPayersPage {...commonProps} getAllAccounts={getAllAccounts} />; break;
-                    case 'contact-us': pageComponent = <ContactUsPage {...commonProps} setNotification={setNotification} />; break;
+                    case 'contact-us': pageComponent = <ContactUsPage {...commonProps} />; break;
                     case 'theme-setting': pageComponent = <ThemeSettingsPage {...commonProps} />; break;
                     case 'tax-page': pageComponent = <TaxPage {...commonProps} paymentAnimationDetails={paymentAnimationDetails} setPaymentAnimationDetails={setPaymentAnimationDetails} />; break;
                     default: pageComponent = <Dashboard {...commonProps} />;
                 }
-                return <MainLayout {...commonProps} notification={notification}>{pageComponent}</MainLayout>;
+                return <MainLayout {...commonProps}>{pageComponent}</MainLayout>;
             };
 
             return <>{renderPage()}{paymentAnimationDetails.show && <PaymentLoadingAnimation {...paymentAnimationDetails} onAnimationComplete={() => setPaymentAnimationDetails({ show: false, amount: 0, status: 'processing', paymentType: '' })} /> }<Modal {...modal} onClose={closeModal} /></>;
@@ -1532,8 +1318,7 @@ const handleAdvanceTax = async (amount) => {
                     let successMessage = `Payment successful!`;
                     if (paymentType === 'fullTax') {
                         successMessage += ` Thanks for paying the tax.`;
-                    }
-                    else if (paymentType === 'advanceTax') {
+                    } else if (paymentType === 'advanceTax') {
                         successMessage += ` Thanks for paying the tax advance.`;
                     }
                     setMessage(successMessage);
@@ -1544,7 +1329,7 @@ const handleAdvanceTax = async (amount) => {
                     setBoxClass('error');
                     timer = setTimeout(() => onAnimationComplete(), 3000); // Display error for 3 seconds
                 } else {
-                    setMessage(`Processing payment of ${amount?.toFixed(2) || '0.00'}...`);
+                    setMessage(`Processing payment of ${amount.toFixed(2)}...`);
                     setBoxClass('');
                 }
                 return () => clearTimeout(timer);
