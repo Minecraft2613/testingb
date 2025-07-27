@@ -111,12 +111,6 @@
             ACCOUNTS: 'https://bank-data.1987sakshamsingh.workers.dev',
             TAX: 'https://bank-data.1987sakshamsingh.workers.dev',
             CONTACT: 'https://bank-data.1987sakshamsingh.workers.dev/contact',
-            BALANCES: 'https://bank-data.1987sakshamsingh.workers.dev/bal.json',
-            SHOP_TRANSACTIONS: 'https://bank-data.1987sakshamsingh.workers.dev/shop-tran.json',
-            JOB_TRANSACTIONS: 'https://bank-data.1987sakshamsingh.workers.dev/job-tran.json',
-            LOANS: 'https://bank-data.1987sakshamsingh.workers.dev/loan.json',
-            MESSAGES: 'https://bank-data.1987sakshamsingh.workers.dev/msg.json',
-            TAX_PAYMENTS: 'https://bank-data.1987sakshamsingh.workers.dev/tax-pay.json',
         };
 
         // --- UTILITY & HELPER FUNCTIONS ---
@@ -158,6 +152,7 @@
                 </div>
             </div>
         );
+        };
 
         const LoginPage = ({ setCurrentPage, handleLogin }) => {
             const [identifier, setIdentifier] = useState('');
@@ -270,117 +265,72 @@
             </button>
         );
 
-                    
-            
-
+        const BankStatusPage = ({ currentUserAccount, handleCancelLoan, handleAdminApproveLoan, handlePayLoan }) => {
             const BankStatusPage = ({ currentUserAccount, handleCancelLoan, handleAdminApproveLoan, handlePayLoan }) => {
-            const BankStatusPage = ({ currentUserAccount, handleCancelLoan, handleAdminApproveLoan, handlePayLoan }) => {
-                if (!currentUserAccount) return null;
+            const [balance, setBalance] = useState(0);
+            const [shopTransactions, setShopTransactions] = useState([]);
+            const [jobTransactions, setJobTransactions] = useState([]);
 
-                const { bankName, loans = [], jobPerDayIncome = 0, businessPerDayIncome = 0, businessIncomeUnit = 'day', balance = 0, transactions = [] } = currentUserAccount;
+            useEffect(() => {
+                const fetchData = async () => {
+                    if (currentUserAccount && currentUserAccount.accountId) {
+                        // Fetch balance
+                        try {
+                            const balResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/bal.json`);
+                            if (balResponse.ok) {
+                                const balData = await balResponse.json();
+                                const playerBal = balData.find(entry => entry.player === currentUserAccount.accountId);
+                                setBalance(playerBal ? playerBal.balance : 0);
+                            } else {
+                                console.error("Failed to fetch balance:", balResponse.statusText);
+                            }
+                        } catch (error) {
+                            console.error("Error fetching balance:", error);
+                        }
 
-                // Derive shopTransactions and jobTransactions from currentUserAccount.transactions
-                const shopTransactions = transactions.filter(tx => tx.item !== undefined);
-                const jobTransactions = transactions.filter(tx => tx.jobName !== undefined);
+                        // Fetch shop transactions
+                        try {
+                            const shopTranResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/shop-tran.json`);
+                            if (shopTranResponse.ok) {
+                                const shopTranData = await shopTranResponse.json();
+                                setShopTransactions(shopTranData.filter(tx => tx.player === currentUserAccount.accountId));
+                            } else {
+                                console.error("Failed to fetch shop transactions:", shopTranResponse.statusText);
+                            }
+                        } catch (error) {
+                            console.error("Error fetching shop transactions:", error);
+                        }
 
-                const totalPerDayIncome = jobPerDayIncome + (businessIncomeUnit === 'hour' ? businessPerDayIncome * 8 : businessPerDayIncome);
+                        // Fetch job transactions
+                        try {
+                            const jobTranResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/job-tran.json`);
+                            if (jobTranResponse.ok) {
+                                const jobTranData = await jobTranResponse.json();
+                                setJobTransactions(jobTranData.filter(tx => tx.player === currentUserAccount.accountId));
+                            } else {
+                                console.error("Failed to fetch job transactions:", jobTranResponse.statusText);
+                            }
+                        } catch (error) {
+                            console.error("Error fetching job transactions:", error);
+                        }
+                    }
+                };
+                fetchData();
+            }, [currentUserAccount]);
 
-                // Combine all transactions from currentUserAccount and sort them
-                const allTransactions = [...transactions].sort((a, b) => new Date(b.date || b.timestamp).getTime() - new Date(a.date || a.timestamp).getTime());
+            if (!currentUserAccount) return null;
+            const { bankName, loans = [], jobPerDayIncome = 0, businessPerDayIncome = 0, businessIncomeUnit = 'day' } = currentUserAccount;
+            const totalPerDayIncome = jobPerDayIncome + (businessIncomeUnit === 'hour' ? businessPerDayIncome * 8 : businessPerDayIncome);
 
-                return (
-                    <div className="space-y-6">
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft">
-                            <h2 className="text-xl font-bold text-green-400 mb-4">Account Overview</h2>
-                            <p className="text-gray-300"><strong>Bank Name:</strong> {bankName}</p>
-                            <p className="text-2xl font-bold">Balance: <span className="text-green-400">${balance?.toFixed(2) || '0.00'}</span></p>
-                            <p className="text-2xl font-bold">Minecraft Balance: <span className="text-green-400">${currentUserAccount.minecraftBalance?.toFixed(2) || '0.00'}</span></p>
-                            <p className="text-lg font-semibold mt-2">Total Income: <span className="text-yellow-400">${totalPerDayIncome}/day</span></p>
-                            <p className="text-sm text-gray-400">Job: ${jobPerDayIncome}/day | Business: ${businessPerDayIncome}/{businessIncomeUnit}</p>
-                        </div>
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft">
-                            <h2 className="text-xl font-bold text-green-400 mb-4">Loans ({loans.length})</h2>
-                            {loans.length > 0 ? (
-                                <div className="space-y-4">
-                                    {[...new Map(loans.map(item => [item['id'], item])).values()].map((loan) => (
-                                        <div key={loan.id} className="p-4 border border-gray-700 rounded-md bg-gray-700">
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex-grow">
-                                                    <p className="font-bold capitalize text-yellow-400">{loan.loanType} Loan</p>
-                                                    <p className="text-gray-300">Amount: ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'} | Total Due: ${parseFloat(loan.loanAmountDue)?.toFixed(2) || '0.00'}</p>
-                                                    <p className="text-gray-300">Status: <span className={`font-semibold ${loan.loanStatus === 'pending' ? 'text-yellow-400' : 'text-green-400'}`}>{loan.loanStatus === 'pending' && loan.employeeVisitTime ? 'Waiting for employee to pass' : loan.loanStatus === 'waitingForAdminApproval' ? 'Waiting for admin approval' : loan.loanStatus}</span></p>
-                                                </div>
-                                                <div className="flex flex-col items-end gap-2">
-                                                    {loan.loanStatus === 'pending' && (
-                                                        <>
-                                                            <button onClick={() => handleCancelLoan(loan.id)} className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded">Cancel</button>
-                                                        </>
-                                                    )}
-                                                    {loan.loanStatus === 'active' && (
-                                                        <button onClick={() => handlePayLoan(loan.id)} className="text-xs bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-2 rounded">Pay Full Amount</button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="mt-2 space-y-1">
-                                                <div className="flex items-center">
-                                                    {loan.employeeVisitTime ? <span className="text-green-400">✅</span> : <span className="text-gray-500">⚪</span>}
-                                                    <span className="ml-2 text-sm text-gray-400">Visit Time Set {loan.employeeVisitTime && `: ${new Date(loan.employeeVisitTime).toLocaleString()}`}</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    {loan.employeeMessage ? <span className="text-green-400">✅</span> : <span className="text-gray-500">⚪</span>}
-                                                    <span className="ml-2 text-sm text-gray-400">Employee Message Added {loan.employeeMessage && `: ${loan.employeeMessage}`}</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    {loan.loanerPhoto && loan.landPhoto && loan.buildingPhoto && loan.employeePhoto && loan.signatureOfBankEmployee && loan.loanerBankId && loan.loanerPerDayIncome && loan.areaVolume && loan.cornerCoords && loan.valueOfLand && loan.valueOfBuilding && loan.loanerNetWorth ? <span className="text-green-400">✅</span> : <span className="text-gray-500">⚪</span>}
-                                                    <span className="ml-2 text-sm text-gray-400">Employee Details Filled</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    {loan.loanStatus === 'waitingForAdminApproval' || loan.loanStatus === 'approved' ? <span className="text-green-400">✅</span> : <span className="text-gray-500">⚪</span>}
-                                                    <span className="ml-2 text-sm text-gray-400">Waiting for Admin Approval</span>
-                                                </div>
-                                            </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-gray-400">No active loans.</p>
-                            )}
-                        </div>
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft">
-                            <h2 className="text-xl font-bold text-green-400 mb-4">Transaction History</h2>
-                            {allTransactions.length > 0 ? (
-                                <div className="max-h-80 overflow-y-auto">
-                                    <table className="min-w-full text-sm text-left">
-                                        <thead className="bg-gray-700 sticky top-0">
-                                            <tr>
-                                                <th className="p-2 text-gray-300">Date</th>
-                                                <th className="p-2 text-gray-300">Type</th>
-                                                <th className="p-2 text-gray-300">Description</th>
-                                                <th className="p-2 text-right text-gray-300">Amount</th>
-                                                <th className="p-2 text-right text-gray-300">Tax</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {allTransactions.map((tx, index) => (
-                                                <tr key={index} className="border-b border-gray-700 hover:bg-gray-700/50">
-                                                    <td className="p-2 text-gray-400">{(new Date(tx.date || tx.timestamp)).toLocaleDateString()}</td>
-                                                    <td className="p-2 text-gray-300">{tx.type}</td>
-                                                    <td className="p-2 text-gray-300">{tx.item || tx.jobName || tx.description}</td>
-                                                    <td className={`p-2 text-right font-semibold ${tx.amount < 0 ? 'text-red-400' : 'text-green-400'}`}>{tx.amount.toFixed(2)}</td>
-                                                    <td className="p-2 text-right text-red-400">{tx.tax?.toFixed(2) || '0.00'}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            ) : (
-                                <p className="text-gray-400">No transactions yet.</p>
-                            )}
-                        </div>
-                    </div>
-                );
-            };
+            const allTransactions = [...shopTransactions, ...jobTransactions].sort((a, b) => b.timestamp - a.timestamp);
+
+            return (
+                <div className="space-y-6">
+                    <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Account Overview</h2><p className="text-gray-300"><strong>Bank Name:</strong> {bankName}</p><p className="text-2xl font-bold">Balance: <span className="text-green-400">${balance?.toFixed(2) || '0.00'}</span></p><p className="text-lg font-semibold mt-2">Total Income: <span className="text-yellow-400">${totalPerDayIncome}/day</span></p><p className="text-sm text-gray-400">Job: ${jobPerDayIncome}/day | Business: ${businessPerDayIncome}/{businessIncomeUnit}</p></div>
+                    <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Loans ({loans.length})</h2>{loans.length > 0 ? <div className="space-y-4">{[...new Map(loans.map(item => [item['id'], item])).values()].map((loan) => <div key={loan.id} className="p-4 border border-gray-700 rounded-md bg-gray-700"><div className="flex justify-between items-start"><div className="flex-grow"><p className="font-bold capitalize text-yellow-400">{loan.loanType} Loan</p><p className="text-gray-300">Amount: ${loan.loanAmount?.toFixed(2) || '0.00'} | Total Due: ${loan.loanAmountDue?.toFixed(2) || '0.00'}</p><p className="text-gray-300">Status: <span className={`font-semibold ${loan.loanStatus === 'pending' ? 'text-yellow-400' : 'text-green-400'}`}>{loan.loanStatus === 'pending' && loan.employeeVisitTime ? 'Waiting for employee to pass' : loan.loanStatus === 'waitingForAdminApproval' ? 'Waiting for admin approval' : loan.loanStatus}</span></p></div><div className="flex flex-col items-end gap-2">{loan.loanStatus === 'pending' && <>                                            <button onClick={() => handleCancelLoan(loan.id)} className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded">Cancel</button></>}{loan.loanStatus === 'active' && <button onClick={() => handlePayLoan(loan.id)} className="text-xs bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-2 rounded">Pay Full Amount</button>}</div></div></div>)}</div> : <p className="text-gray-400">No active loans.</p>}</div>
+                    <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft"><h2 className="text-xl font-bold text-green-400 mb-4">Transaction History</h2>{allTransactions.length > 0 ? <div className="max-h-80 overflow-y-auto"><table className="min-w-full text-sm text-left"><thead className="bg-gray-700 sticky top-0"><tr><th className="p-2 text-gray-300">Date</th><th className="p-2 text-gray-300">Type</th><th className="p-2 text-gray-300">Description</th><th className="p-2 text-right text-gray-300">Amount</th><th className="p-2 text-right text-gray-300">Tax</th></tr></thead><tbody>{allTransactions.map((tx, index) => <tr key={index} className="border-b border-gray-700 hover:bg-gray-700/50"><td className="p-2 text-gray-400">{(new Date(tx.timestamp)).toLocaleDateString()}</td><td className="p-2 text-gray-300">{tx.type}</td><td className="p-2 text-gray-300">{tx.item || tx.jobName}</td><td className={`p-2 text-right font-semibold ${tx.amount < 0 ? 'text-red-400' : 'text-green-400'}`}>{tx.amount.toFixed(2)}</td><td className="p-2 text-right text-red-400">{tx.tax?.toFixed(2) || '0.00'}</td></tr>)}</tbody></table></div> : <p className="text-gray-400">No transactions yet.</p>}</div>
+                </div>
+            );
         };
 
                 const TaxPage = ({ currentUserAccount, setCurrentUserAccount, handlePayTax, handleAdvanceTax, showModal, paymentAnimationDetails, setPaymentAnimationDetails }) => {
@@ -719,7 +669,7 @@
                                     <input name="coord1Y" type="number" value={loanDetails.coord1Y} onChange={handleChange} placeholder="Y" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                     <input name="coord1Z" type="number" value={loanDetails.coord1Z} onChange={handleChange} placeholder="Z" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                 </div>
-                                <label className="block text-gray-300">Player Screenshot:</label>
+                                <label class="block text-gray-300">Player Screenshot:</label>
                                 <input name="playerScreenshot" type="file" onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                 {loanDetails.playerScreenshot && <p className="text-sm text-gray-400">Selected: {loanDetails.playerScreenshot.name}</p>}
                             </div>
@@ -727,11 +677,11 @@
 
                         {(loanDetails.type === 'home' || loanDetails.type === 'business' || loanDetails.type.includes('Startup')) && (
                             <div className="space-y-4 pt-2 border-t border-gray-700">
-                                <h3 className="text-lg font-semibold text-yellow-400">Property/Business Details</h3>
+                                <h3 class="text-lg font-semibold text-yellow-400">Property/Business Details</h3>
                                 <input name="areaVolume" type="number" value={loanDetails.areaVolume} onChange={handleChange} placeholder="Area/Volume (sq/cu blocks)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                 <input name="valueOfLand" type="number" value={loanDetails.valueOfLand} onChange={handleChange} placeholder="Value of Land ($)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                 <input name="valueOfBuilding" type="number" value={loanDetails.valueOfBuilding} onChange={handleChange} placeholder="Value of Building ($)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                <p className="text-sm text-gray-400">Corner Coordinates (up to 10 corners)</p>
+                                <p class="text-sm text-gray-400">Corner Coordinates (up to 10 corners)</p>
                                 {loanDetails.coords.map((coord, index) => (
                                     <div key={index} className="grid grid-cols-4 gap-2">
                                         <input name={`coord-${index}-x`} type="number" value={coord.x} onChange={handleChange} placeholder="X" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
@@ -746,10 +696,10 @@
                                     <button type="button" onClick={() => setLoanDetails(prev => ({ ...prev, coords: [...prev.coords, { x: '', y: '', z: '' }] }))} className="w-full p-3 bg-blue-600 text-white rounded-md">Add Coordinate</button>
                                 )}
                                 <p className="text-gray-300">Calculated Area: <span className="font-bold text-yellow-400">{totalArea?.toFixed(2) || '0.00'}</span></p>
-                                <label className="block text-gray-300">Land Photo:</label>
+                                <label class="block text-gray-300">Land Photo:</label>
                                 <input name="landPhoto" type="file" onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                 {loanDetails.landPhoto && <p className="text-sm text-gray-400">Selected: {loanDetails.landPhoto.name}</p>}
-                                <label className="block text-gray-300">Building Photo:</label>
+                                <label class="block text-gray-300">Building Photo:</label>
                                 <input name="buildingPhoto" type="file" onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                 {loanDetails.buildingPhoto && <p className="text-sm text-gray-400">Selected: {loanDetails.buildingPhoto.name}</p>}
                             </div>
@@ -1186,49 +1136,18 @@
                         const taxData = taxResponse.ok ? await taxResponse.json() : {};
 
                         // Fetch loan data
-                        const [
-                            balancesResponse,
-                            shopTransactionsResponse,
-                            jobTransactionsResponse,
-                            loansResponse,
-                            messagesResponse,
-                            taxPaymentsResponse
-                        ] = await Promise.all([
-                            fetch(API_ENDPOINTS.BALANCES),
-                            fetch(API_ENDPOINTS.SHOP_TRANSACTIONS),
-                            fetch(API_ENDPOINTS.JOB_TRANSACTIONS),
-                            fetch(API_ENDPOINTS.LOANS),
-                            fetch(API_ENDPOINTS.MESSAGES),
-                            fetch(API_ENDPOINTS.TAX_PAYMENTS)
-                        ]);
-
-                        const balancesData = balancesResponse.ok ? await balancesResponse.json() : [];
-                        const shopTransactionsData = shopTransactionsResponse.ok ? await shopTransactionsResponse.json() : [];
-                        const jobTransactionsData = jobTransactionsResponse.ok ? await jobTransactionsResponse.json() : [];
-                        const loansData = loansResponse.ok ? await loansResponse.json() : [];
-                        const messagesData = messagesResponse.ok ? await messagesResponse.json() : [];
-                        const taxPaymentsData = taxPaymentsResponse.ok ? await taxPaymentsResponse.json() : [];
-
-                        const userLoans = loansData.filter(loan => loan.accountId === data.account.accountId);
-                        const userBalances = balancesData.find(bal => bal.player === data.account.accountId);
-                        const userShopTransactions = shopTransactionsData.filter(tx => tx.player === data.account.accountId);
-                        const userJobTransactions = jobTransactionsData.filter(tx => tx.player === data.account.accountId);
-                        const userMessages = messagesData.filter(msg => msg.username === data.account.accountId);
-                        const userTaxPayments = taxPaymentsData.filter(tx => tx.player === data.account.accountId);
+                        const loansResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/admin`, { 
+                            method: 'POST', 
+                            headers: { 'Content-Type': 'application/json' }, 
+                            body: JSON.stringify({ action: 'get_all_data' })
+                        });
+                        const loansData = loansResponse.ok ? await loansResponse.json() : { loans: [] };
+                        const userLoans = loansData.loans.filter(loan => loan.accountId === data.account.accountId);
 
                         setLoginSuccess(true);
                         setTimeout(() => {
                             setLoading(false);
-                            setCurrentUserAccount({
-                                ...data.account,
-                                taxData: taxData,
-                                loans: userLoans,
-                                minecraftBalance: userBalances ? userBalances.balance : 0,
-                                shopTransactions: userShopTransactions,
-                                jobTransactions: userJobTransactions,
-                                messages: userMessages,
-                                taxPayments: userTaxPayments
-                            });
+                            setCurrentUserAccount({ ...data.account, taxData: taxData, loans: userLoans }); 
                             setCurrentPage('home');
                             setLoginSuccess(false);
                         }, 1500);
