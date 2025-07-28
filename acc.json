@@ -187,6 +187,12 @@
         "amount": 0,
         "date": "2025-07-28T09:49:11.101Z",
         "description": "Loan application LOAN1753689055181 cancelled"
+      },
+      {
+        "type": "info",
+        "amount": 0,
+        "date": "2025-07-28T09:49:13.857Z",
+        "description": "Loan application LOAN1753690117580 cancelled"
       }
     ],
     "taxData": {
@@ -472,37 +478,6 @@
       }
     },
     "loans": [
-      {
-        "id": "LOAN1753690117580",
-        "accountId": "Ansh",
-        "loanAmount": 12,
-        "loanAmountDue": 12.719999999999992,
-        "loanPaid": 0,
-        "dailyRepayment": 1.817142857142856,
-        "durationWeeks": 1,
-        "loanType": "personal",
-        "loanStatus": "pending",
-        "applicationDate": "2025-07-28T08:08:37.580Z",
-        "purpose": "2`",
-        "coord1": "2,2,2",
-        "coord2": "",
-        "playerScreenshot": {},
-        "landPhoto": "",
-        "bankEmployeeUsername": null,
-        "loanerBankId": null,
-        "loanerPerDayIncome": null,
-        "hasBusiness": false,
-        "areaVolume": "2",
-        "cornerCoords": null,
-        "valueOfLand": "2",
-        "valueOfBuilding": "2",
-        "loanerNetWorth": "1",
-        "employeePhoto": null,
-        "signatureOfBankEmployee": null,
-        "employeeVisitTime": null,
-        "employeeMessage": null,
-        "adminReply": null
-      },
       {
         "id": "LOAN1753690443467",
         "accountId": "Ansh",
