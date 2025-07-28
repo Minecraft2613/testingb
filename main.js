@@ -168,6 +168,7 @@ const { useState, useEffect, useMemo, useRef } = React; // Added a comment to tr
             
 
             const BankStatusPage = ({ currentUserAccount, handleCancelLoan, handleAdminApproveLoan, handlePayLoan }) => {
+                const [selectedLoan, setSelectedLoan] = useState(null);
                 if (!currentUserAccount) return null;
 
                 const { bankName, loans = [], jobPerDayIncome = 0, businessPerDayIncome = 0, businessIncomeUnit = 'day', balance = 0, transactions = [] } = currentUserAccount;
