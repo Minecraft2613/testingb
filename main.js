@@ -206,6 +206,24 @@ const parsedBalance = parseFloat(balance);
                                                     <p className="font-bold capitalize text-yellow-400">{loan.loanType} Loan</p>
                                                     <p className="text-gray-300">Amount: ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'} | Total Due: ${parseFloat(loan.loanAmountDue)?.toFixed(2) || '0.00'}</p>
                                                     <p className="text-gray-300">Status: <span className={`font-semibold ${loan.loanStatus === 'approved' ? 'text-green-400' : (loan.loanStatus === 'rejected' ? 'text-red-400' : 'text-yellow-400')}`}>
+    {loan.forcefullyApproved ? 'Forcefully Approved' : 
+     (loan.loanStatus === 'approved' ? 'Approved' : 
+      loan.loanStatus === 'rejected' ? 'Rejected' : 
+      (loan.loanStatus === 'pending' && loan.employeeVisitTime ? 'Waiting for employee to pass' : 
+       (loan.loanStatus === 'waitingForAdminApproval' ? 'Waiting for admin approval' : loan.loanStatus)))}
+</span></p>
+    {loan.forcefullyApproved ? 'Forcefully Approved' : 
+     (loan.loanStatus === 'approved' ? 'Approved' : 
+      loan.loanStatus === 'rejected' ? 'Rejected' : 
+      (loan.loanStatus === 'pending' && loan.employeeVisitTime ? 'Waiting for employee to pass' : 
+       (loan.loanStatus === 'waitingForAdminApproval' ? 'Waiting for admin approval' : loan.loanStatus)))}
+</span></p>
+    {loan.forcefullyApproved ? 'Forcefully Approved' : 
+     (loan.loanStatus === 'approved' ? 'Approved' : 
+      loan.loanStatus === 'rejected' ? 'Rejected' : 
+      (loan.loanStatus === 'pending' && loan.employeeVisitTime ? 'Waiting for employee to pass' : 
+       (loan.loanStatus === 'waitingForAdminApproval' ? 'Waiting for admin approval' : loan.loanStatus)))}
+</span></p>
     {loan.loanStatus === 'approved' ? 'Approved' :
      loan.loanStatus === 'rejected' ? 'Rejected' :
      (loan.loanStatus === 'pending' && loan.employeeVisitTime ? 'Waiting for employee to pass' :
@@ -215,7 +233,7 @@ const parsedBalance = parseFloat(balance);
                                                 <div className="flex flex-col items-end gap-2">
                                                     {loan.loanStatus === 'pending' && (
         
-                                                            <button onClick={() => handleCancelLoan(loan.id)} className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded">Cancel</button>
+                                                            <button onClick={() => handleCancelLoan(loan.id)} className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded" disabled={loan.loanStatus === 'approved'}>Cancel</button>
                                                     )}
                                                     {loan.loanStatus === 'approved' && (
                                                         <button onClick={() => handlePayLoan(loan.id)} className="text-xs bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-2 rounded">Pay Full Amount</button>
@@ -231,7 +249,7 @@ const parsedBalance = parseFloat(balance);
                                                         <span className="status-text">Employee Message Added {loan.employeeMessage && `: ${loan.employeeMessage}`}</span>
                                                     </div>
                                                     <div className="status-step">
-                                                        <div className={`status-circle ${loan.loanerPhoto && loan.landPhoto && loan.buildingPhoto && loan.employeePhoto && loan.signatureOfBankEmployee && loan.loanerBankId && loan.loanerPerDayIncome && loan.areaVolume && loan.cornerCoords && loan.valueOfLand && loan.valueOfBuilding && loan.loanerNetWorth ? 'completed' : ''}`}></div>
+                                                        <div className={`status-circle ${loan.forcefullyApproved ? 'completed' : (loan.loanerPhoto && loan.landPhoto && loan.buildingPhoto && loan.employeePhoto && loan.signatureOfBankEmployee && loan.loanerBankId && loan.loanerPerDayIncome && loan.areaVolume && loan.cornerCoords && loan.valueOfLand && loan.valueOfBuilding && loan.loanerNetWorth ? 'completed' : '')}`}></div>
                                                         <span className="status-text">Employee Details Filled</span>
                                                     </div>
                                                     <div className="status-step">
