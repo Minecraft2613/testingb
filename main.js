@@ -561,8 +561,7 @@ const { useState, useEffect, useMemo, useRef } = React; // Added a comment to tr
                     await handleApplyLoan(loanDataToSend);
                     setLoanDetails({
                         amount: '', duration: 1, type: 'personal', purpose: '',
-                        coord1X: '', coord1Y: '', coord1Z: '',
-                        coord2X: '', coord2Y: '', coord2Z: '',
+                        coords: [{ x: '', y: '', z: '' }],
                         repayment: 'daily',
                         loanerNetWorth: '',
                         valueOfLand: '', valueOfBuilding: '', areaVolume: '',
@@ -608,9 +607,9 @@ const { useState, useEffect, useMemo, useRef } = React; // Added a comment to tr
                                 <h3 className="text-lg font-semibold text-yellow-400">Personal Loan Details</h3>
                                 <p className="text-sm text-gray-400">Please provide the coordinates for the location related to your loan purpose.</p>
                                 <div className="grid grid-cols-3 gap-2">
-                                    <input name="coord1X" type="number" value={loanDetails.coord1X} onChange={handleChange} placeholder="X" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord1Y" type="number" value={loanDetails.coord1Y} onChange={handleChange} placeholder="Y" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord1Z" type="number" value={loanDetails.coord1Z} onChange={handleChange} placeholder="Z" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord-0-x" type="number" value={loanDetails.coords[0].x} onChange={handleChange} placeholder="X" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord-0-y" type="number" value={loanDetails.coords[0].y} onChange={handleChange} placeholder="Y" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord-0-z" type="number" value={loanDetails.coords[0].z} onChange={handleChange} placeholder="Z" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                 </div>
                                 <label className="block text-gray-300">Player Screenshot:</label>
                                 <input name="playerScreenshot" type="file" onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
