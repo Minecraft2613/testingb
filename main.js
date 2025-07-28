@@ -1384,28 +1384,25 @@ const handleAdvanceTax = async (amount) => {
             };
 
             const handleAdminApproveLoan = async (loanId) => {
-                const loans = currentUserAccount.loans.map(loan => loan.id === loanId ? { ...loan, loanStatus: 'approved' } : loan);
-                const approvedLoan = loans.find(loan => loan.id === loanId);
-                const updatedAccount = { ...currentUserAccount, loans, balance: currentUserAccount.balance + approvedLoan.loanAmount, transactions: [...currentUserAccount.transactions, { type: 'credit', amount: approvedLoan.loanAmount, date: new Date().toISOString(), description: `Loan ${loanId} approved` }] };
+                const loan = currentUserAccount.loans.find(l => l.id === loanId);
+                if (!loan) return;
+
+                const updatedLoan = { ...loan, loanStatus: 'approved' };
+                const updatedLoans = currentUserAccount.loans.map(l => l.id === loanId ? updatedLoan : l);
+
+                const updatedAccount = {
+                    ...currentUserAccount,
+                    loans: updatedLoans,
+                    balance: currentUserAccount.balance + loan.loanAmount,
+                    transactions: [
+                        ...currentUserAccount.transactions,
+                        { type: 'credit', amount: loan.loanAmount, date: new Date().toISOString(), description: `Loan ${loanId} approved` }
+                    ]
+                };
+
                 const success = await updateCurrentUser(updatedAccount);
                 if (success) {
                     showModal('Admin Action', 'Loan has been approved!', 'success');
-                    console.log('Processing loan approval for loanId:', loanId);
-                    // Explicitly re-fetch ALL loans to ensure UI is updated with latest loan statuses
-                    const loansResponse = await fetch(API_ENDPOINTS.LOANS);
-                    if (loansResponse.ok) {
-                        const allLoansData = await loansResponse.json();
-                        console.log('Fetched all loans data:', allLoansData);
-                        const userLoans = allLoansData.filter(loan => loan.accountId === currentUserAccount.accountId);
-                        console.log('Filtered user loans:', userLoans);
-                        setCurrentUserAccount(prevAccount => ({
-                            ...prevAccount,
-                            loans: userLoans
-                        }));
-                        console.log('currentUserAccount after update:', currentUserAccount);
-                    } else {
-                        console.error("Failed to re-fetch loans after admin approval.");
-                    }
                 } else {
                     showModal('Error', 'Failed to update account after loan approval.', 'error');
                 }
