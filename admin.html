@@ -197,7 +197,10 @@
 
                 switch(view) {
                     case 'home': return <HomeView {...props} />;
-                    case 'loan_approved': return <LoanApprovedView {...props} />;
+                    case 'loan_approval_requests': return <LoanApprovalRequestsView {...props} />;
+                    case 'loan_active': return <LoanActiveView {...props} />;
+                    case 'loan_cancelled': return <LoanCancelledView {...props} />;
+                    case 'loan_closed': return <LoanClosedView {...props} />;
                     case 'loan_history': return <LoanHistoryView {...props} />;
                     case 'paid_tax': return <PaidTaxView {...props} />;
                     case 'pending_tax': return <PendingTaxView {...props} />;
@@ -223,7 +226,10 @@
         const Sidebar = ({ setView, adminUser, handleLogout }) => {
             const views = [
                 { name: 'Home', view: 'home', roles: ['admin', 'admin22'] },
-                { name: 'Loan Approved', view: 'loan_approved', roles: ['admin', 'admin22'] },
+                { name: 'Loan Approval Requests', view: 'loan_approval_requests', roles: ['admin', 'admin22'] },
+                { name: 'Active Loans', view: 'loan_active', roles: ['admin', 'admin22'] },
+                { name: 'Cancelled Loans', view: 'loan_cancelled', roles: ['admin', 'admin22'] },
+                { name: 'Closed Loans', view: 'loan_closed', roles: ['admin', 'admin22'] },
                 { name: 'Loan History', view: 'loan_history', roles: ['admin', 'admin22'] },
                 { name: 'Paid Tax', view: 'paid_tax', roles: ['admin', 'admin22'] },
                 { name: 'Pending Tax', view: 'pending_tax', roles: ['admin', 'admin22'] },
@@ -310,40 +316,244 @@
             );
         };
 
-        const LoanApprovedView = ({ data }) => {
-            const approvedLoans = data.accounts.flatMap(acc => (acc.loans || []).filter(l => l.loanStatus === 'active').map(l => ({ ...l, accountId: acc.accountId })));
+        
+
+        const LoanApprovalRequestsView = ({ data, handleApproveLoan, handleCancelLoan, handleForceApproveLoan, handleUpdateLoanDetails, adminUser }) => {
+            const pendingLoans = data.loans.filter(loan => loan.loanStatus === 'pending' || loan.loanStatus === 'waitingForEmployeeApproval');
+            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
+            const [selectedLoan, setSelectedLoan] = useState(null);
+
+            const openLoanDetails = (loan) => {
+                setSelectedLoan(loan);
+                setShowLoanDetailModal(true);
+            };
+
             return (
                 <div>
-                    <h2 className="text-3xl font-bold text-white mb-6">Approved Loans</h2>
+                    <h2 className="text-3xl font-bold text-white mb-6">Loan Approval Requests</h2>
                     <div className="space-y-4">
-                        {approvedLoans.length > 0 ? approvedLoans.map(loan => (
-                            <div key={loan.id} className="bg-gray-800 p-4 rounded-lg shadow-lg">
-                                <p><strong>Player:</strong> {loan.accountId}</p>
-                                <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
-                                <p><strong>Status:</strong> {loan.loanStatus}</p>
+                        {pendingLoans.length > 0 ? pendingLoans.map(loan => (
+                            <div key={loan.id} className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
+                                <div>
+                                    <p><strong>Player:</strong> {loan.accountId}</p>
+                                    <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
+                                    <p><strong>Status:</strong> {loan.loanStatus}</p>
+                                </div>
+                                <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
                             </div>
-                        )) : <p>No approved loans.</p>}
+                        )) : <p>No pending loan approval requests.</p>}
                     </div>
+                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} handleForceApproveLoan={handleForceApproveLoan} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
                 </div>
             );
         };
 
-        const LoanHistoryView = ({ data }) => {
-            const allLoans = data.accounts.flatMap(acc => (acc.loans || []).map(l => ({ ...l, accountId: acc.accountId })));
+        const LoanActiveView = ({ data, handleApproveLoan, handleCancelLoan, handleForceApproveLoan, handleUpdateLoanDetails, adminUser }) => {
+            const activeLoans = data.loans.filter(loan => loan.loanStatus === 'approved');
+            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
+            const [selectedLoan, setSelectedLoan] = useState(null);
+
+            const openLoanDetails = (loan) => {
+                setSelectedLoan(loan);
+                setShowLoanDetailModal(true);
+            };
+
             return (
                 <div>
-                    <h2 className="text-3xl font-bold text-white mb-6">Loan History</h2>
+                    <h2 className="text-3xl font-bold text-white mb-6">Active Loans</h2>
                     <div className="space-y-4">
-                        {allLoans.length > 0 ? allLoans.map(loan => (
-                            <div key={loan.id} className="bg-gray-800 p-4 rounded-lg shadow-lg">
-                                <p><strong>Player:</strong> {loan.accountId}</p>
-                                <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
-                                <p><strong>Status:</strong> {loan.loanStatus}</p>
-                                <p><strong>Type:</strong> {loan.loanType}</p>
-                                <p><strong>Application Date:</strong> {new Date(loan.applicationDate).toLocaleDateString()}</p>
+                        {activeLoans.length > 0 ? activeLoans.map(loan => (
+                            <div key={loan.id} className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
+                                <div>
+                                    <p><strong>Player:</strong> {loan.accountId}</p>
+                                    <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
+                                    <p><strong>Status:</strong> {loan.loanStatus}</p>
+                                </div>
+                                <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
                             </div>
-                        )) : <p>No loan history.</p>}
+                        )) : <p>No active loans.</p>}
                     </div>
+                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} handleForceApproveLoan={handleForceApproveLoan} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
+                </div>
+            );
+        };
+
+        const LoanCancelledView = ({ data, handleApproveLoan, handleCancelLoan, handleForceApproveLoan, handleUpdateLoanDetails, adminUser }) => {
+            const cancelledLoans = data.loans.filter(loan => loan.loanStatus === 'cancelled' || loan.loanStatus === 'rejected');
+            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
+            const [selectedLoan, setSelectedLoan] = useState(null);
+
+            const openLoanDetails = (loan) => {
+                setSelectedLoan(loan);
+                setShowLoanDetailModal(true);
+            };
+
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Cancelled Loans</h2>
+                    <div className="space-y-4">
+                        {cancelledLoans.length > 0 ? cancelledLoans.map(loan => (
+                            <div key={loan.id} className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
+                                <div>
+                                    <p><strong>Player:</strong> {loan.accountId}</p>
+                                    <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
+                                    <p><strong>Status:</strong> {loan.loanStatus}</p>
+                                </div>
+                                <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                            </div>
+                        )) : <p>No cancelled loans.</p>}
+                    </div>
+                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} handleForceApproveLoan={handleForceApproveLoan} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
+                </div>
+            );
+        };
+
+        const LoanClosedView = ({ data, handleApproveLoan, handleCancelLoan, handleForceApproveLoan, handleUpdateLoanDetails, adminUser }) => {
+            const closedLoans = data.loans.filter(loan => loan.loanStatus === 'closed');
+            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
+            const [selectedLoan, setSelectedLoan] = useState(null);
+
+            const openLoanDetails = (loan) => {
+                setSelectedLoan(loan);
+                setShowLoanDetailModal(true);
+            };
+
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Closed Loans</h2>
+                    <div className="space-y-4">
+                        {closedLoans.length > 0 ? closedLoans.map(loan => (
+                            <div key={loan.id} className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
+                                <div>
+                                    <p><strong>Player:</strong> {loan.accountId}</p>
+                                    <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
+                                    <p><strong>Status:</strong> {loan.loanStatus}</p>
+                                </div>
+                                <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                            </div>
+                        )) : <p>No closed loans.</p>}
+                    </div>
+                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} handleForceApproveLoan={handleForceApproveLoan} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
+                </div>
+            );
+        };
+
+        const LoanApprovalRequestsView = ({ data, handleApproveLoan, handleCancelLoan, handleForceApproveLoan, handleUpdateLoanDetails, adminUser }) => {
+            const pendingLoans = data.loans.filter(loan => loan.loanStatus === 'pending' || loan.loanStatus === 'waitingForEmployeeApproval');
+            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
+            const [selectedLoan, setSelectedLoan] = useState(null);
+
+            const openLoanDetails = (loan) => {
+                setSelectedLoan(loan);
+                setShowLoanDetailModal(true);
+            };
+
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Loan Approval Requests</h2>
+                    <div className="space-y-4">
+                        {pendingLoans.length > 0 ? pendingLoans.map(loan => (
+                            <div key={loan.id} className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
+                                <div>
+                                    <p><strong>Player:</strong> {loan.accountId}</p>
+                                    <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
+                                    <p><strong>Status:</strong> {loan.loanStatus}</p>
+                                </div>
+                                <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                            </div>
+                        )) : <p>No pending loan approval requests.</p>}
+                    </div>
+                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} handleForceApproveLoan={handleForceApproveLoan} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
+                </div>
+            );
+        };
+
+        const LoanActiveView = ({ data, handleApproveLoan, handleCancelLoan, handleForceApproveLoan, handleUpdateLoanDetails, adminUser }) => {
+            const activeLoans = data.loans.filter(loan => loan.loanStatus === 'approved');
+            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
+            const [selectedLoan, setSelectedLoan] = useState(null);
+
+            const openLoanDetails = (loan) => {
+                setSelectedLoan(loan);
+                setShowLoanDetailModal(true);
+            };
+
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Active Loans</h2>
+                    <div className="space-y-4">
+                        {activeLoans.length > 0 ? activeLoans.map(loan => (
+                            <div key={loan.id} className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
+                                <div>
+                                    <p><strong>Player:</strong> {loan.accountId}</p>
+                                    <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
+                                    <p><strong>Status:</strong> {loan.loanStatus}</p>
+                                </div>
+                                <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                            </div>
+                        )) : <p>No active loans.</p>}
+                    </div>
+                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} handleForceApproveLoan={handleForceApproveLoan} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
+                </div>
+            );
+        };
+
+        const LoanCancelledView = ({ data, handleApproveLoan, handleCancelLoan, handleForceApproveLoan, handleUpdateLoanDetails, adminUser }) => {
+            const cancelledLoans = data.loans.filter(loan => loan.loanStatus === 'cancelled' || loan.loanStatus === 'rejected');
+            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
+            const [selectedLoan, setSelectedLoan] = useState(null);
+
+            const openLoanDetails = (loan) => {
+                setSelectedLoan(loan);
+                setShowLoanDetailModal(true);
+            };
+
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Cancelled Loans</h2>
+                    <div className="space-y-4">
+                        {cancelledLoans.length > 0 ? cancelledLoans.map(loan => (
+                            <div key={loan.id} className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
+                                <div>
+                                    <p><strong>Player:</strong> {loan.accountId}</p>
+                                    <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
+                                    <p><strong>Status:</strong> {loan.loanStatus}</p>
+                                </div>
+                                <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                            </div>
+                        )) : <p>No cancelled loans.</p>}
+                    </div>
+                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} handleForceApproveLoan={handleForceApproveLoan} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
+                </div>
+            );
+        };
+
+        const LoanClosedView = ({ data, handleApproveLoan, handleCancelLoan, handleForceApproveLoan, handleUpdateLoanDetails, adminUser }) => {
+            const closedLoans = data.loans.filter(loan => loan.loanStatus === 'closed');
+            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
+            const [selectedLoan, setSelectedLoan] = useState(null);
+
+            const openLoanDetails = (loan) => {
+                setSelectedLoan(loan);
+                setShowLoanDetailModal(true);
+            };
+
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Closed Loans</h2>
+                    <div className="space-y-4">
+                        {closedLoans.length > 0 ? closedLoans.map(loan => (
+                            <div key={loan.id} className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
+                                <div>
+                                    <p><strong>Player:</strong> {loan.accountId}</p>
+                                    <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
+                                    <p><strong>Status:</strong> {loan.loanStatus}</p>
+                                </div>
+                                <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                            </div>
+                        )) : <p>No closed loans.</p>}
+                    </div>
+                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} handleForceApproveLoan={handleForceApproveLoan} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
                 </div>
             );
         };
@@ -502,6 +712,126 @@
             );
         }
 
+        const LoanApprovalRequestsView = ({ data, handleApproveLoan, handleCancelLoan, handleForceApproveLoan, handleUpdateLoanDetails, adminUser }) => {
+            const pendingLoans = data.loans.filter(loan => loan.loanStatus === 'pending' || loan.loanStatus === 'waitingForEmployeeApproval');
+            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
+            const [selectedLoan, setSelectedLoan] = useState(null);
+
+            const openLoanDetails = (loan) => {
+                setSelectedLoan(loan);
+                setShowLoanDetailModal(true);
+            };
+
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Loan Approval Requests</h2>
+                    <div className="space-y-4">
+                        {pendingLoans.length > 0 ? pendingLoans.map(loan => (
+                            <div key={loan.id} className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
+                                <div>
+                                    <p><strong>Player:</strong> {loan.accountId}</p>
+                                    <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
+                                    <p><strong>Status:</strong> {loan.loanStatus}</p>
+                                </div>
+                                <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                            </div>
+                        )) : <p>No pending loan approval requests.</p>}
+                    </div>
+                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} handleForceApproveLoan={handleForceApproveLoan} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
+                </div>
+            );
+        };
+
+        const LoanActiveView = ({ data, handleApproveLoan, handleCancelLoan, handleForceApproveLoan, handleUpdateLoanDetails, adminUser }) => {
+            const activeLoans = data.loans.filter(loan => loan.loanStatus === 'approved');
+            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
+            const [selectedLoan, setSelectedLoan] = useState(null);
+
+            const openLoanDetails = (loan) => {
+                setSelectedLoan(loan);
+                setShowLoanDetailModal(true);
+            };
+
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Active Loans</h2>
+                    <div className="space-y-4">
+                        {activeLoans.length > 0 ? activeLoans.map(loan => (
+                            <div key={loan.id} className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
+                                <div>
+                                    <p><strong>Player:</strong> {loan.accountId}</p>
+                                    <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
+                                    <p><strong>Status:</strong> {loan.loanStatus}</p>
+                                </div>
+                                <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                            </div>
+                        )) : <p>No active loans.</p>}
+                    </div>
+                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} handleForceApproveLoan={handleForceApproveLoan} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
+                </div>
+            );
+        };
+
+        const LoanCancelledView = ({ data, handleApproveLoan, handleCancelLoan, handleForceApproveLoan, handleUpdateLoanDetails, adminUser }) => {
+            const cancelledLoans = data.loans.filter(loan => loan.loanStatus === 'cancelled' || loan.loanStatus === 'rejected');
+            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
+            const [selectedLoan, setSelectedLoan] = useState(null);
+
+            const openLoanDetails = (loan) => {
+                setSelectedLoan(loan);
+                setShowLoanDetailModal(true);
+            };
+
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Cancelled Loans</h2>
+                    <div className="space-y-4">
+                        {cancelledLoans.length > 0 ? cancelledLoans.map(loan => (
+                            <div key={loan.id} className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
+                                <div>
+                                    <p><strong>Player:</strong> {loan.accountId}</p>
+                                    <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
+                                    <p><strong>Status:</strong> {loan.loanStatus}</p>
+                                </div>
+                                <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                            </div>
+                        )) : <p>No cancelled loans.</p>}
+                    </div>
+                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} handleForceApproveLoan={handleForceApproveLoan} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
+                </div>
+            );
+        };
+
+        const LoanClosedView = ({ data, handleApproveLoan, handleCancelLoan, handleForceApproveLoan, handleUpdateLoanDetails, adminUser }) => {
+            const closedLoans = data.loans.filter(loan => loan.loanStatus === 'closed');
+            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
+            const [selectedLoan, setSelectedLoan] = useState(null);
+
+            const openLoanDetails = (loan) => {
+                setSelectedLoan(loan);
+                setShowLoanDetailModal(true);
+            };
+
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-white mb-6">Closed Loans</h2>
+                    <div className="space-y-4">
+                        {closedLoans.length > 0 ? closedLoans.map(loan => (
+                            <div key={loan.id} className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
+                                <div>
+                                    <p><strong>Player:</strong> {loan.accountId}</p>
+                                    <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
+                                    <p><strong>Status:</strong> {loan.loanStatus}</p>
+                                </div>
+                                <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
+                            </div>
+                        )) : <p>No closed loans.</p>}
+                    </div>
+                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} handleForceApproveLoan={handleForceApproveLoan} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
+                </div>
+            );
+        };
+
         const MessagesView = ({ data }) => {
             const [messages, setMessages] = useState([]);
 
@@ -594,6 +924,7 @@
                     loanerNetWorth
                 };
                 await handleUpdateLoanDetails(loan.id, updatedFields);
+                fetchData(); // Refresh data after action
                 onClose();
             };
 
