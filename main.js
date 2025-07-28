@@ -35,7 +35,7 @@ const { useState, useEffect, useMemo, useRef } = React; // Added a comment to tr
 
         const LoadingScreen = ({ loginSuccess, message }) => (
             <div className="loading-screen">
-                {loginSuccess ? 
+                {loginSuccess ?
                     <h1 className="text-4xl font-bold animate-fade-in">{message}</h1> :
                     <><div className="loading-container"><div className="giant-cube">{'cube-1,cube-2,cube-3,cube-4'.split(',').map(c => <div key={c} className={`cube ${c}`}><div className="face front"></div><div className="face back"></div><div className="face right"></div><div className="face left"></div><div className="face top"></div><div className="face bottom"></div></div>)}</div></div><h2 className="text-2xl font-bold mt-12 animate-pulse">{message}</h2></>
                 }
@@ -164,8 +164,6 @@ const { useState, useEffect, useMemo, useRef } = React; // Added a comment to tr
             </button>
         );
 
-                    
-            
 
             const BankStatusPage = ({ currentUserAccount, handleCancelLoan, handleAdminApproveLoan, handlePayLoan }) => {
                 const [selectedLoan, setSelectedLoan] = useState(null);
@@ -198,7 +196,7 @@ const parsedBalance = parseFloat(balance);
                             {loans.length > 0 ? (
                                 <ul className="space-y-4">
                                     {[...new Map(loans.map(item => [item['id'], item])).values()].map((loan) => (
-                                        <li key={loan.id} 
+                                        <li key={loan.id}
                                             className={`p-4 rounded-md cursor-pointer ${selectedLoan?.id === loan.id ? 'bg-blue-700' : 'bg-gray-700'} hover:bg-gray-600`}
                                             onClick={() => setSelectedLoan(loan)}>
                                             <>
@@ -206,16 +204,15 @@ const parsedBalance = parseFloat(balance);
                                                     <p className="font-bold capitalize text-yellow-400">{loan.loanType} Loan</p>
                                                     <p className="text-gray-300">Amount: ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'} | Total Due: ${parseFloat(loan.loanAmountDue)?.toFixed(2) || '0.00'}</p>
                                                     <p className="text-gray-300">Status: <span className={`font-semibold ${loan.loanStatus === 'approved' ? 'text-green-400' : (loan.loanStatus === 'rejected' ? 'text-red-400' : 'text-yellow-400')}`}>
-    {loan.forcefullyApproved ? 'Forcefully Approved' : 
-     (loan.loanStatus === 'approved' ? 'Approved' : 
-      loan.loanStatus === 'rejected' ? 'Rejected' : 
-      (loan.loanStatus === 'pending' && loan.employeeVisitTime ? 'Waiting for employee to pass' : 
-       (loan.loanStatus === 'waitingForAdminApproval' ? 'Waiting for admin approval' : loan.loanStatus)))}
+    {loan.forcefullyApproved ? 'Forcefully Approved' :
+     (loan.loanStatus === 'approved' ? 'Active Loan' :
+      loan.loanStatus === 'rejected' ? 'Rejected' :
+      loan.loanStatus)}
 </span></p>
                                                 </div>
                                                 <div className="flex flex-col items-end gap-2">
                                                     {loan.loanStatus === 'pending' && (
-        
+
                                                             <button onClick={() => handleCancelLoan(loan.id)} className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded" disabled={loan.loanStatus === 'approved'}>Cancel</button>
                                                     )}
                                                     {loan.loanStatus === 'approved' && (
@@ -224,19 +221,15 @@ const parsedBalance = parseFloat(balance);
                                                 </div>
                                                 <div className="mt-2 space-y-1">
                                                     <div className="status-step">
-                                                        <div className={`status-circle ${loan.employeeVisitTime ? 'completed' : ''}`}></div>
                                                         <span className="status-text">Visit Time Set {loan.employeeVisitTime && `: ${new Date(loan.employeeVisitTime).toLocaleString()}`}</span>
                                                     </div>
                                                     <div className="status-step">
-                                                        <div className={`status-circle ${loan.employeeMessage ? 'completed' : ''}`}></div>
                                                         <span className="status-text">Employee Message Added {loan.employeeMessage && `: ${loan.employeeMessage}`}</span>
                                                     </div>
                                                     <div className="status-step">
-                                                        <div className={`status-circle ${loan.forcefullyApproved ? 'completed' : (loan.loanerPhoto && loan.landPhoto && loan.buildingPhoto && loan.employeePhoto && loan.signatureOfBankEmployee && loan.loanerBankId && loan.loanerPerDayIncome && loan.areaVolume && loan.cornerCoords && loan.valueOfLand && loan.valueOfBuilding && loan.loanerNetWorth ? 'completed' : '')}`}></div>
                                                         <span className="status-text">Employee Details Filled</span>
                                                     </div>
                                                     <div className="status-step">
-                                                        <div className={`status-circle ${loan.loanStatus === 'approved' ? 'completed' : (loan.loanStatus === 'rejected' ? 'rejected' : '')}`}></div>
                                                         <span className="status-text">Waiting for Admin Approval</span>
                                                     </div>
                                                 </div>
@@ -295,7 +288,7 @@ const parsedBalance = parseFloat(balance);
             const { taxData = {}, accountId, transactions = [], balance } = currentUserAccount;
 
             const totalTaxPaidTillYet = (transactions || []).filter(tx => tx.description && (tx.description.includes('Tax payment') || tx.description.includes('Advance tax payment'))).reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
-            
+
             // Ensure taxData.players is an object, or default to an empty object
             const playersData = taxData.players && typeof taxData.players === 'object' ? taxData.players : {};
 
@@ -308,7 +301,7 @@ const parsedBalance = parseFloat(balance);
 
             // Ensure dailyTaxCharges is an array of objects with date and amount
             const dailyCharges = sessionTaxData.dailyCharges || [];
-            
+
             // Filter tax payments, ensuring amount is positive for display
             const taxPayments = transactions.filter(tx => tx.description.includes('tax payment'))
                                         .map(tx => ({ date: tx.date, amount: Math.abs(tx.amount), description: tx.description.replace(/ for session [^,]+/, '') }));
@@ -457,7 +450,7 @@ const parsedBalance = parseFloat(balance);
                 </div>
             );
         };
-        
+
         const ApplyLoanPage = ({ currentUserAccount, showModal, handleApplyLoan }) => {
             const [loanDetails, setLoanDetails] = useState({
                 amount: '', duration: 1, type: 'personal', purpose: '',
@@ -493,7 +486,7 @@ const parsedBalance = parseFloat(balance);
                 } else {
                     weeklyRate = interestRates[loanDetails.type];
                 }
-                
+
                 let totalLoanAmountDue;
                 let calculatedTotalInterest = 0;
 
@@ -606,7 +599,7 @@ const parsedBalance = parseFloat(balance);
                             </label>
                         </div>
                         <textarea name="purpose" value={loanDetails.purpose} onChange={handleChange} placeholder="What is the purpose of this loan?" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md h-24"></textarea>
-                        
+
                         <input name="loanerNetWorth" type="number" value={loanDetails.loanerNetWorth} onChange={handleChange} placeholder="Your Net Worth ($)" className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
 
                         {loanDetails.type === 'personal' && (
@@ -674,13 +667,13 @@ const parsedBalance = parseFloat(balance);
             if (!currentUserAccount) return null;
             const [oldPassword, setOldPassword] = useState('');
             const [newPassword, setNewPassword] = useState('');
-            const [profile, setProfile] = useState({ 
-                jobType: currentUserAccount.jobType || '', 
-                jobPerDayIncome: currentUserAccount.jobPerDayIncome || '', 
-                businessType: currentUserAccount.businessType || '', 
-                businessPerDayIncome: currentUserAccount.businessPerDayIncome || '', 
-                businessIncomeUnit: currentUserAccount.businessIncomeUnit || 'day', 
-                hasBusiness: !!currentUserAccount.businessType 
+            const [profile, setProfile] = useState({
+                jobType: currentUserAccount.jobType || '',
+                jobPerDayIncome: currentUserAccount.jobPerDayIncome || '',
+                businessType: currentUserAccount.businessType || '',
+                businessPerDayIncome: currentUserAccount.businessPerDayIncome || '',
+                businessIncomeUnit: currentUserAccount.businessIncomeUnit || 'day',
+                hasBusiness: !!currentUserAccount.businessType
             });
             const [editMode, setEditMode] = useState({ job: false, business: false, password: false });
 
@@ -735,7 +728,7 @@ const parsedBalance = parseFloat(balance);
                 </div>
             );
         };
-        
+
         const TopTaxPayersPage = ({ getAllAccounts }) => {
             const [topTaxPayers, setTopTaxPayers] = useState([]);
             useEffect(() => {
@@ -836,7 +829,7 @@ const parsedBalance = parseFloat(balance);
                     const response = await fetch(API_ENDPOINTS.CONTACT, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
+                        body: JSON.stringify({
                             username: currentUserAccount.accountId,
                             problem: newMessage,
                             platform: 'web',
@@ -881,12 +874,12 @@ const parsedBalance = parseFloat(balance);
                         ))}
                     </div>
                     <form onSubmit={handleSendMessage} className="mt-4 flex gap-2">
-                        <input 
-                            type="text" 
-                            value={newMessage} 
-                            onChange={(e) => setNewMessage(e.target.value)} 
-                            placeholder="Type your message..." 
-                            className="flex-grow p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" 
+                        <input
+                            type="text"
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            placeholder="Type your message..."
+                            className="flex-grow p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                         />
                         <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md">Send</button>
                     </form>
@@ -932,7 +925,7 @@ const parsedBalance = parseFloat(balance);
                 root.style.setProperty('--glow-color', currentTheme.glowColor);
                 root.style.setProperty('--block-color', currentTheme.blockColor);
                 root.style.setProperty('--background-color-body', currentTheme.backgroundColorBody);
-                root.style.setProperty('--background-image-url', currentTheme.backgroundImageUrl === 'none' ? 'none' : `url('${currentTheme.backgroundImageUrl}')`);
+                document.body.style.backgroundImage = currentTheme.backgroundImageUrl === 'none' ? 'none' : `url('${currentTheme.backgroundImageUrl}')`;
                 root.style.setProperty('--text-color', currentTheme.textColor);
                 root.style.setProperty('--block-border-color', currentTheme.blockBorderColor);
                 root.style.setProperty('--loading-bg-color', currentTheme.loadingBgColor);
@@ -1002,7 +995,7 @@ const parsedBalance = parseFloat(balance);
             );
         };
 
-        
+
 
         // --- Main App Component ---
         const App = () => {
@@ -1064,7 +1057,7 @@ const parsedBalance = parseFloat(balance);
 
             const handleLogin = async (identifier, password) => {
                 setLoading(true);
-                setLoginSuccess(false); 
+                setLoginSuccess(false);
 
                 try {
                     const response = await fetch(`${API_ENDPOINTS.ACCOUNTS}/login`, {
@@ -1168,7 +1161,7 @@ const parsedBalance = parseFloat(balance);
             };
 
             const handleLogout = () => { setCurrentUserAccount(null); setSession(null); setCurrentPage('login'); showModal('Logged Out', 'You have been successfully logged out.', 'info'); };
-            
+
             const updateCurrentUser = async (updatedAccount) => {
                 try {
                     const response = await fetch(`${API_ENDPOINTS.ACCOUNTS}/update-account`, {
@@ -1313,7 +1306,7 @@ const handleAdvanceTax = async (amount) => {
                 const jobIncome = currentUserAccount.jobPerDayIncome || 0;
                 const bizIncome = currentUserAccount.businessPerDayIncome || 0;
                 const maxDailyRepayment = (jobIncome * 0.55) + (bizIncome * (currentUserAccount.businessIncomeUnit === 'hour' ? 0.70 * 8 : 0.70));
-                
+
                 const interestRates = {
                     personal: 0.06,
                     home: 0.02,
@@ -1328,7 +1321,7 @@ const handleAdvanceTax = async (amount) => {
                 } else {
                     weeklyRate = interestRates[type];
                 }
-                
+
                 let totalDue, dailyRepayment;
                 const dailyRate = Math.pow(1 + weeklyRate, 1/7) - 1;
                 totalDue = amount * Math.pow(1 + dailyRate, duration * 7);
@@ -1351,7 +1344,7 @@ const handleAdvanceTax = async (amount) => {
                 }
 
                 const newLoan = { id: `LOAN${Date.now()}`, accountId: currentUserAccount.accountId, loanAmount: amount, loanAmountDue: totalDue, loanPaid: 0, dailyRepayment, durationWeeks: duration, loanType: type, loanStatus: 'pending', applicationDate: new Date().toISOString(), purpose, coord1, coord2, playerScreenshot, landPhoto, valueOfLand, valueOfBuilding, areaVolume, loanerNetWorth };
-                
+
                 try {
                     const response = await fetch(`${API_ENDPOINTS.ACCOUNTS}/apply-loan`, {
                         method: 'POST',
@@ -1453,16 +1446,16 @@ const handleAdvanceTax = async (amount) => {
 
                 const newLoanPaid = loan.loanPaid + effectiveAmountToPay;
                 let newLoanStatus = loan.loanStatus;
-                let transactionDescription = `Loan payment for ${loan.id}`; 
+                let transactionDescription = `Loan payment for ${loan.id}`;
 
                 if (newLoanPaid >= loan.loanAmountDue) {
                     newLoanStatus = 'closed';
-                    transactionDescription = `Paid off loan ${loan.id}`; 
+                    transactionDescription = `Paid off loan ${loan.id}`;
                     showModal('Loan Paid!', 'Loan has been fully paid off!', 'success');
                 } else {
                     showModal('Payment Successful!', `Paid ${effectiveAmountToPay.toFixed(2)} towards loan ${loan.id}.`, 'success');
                 }
-                
+
                 try {
                     const response = await fetch(`${API_ENDPOINTS.ACCOUNTS}/pay-loan`, {
                         method: 'POST',

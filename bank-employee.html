@@ -274,6 +274,24 @@
                                 updatedFields: { employeeMessage: employeeMessage }
                             })
                         });
+                        fetch(EMPLOYEE_API_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                action: 'update_loan_status',
+                                loanId: selectedLoan.id,
+                                updatedFields: { employeeMessage: employeeMessage }
+                            })
+                        });
+                        fetch(EMPLOYEE_API_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                action: 'update_loan_status',
+                                loanId: selectedLoan.id,
+                                updatedFields: { employeeMessage: employeeMessage }
+                            })
+                        });
                         setMessageSet(true);
                         // Update the selected loan in the local state
                         setLoans(prevLoans => prevLoans.map(loan =>
