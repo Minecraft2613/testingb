@@ -555,7 +555,7 @@
     "dailyRepayment": 1.6657142857142848,
     "durationWeeks": 1,
     "loanType": "personal",
-    "loanStatus": "pending",
+    "loanStatus": "waitingForEmployeeApproval",
     "applicationDate": "2025-07-28T14:51:23.668Z",
     "purpose": "11",
     "coord1": "1,1,1",
@@ -573,8 +573,9 @@
     "loanerNetWorth": "11",
     "employeePhoto": null,
     "signatureOfBankEmployee": null,
-    "employeeVisitTime": null,
+    "employeeVisitTime": "2025-07-28T14:52",
     "employeeMessage": null,
-    "adminReply": null
+    "adminReply": null,
+    "assignedEmployee": "Banker"
   }
 ]
