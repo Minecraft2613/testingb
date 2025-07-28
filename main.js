@@ -172,6 +172,7 @@ const { useState, useEffect, useMemo, useRef } = React; // Added a comment to tr
                 if (!currentUserAccount) return null;
 
                 const { bankName, loans = [], jobPerDayIncome = 0, businessPerDayIncome = 0, businessIncomeUnit = 'day', balance = 0, transactions = [] } = currentUserAccount;
+const parsedBalance = parseFloat(balance);
 
                 // Derive shopTransactions and jobTransactions from currentUserAccount.transactions
                 const shopTransactions = transactions.filter(tx => tx.item !== undefined);
@@ -187,7 +188,7 @@ const { useState, useEffect, useMemo, useRef } = React; // Added a comment to tr
                         <div className="bg-gray-800 p-6 rounded-lg shadow-minecraft">
                             <h2 className="text-xl font-bold text-green-400 mb-4">Account Overview</h2>
                             <p className="text-gray-300"><strong>Bank Name:</strong> {bankName}</p>
-                            <p className="text-2xl font-bold">Balance: <span className="text-green-400">${balance?.toFixed(2) || '0.00'}</span></p>
+                            <p className="text-2xl font-bold">Balance: <span className="text-green-400">${parsedBalance?.toFixed(2) || '0.00'}</span></p>
                             <p className="text-2xl font-bold">Minecraft Balance: <span className="text-green-400">${currentUserAccount.minecraftBalance?.toFixed(2) || '0.00'}</span></p>
                             <p className="text-lg font-semibold mt-2">Total Income: <span className="text-yellow-400">${totalPerDayIncome}/day</span></p>
                             <p className="text-sm text-gray-400">Job: ${jobPerDayIncome}/day | Business: ${businessPerDayIncome}/{businessIncomeUnit}</p>
