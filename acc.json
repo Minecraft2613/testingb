@@ -169,6 +169,12 @@
         "amount": 0,
         "date": "2025-07-28T08:15:44.250Z",
         "description": "Loan LOAN1753690443467 cancelled by admin"
+      },
+      {
+        "type": "info",
+        "amount": 0,
+        "date": "2025-07-28T08:15:46.824Z",
+        "description": "Loan LOAN1753690443467 cancelled by admin"
       }
     ],
     "taxData": {
