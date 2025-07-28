@@ -1035,6 +1035,7 @@ const parsedBalance = parseFloat(balance);
                             const response = await fetch(`${API_ENDPOINTS.ACCOUNTS}/accounts/${currentUserAccount.accountId}`);
                             if (response.ok) {
                                 const data = await response.json();
+                                console.log("Data received from worker refresh:", data.account);
                                 setCurrentUserAccount(data.account);
                             } else {
                                 console.error("Failed to refresh user account:", response.statusText);
