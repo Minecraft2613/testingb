@@ -204,9 +204,9 @@ const parsedBalance = parseFloat(balance);
                                                     <p className="font-bold capitalize text-yellow-400">{loan.loanType} Loan</p>
                                                     <p className="text-gray-300">Amount: ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'} | Total Due: ${parseFloat(loan.loanAmountDue)?.toFixed(2) || '0.00'}</p>
                                                     <p className="text-gray-300">Status: <span className={`font-semibold ${loan.loanStatus === 'approved' ? 'text-green-400' : (loan.loanStatus === 'rejected' ? 'text-red-400' : 'text-yellow-400')}`}>
-    {loan.forcefullyApproved ? 'Forcefully Approved' :
-     (loan.loanStatus === 'approved' ? 'Active Loan' :
-      loan.loanStatus === 'rejected' ? 'Rejected' :
+    {loan.forcefullyApproved ? 'Forcefully Approved' : 
+     (loan.loanStatus === 'approved' ? 'Active Loan' : 
+      loan.loanStatus === 'rejected' ? 'Rejected' : 
       loan.loanStatus)}
 </span></p>
                                                 </div>
