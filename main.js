@@ -205,14 +205,19 @@ const parsedBalance = parseFloat(balance);
                                                 <div className="flex-grow">
                                                     <p className="font-bold capitalize text-yellow-400">{loan.loanType} Loan</p>
                                                     <p className="text-gray-300">Amount: ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'} | Total Due: ${parseFloat(loan.loanAmountDue)?.toFixed(2) || '0.00'}</p>
-                                                    <p className="text-gray-300">Status: <span className={`font-semibold ${loan.loanStatus === 'pending' ? 'text-yellow-400' : 'text-green-400'}`}>{loan.loanStatus === 'pending' && loan.employeeVisitTime ? 'Waiting for employee to pass' : loan.loanStatus === 'waitingForAdminApproval' ? 'Waiting for admin approval' : loan.loanStatus}</span></p>
+                                                    <p className="text-gray-300">Status: <span className={`font-semibold ${loan.loanStatus === 'approved' ? 'text-green-400' : (loan.loanStatus === 'rejected' ? 'text-red-400' : 'text-yellow-400')}`}>
+    {loan.loanStatus === 'approved' ? 'Approved' :
+     loan.loanStatus === 'rejected' ? 'Rejected' :
+     (loan.loanStatus === 'pending' && loan.employeeVisitTime ? 'Waiting for employee to pass' :
+      (loan.loanStatus === 'waitingForAdminApproval' ? 'Waiting for admin approval' : loan.loanStatus))}
+</span></p>
                                                 </div>
                                                 <div className="flex flex-col items-end gap-2">
                                                     {loan.loanStatus === 'pending' && (
         
                                                             <button onClick={() => handleCancelLoan(loan.id)} className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded">Cancel</button>
                                                     )}
-                                                    {loan.loanStatus === 'active' && (
+                                                    {loan.loanStatus === 'approved' && (
                                                         <button onClick={() => handlePayLoan(loan.id)} className="text-xs bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-2 rounded">Pay Full Amount</button>
                                                     )}
                                                 </div>
@@ -1385,6 +1390,18 @@ const handleAdvanceTax = async (amount) => {
                 const success = await updateCurrentUser(updatedAccount);
                 if (success) {
                     showModal('Admin Action', 'Loan has been approved!', 'success');
+                    // Explicitly re-fetch ALL loans to ensure UI is updated with latest loan statuses
+                    const loansResponse = await fetch(API_ENDPOINTS.LOANS);
+                    if (loansResponse.ok) {
+                        const allLoansData = await loansResponse.json();
+                        const userLoans = allLoansData.filter(loan => loan.accountId === currentUserAccount.accountId);
+                        setCurrentUserAccount(prevAccount => ({
+                            ...prevAccount,
+                            loans: userLoans
+                        }));
+                    } else {
+                        console.error("Failed to re-fetch loans after admin approval.");
+                    }
                 } else {
                     showModal('Error', 'Failed to update account after loan approval.', 'error');
                 }
