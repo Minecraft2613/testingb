@@ -1390,15 +1390,19 @@ const handleAdvanceTax = async (amount) => {
                 const success = await updateCurrentUser(updatedAccount);
                 if (success) {
                     showModal('Admin Action', 'Loan has been approved!', 'success');
+                    console.log('Processing loan approval for loanId:', loanId);
                     // Explicitly re-fetch ALL loans to ensure UI is updated with latest loan statuses
                     const loansResponse = await fetch(API_ENDPOINTS.LOANS);
                     if (loansResponse.ok) {
                         const allLoansData = await loansResponse.json();
+                        console.log('Fetched all loans data:', allLoansData);
                         const userLoans = allLoansData.filter(loan => loan.accountId === currentUserAccount.accountId);
+                        console.log('Filtered user loans:', userLoans);
                         setCurrentUserAccount(prevAccount => ({
                             ...prevAccount,
                             loans: userLoans
                         }));
+                        console.log('currentUserAccount after update:', currentUserAccount);
                     } else {
                         console.error("Failed to re-fetch loans after admin approval.");
                     }
