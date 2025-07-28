@@ -355,6 +355,12 @@
         "amount": 11,
         "date": "2025-07-28T15:46:07.214Z",
         "description": "Loan LOAN1753717527035 forcefully approved by admin"
+      },
+      {
+        "type": "info",
+        "amount": 0,
+        "date": "2025-07-28T15:55:24.240Z",
+        "description": "Loan application LOAN1753717527035 cancelled"
       }
     ],
     "taxData": {
@@ -639,39 +645,7 @@
         }
       }
     },
-    "loans": [
-      {
-        "id": "LOAN1753717527035",
-        "accountId": "Ansh",
-        "loanAmount": 11,
-        "loanAmountDue": 11.659999999999993,
-        "loanPaid": 0,
-        "dailyRepayment": 1.6657142857142848,
-        "durationWeeks": 1,
-        "loanType": "personal",
-        "loanStatus": "pending",
-        "applicationDate": "2025-07-28T15:45:27.035Z",
-        "purpose": "11",
-        "coord1": "1,1,-2",
-        "coord2": "",
-        "playerScreenshot": {},
-        "landPhoto": "",
-        "bankEmployeeUsername": null,
-        "loanerBankId": null,
-        "loanerPerDayIncome": null,
-        "hasBusiness": false,
-        "areaVolume": null,
-        "cornerCoords": null,
-        "valueOfLand": null,
-        "valueOfBuilding": null,
-        "loanerNetWorth": "1",
-        "employeePhoto": null,
-        "signatureOfBankEmployee": null,
-        "employeeVisitTime": null,
-        "employeeMessage": null,
-        "adminReply": null
-      }
-    ],
+    "loans": [],
     "jobType": "ansh",
     "jobPerDayIncome": "1111111111",
     "businessType": "",
