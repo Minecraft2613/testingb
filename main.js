@@ -84,7 +84,7 @@ const { useState, useEffect, useMemo, useRef } = React; // Added a comment to tr
                         <input name="email" type="email" value={formState.email} onChange={handleChange} placeholder="Email Address" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" />
                         <select name="edition" value={formState.edition} onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"><option value="java">Java</option><option value="bedrock">Bedrock</option></select>
                         <div className="flex"><input name="accountId" value={formState.accountId} onChange={handleChange} placeholder="Your in-game name" required className={`w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 ${formState.edition === 'bedrock' ? 'rounded-l-none rounded-r-md' : 'rounded-md'}`} /></div>
-                        <input name="password" type="password" value={formState.password} onChange={handleChange} placeholder="Password" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" />
+                        <input name="password" type="password" value={formState.password} onChange={handleChange} placeholder="********" required className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" />
                         {generatedBankId && <div className="p-3 bg-gray-700 rounded-md border border-green-500 flex items-center justify-between"><span className="text-green-300 text-sm font-mono break-all pr-2">Your Bank ID: <span className="font-bold text-lg">{generatedBankId}</span></span><button type="button" onClick={() => copyToClipboard(generatedBankId, showModal)} className="bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-1 px-3 rounded-md">Copy</button></div>}
                         <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md">Create Account</button>
                     </form>
@@ -211,23 +211,6 @@ const parsedBalance = parseFloat(balance);
       loan.loanStatus === 'rejected' ? 'Rejected' : 
       (loan.loanStatus === 'pending' && loan.employeeVisitTime ? 'Waiting for employee to pass' : 
        (loan.loanStatus === 'waitingForAdminApproval' ? 'Waiting for admin approval' : loan.loanStatus)))}
-</span></p>
-    {loan.forcefullyApproved ? 'Forcefully Approved' : 
-     (loan.loanStatus === 'approved' ? 'Approved' : 
-      loan.loanStatus === 'rejected' ? 'Rejected' : 
-      (loan.loanStatus === 'pending' && loan.employeeVisitTime ? 'Waiting for employee to pass' : 
-       (loan.loanStatus === 'waitingForAdminApproval' ? 'Waiting for admin approval' : loan.loanStatus)))}
-</span></p>
-    {loan.forcefullyApproved ? 'Forcefully Approved' : 
-     (loan.loanStatus === 'approved' ? 'Approved' : 
-      loan.loanStatus === 'rejected' ? 'Rejected' : 
-      (loan.loanStatus === 'pending' && loan.employeeVisitTime ? 'Waiting for employee to pass' : 
-       (loan.loanStatus === 'waitingForAdminApproval' ? 'Waiting for admin approval' : loan.loanStatus)))}
-</span></p>
-    {loan.loanStatus === 'approved' ? 'Approved' :
-     loan.loanStatus === 'rejected' ? 'Rejected' :
-     (loan.loanStatus === 'pending' && loan.employeeVisitTime ? 'Waiting for employee to pass' :
-      (loan.loanStatus === 'waitingForAdminApproval' ? 'Waiting for admin approval' : loan.loanStatus))}
 </span></p>
                                                 </div>
                                                 <div className="flex flex-col items-end gap-2">
@@ -1571,4 +1554,3 @@ const handleAdvanceTax = async (amount) => {
         };
 
         ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-    
