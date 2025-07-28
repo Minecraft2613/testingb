@@ -259,11 +259,32 @@
         const HomeView = ({ data, handleApproveLoan, handleCancelLoan, adminUser, handleForceApproveLoan, handleUpdateLoanDetails }) => {
             const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
             const [selectedLoan, setSelectedLoan] = useState(null);
+            const [accountSearchTerm, setAccountSearchTerm] = useState('');
+            const [loanSearchTerm, setLoanSearchTerm] = useState('');
+            const [currentPage, setCurrentPage] = useState(1);
+            const accountsPerPage = 5; // Display 5 accounts per page
 
             const openLoanDetails = (loan) => {
                 setSelectedLoan(loan);
                 setShowLoanDetailModal(true);
             };
+
+            // Filter and paginate accounts
+            const filteredAccounts = data.accounts.filter(acc =>
+                acc.accountId.toLowerCase().includes(accountSearchTerm.toLowerCase())
+            );
+            const indexOfLastAccount = currentPage * accountsPerPage;
+            const indexOfFirstAccount = indexOfLastAccount - accountsPerPage;
+            const currentAccounts = filteredAccounts.slice(indexOfFirstAccount, indexOfLastAccount);
+            const totalAccountPages = Math.ceil(filteredAccounts.length / accountsPerPage);
+
+            // Sort loans by applicationDate (newest first) and get latest 5, then filter
+            const sortedLoans = [...data.loans].sort((a, b) => new Date(b.applicationDate) - new Date(a.applicationDate));
+            const latestFiveLoans = sortedLoans.slice(0, 5);
+            const filteredLoans = latestFiveLoans.filter(loan =>
+                loan.accountId.toLowerCase().includes(loanSearchTerm.toLowerCase())
+            );
+
 
             return (
                 <div>
@@ -271,8 +292,15 @@
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
                             <h3 className="text-xl font-bold text-amber-400 mb-4">User Accounts</h3>
+                            <input
+                                type="text"
+                                placeholder="Search accounts..."
+                                className="w-full p-2 mb-4 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                value={accountSearchTerm}
+                                onChange={(e) => setAccountSearchTerm(e.target.value)}
+                            />
                             <div className="space-y-4">
-                                {data.accounts.map(acc => {
+                                {currentAccounts.map(acc => {
                                     const playerBalance = data.balances.find(bal => bal.player === acc.accountId);
                                     return (
                                         <div key={acc.accountId} className="bg-gray-700 p-4 rounded-md">
@@ -283,11 +311,35 @@
                                     );
                                 })}
                             </div>
+                            <div className="flex justify-between mt-4">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-4 py-2 bg-amber-500 text-white rounded-md disabled:opacity-50"
+                                >
+                                    Previous
+                                </button>
+                                <span>Page {currentPage} of {totalAccountPages}</span>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(totalAccountPages, prev + 1))}
+                                    disabled={currentPage === totalAccountPages}
+                                    className="px-4 py-2 bg-amber-500 text-white rounded-md disabled:opacity-50"
+                                >
+                                    Next
+                                </button>
+                            </div>
                         </div>
                         <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-                            <h3 className="text-xl font-bold text-amber-400 mb-4">All Loans</h3>
+                            <h3 className="text-xl font-bold text-amber-400 mb-4">Latest 5 Loans</h3>
+                            <input
+                                type="text"
+                                placeholder="Search loans..."
+                                className="w-full p-2 mb-4 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                value={loanSearchTerm}
+                                onChange={(e) => setLoanSearchTerm(e.target.value)}
+                            />
                             <div className="space-y-4">
-                                {data.loans.map(loan => (
+                                {filteredLoans.map(loan => (
                                     <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
                                         <div>
                                             <p><strong>Player:</strong> {loan.accountId}</p>
@@ -436,17 +488,32 @@
         const LoanHistoryView = ({ data, handleUpdateLoanDetails, adminUser }) => {
             const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
             const [selectedLoan, setSelectedLoan] = useState(null);
+            const [searchTerm, setSearchTerm] = useState('');
 
             const openLoanDetails = (loan) => {
                 setSelectedLoan(loan);
                 setShowLoanDetailModal(true);
             };
 
+            // Sort loans by applicationDate (newest first) and get latest 5, then filter
+            const sortedLoans = [...data.loans].sort((a, b) => new Date(b.applicationDate) - new Date(a.applicationDate));
+            const latestFiveLoans = sortedLoans.slice(0, 5);
+            const filteredLoans = latestFiveLoans.filter(loan =>
+                loan.accountId.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
             return (
                 <div>
                     <h2 className="text-3xl font-bold text-white mb-6">Loan History</h2>
+                    <input
+                        type="text"
+                        placeholder="Search loans by player name..."
+                        className="w-full p-2 mb-4 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                     <div className="space-y-4">
-                        {data.loans.map(loan => (
+                        {filteredLoans.map(loan => (
                             <div key={loan.id} className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
                                 <div>
                                     <p><strong>Player:</strong> {loan.accountId}</p>
@@ -569,11 +636,33 @@
         };
 
         const BankInfoView = ({ data, adminUser }) => {
+            const [searchTerm, setSearchTerm] = useState('');
+            const [currentPage, setCurrentPage] = useState(1);
+            const accountsPerPage = 5; // Display 5 accounts per page
+
+            const filteredAccounts = data.accounts.filter(acc =>
+                acc.accountId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                acc.bankId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                acc.email.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            const indexOfLastAccount = currentPage * accountsPerPage;
+            const indexOfFirstAccount = indexOfLastAccount - accountsPerPage;
+            const currentAccounts = filteredAccounts.slice(indexOfFirstAccount, indexOfLastAccount);
+            const totalPages = Math.ceil(filteredAccounts.length / accountsPerPage);
+
             return (
                 <div>
                     <h2 className="text-3xl font-bold text-white mb-6">Player Bank Information</h2>
+                    <input
+                        type="text"
+                        placeholder="Search accounts by Player ID, Bank ID, or Email..."
+                        className="w-full p-2 mb-4 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {data.accounts.map(acc => (
+                        {currentAccounts.map(acc => (
                             <div key={acc.accountId} className="bg-gray-800 p-6 rounded-lg shadow-lg">
                                 <h4 className="font-bold text-amber-400 text-lg mb-2">{acc.accountId}</h4>
                                 <p><strong>Bank ID:</strong> {acc.bankId}</p>
@@ -583,19 +672,48 @@
                             </div>
                         ))}
                     </div>
+                    <div className="flex justify-between mt-4">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="px-4 py-2 bg-amber-500 text-white rounded-md disabled:opacity-50"
+                        >
+                            Previous
+                        </button>
+                        <span>Page {currentPage} of {totalPages}</span>
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-4 py-2 bg-amber-500 text-white rounded-md disabled:opacity-50"
+                        >
+                            Next
+                        </button>
+                    </div>
                 </div>
             );
         };
         
         const PlayerView = ({ data }) => {
              const [selectedPlayer, setSelectedPlayer] = useState(null);
+             const [searchTerm, setSearchTerm] = useState('');
+
+            const filteredAccounts = data.accounts.filter(acc =>
+                acc.accountId.toLowerCase().includes(searchTerm.toLowerCase())
+            );
 
             return (
                 <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
                     <h2 className="text-2xl font-bold text-amber-400 mb-4">View as Player</h2>
+                    <input
+                        type="text"
+                        placeholder="Search player by name..."
+                        className="w-full p-2 mb-4 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                     <select onChange={(e) => setSelectedPlayer(data.accounts.find(acc => acc.accountId === e.target.value))} className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 mb-4">
                         <option value="">Select a player</option>
-                        {data.accounts.map(acc => <option key={acc.accountId} value={acc.accountId}>{acc.accountId}</option>)}
+                        {filteredAccounts.map(acc => <option key={acc.accountId} value={acc.accountId}>{acc.accountId}</option>)}
                     </select>
 
                     {selectedPlayer && (
