@@ -1032,29 +1032,43 @@ const parsedBalance = parseFloat(balance);
 
             // Initial app load effect
             useEffect(() => {
+                const refreshCurrentUserAccount = async () => {
+                    if (currentUserAccount && currentUserAccount.accountId) {
+                        try {
+                            const response = await fetch(`${API_ENDPOINTS.ACCOUNTS}/accounts/${currentUserAccount.accountId}`);
+                            if (response.ok) {
+                                const data = await response.json();
+                                setCurrentUserAccount(data.account);
+                            } else {
+                                console.error("Failed to refresh user account:", response.statusText);
+                            }
+                        } catch (error) {
+                            console.error("Error refreshing user account:", error);
+                        }
+                    }
+                };
+
                 const initializeApp = async () => {
                     let accounts = await getAllAccounts();
                     if (accounts.length === 0) {
-                        // Populate initial data if no accounts exist on GitHub
                         const initialAccount = {
                             bankName: 'Gemini Test Bank', accountId: 'tester', email: 'tester@gemini.com', password: '26', edition: 'java', bankId: 'BANK006443',
                             balance: 10000, jobType: 'Diamond Miner', jobPerDayIncome: 250, businessType: 'Potion Shop', businessPerDayIncome: 150, businessIncomeUnit: 'day',
                             loans: [], transactions: []
                         };
-                        // This initial save would go through the worker as well in a real app
-                        // For this simulation, we'll just add it to the in-memory accounts for now
-                        // and rely on the create-account endpoint for persistence.
                         accounts.push(initialAccount);
-                        // In a real app, you'd call the worker to create this initial account
-                        // await fetch(`${API_ENDPOINTS.ACCOUNTS}/create-account`, { method: 'POST', body: JSON.stringify(initialAccount) });
                     }
-                    // Simulate initial loading time
                     setLoading(false);
-                    setCurrentUserAccount(accounts[0]); // Set the first account as the current user for direct access
+                    setCurrentUserAccount(accounts[0]);
                     setCurrentPage('home');
                 };
+
                 initializeApp();
-            }, []);
+
+                const intervalId = setInterval(refreshCurrentUserAccount, 5000); // Refresh every 5 seconds
+
+                return () => clearInterval(intervalId); // Cleanup on unmount
+            }, [currentUserAccount]);
 
             const handleLogin = async (identifier, password) => {
                 setLoading(true);
