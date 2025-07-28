@@ -425,7 +425,7 @@
     "dailyRepayment": 16.80857142857142,
     "durationWeeks": 1,
     "loanType": "personal",
-    "loanStatus": "waitingForEmployeeApproval",
+    "loanStatus": "approved",
     "applicationDate": "2025-07-28T13:16:36.617Z",
     "purpose": "11",
     "coord1": "1,1,1",
