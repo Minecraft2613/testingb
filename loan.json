@@ -521,7 +521,7 @@
     "dailyRepayment": 2.5742857142857125,
     "durationWeeks": 1,
     "loanType": "personal",
-    "loanStatus": "waitingForEmployeeApproval",
+    "loanStatus": "approved",
     "applicationDate": "2025-07-28T14:24:35.960Z",
     "purpose": "1",
     "coord1": "1,1,1",
@@ -542,6 +542,7 @@
     "employeeVisitTime": "2025-07-28T14:25",
     "employeeMessage": "nsh",
     "adminReply": null,
-    "assignedEmployee": "admin22"
+    "assignedEmployee": "admin22",
+    "forcefullyApproved": false
   }
 ]
