@@ -457,7 +457,7 @@
     "dailyRepayment": 18.322857142857135,
     "durationWeeks": 1,
     "loanType": "personal",
-    "loanStatus": "waitingForEmployeeApproval",
+    "loanStatus": "approved",
     "applicationDate": "2025-07-28T13:21:30.036Z",
     "purpose": "1",
     "coord1": "1,1,1",
@@ -478,7 +478,8 @@
     "employeeVisitTime": "2025-07-28T13:27",
     "employeeMessage": "nsg",
     "adminReply": null,
-    "assignedEmployee": "Banker"
+    "assignedEmployee": "Banker",
+    "forcefullyApproved": false
   },
   {
     "id": "LOAN1753709249924",
