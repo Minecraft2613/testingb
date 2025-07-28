@@ -6,7 +6,7 @@
     "password": "26",
     "edition": "java",
     "bankId": "BANK622688",
-    "balance": "56409111121211111111111111111111111111111111111211711",
+    "balance": "564091111212111111111111111111111111111111111112117",
     "transactions": [
       {
         "type": "credit",
@@ -321,10 +321,10 @@
         "description": "Loan LOAN1753712675960 forcefully approved by admin"
       },
       {
-        "type": "credit",
-        "amount": 11,
-        "date": "2025-07-28T14:50:55.500Z",
-        "description": "Loan LOAN1753709249924 forcefully approved by admin"
+        "type": "info",
+        "amount": 0,
+        "date": "2025-07-28T14:51:03.368Z",
+        "description": "Loan application LOAN1753712675960 cancelled"
       }
     ],
     "taxData": {
@@ -609,39 +609,7 @@
         }
       }
     },
-    "loans": [
-      {
-        "id": "LOAN1753712675960",
-        "accountId": "Ansh",
-        "loanAmount": 17,
-        "loanAmountDue": 18.01999999999999,
-        "loanPaid": 0,
-        "dailyRepayment": 2.5742857142857125,
-        "durationWeeks": 1,
-        "loanType": "personal",
-        "loanStatus": "pending",
-        "applicationDate": "2025-07-28T14:24:35.960Z",
-        "purpose": "1",
-        "coord1": "1,1,1",
-        "coord2": "",
-        "playerScreenshot": {},
-        "landPhoto": "",
-        "bankEmployeeUsername": null,
-        "loanerBankId": null,
-        "loanerPerDayIncome": null,
-        "hasBusiness": false,
-        "areaVolume": null,
-        "cornerCoords": null,
-        "valueOfLand": null,
-        "valueOfBuilding": null,
-        "loanerNetWorth": "1",
-        "employeePhoto": null,
-        "signatureOfBankEmployee": null,
-        "employeeVisitTime": null,
-        "employeeMessage": null,
-        "adminReply": null
-      }
-    ],
+    "loans": [],
     "jobType": "ansh",
     "jobPerDayIncome": "1111111111",
     "businessType": "",
