@@ -123,6 +123,198 @@
             const [messageSet, setMessageSet] = useState(false);
             const [sendingLoan, setSendingLoan] = useState(false);
 
+            const fetchLoans = async () => {
+                setLoadingLoans(true);
+                try {
+                    const response = await fetch(EMPLOYEE_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'get_loans', employeeUser })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        setLoans(data.loans);
+                    } else {
+                        setModalMessage(data.message || 'Failed to fetch loans.');
+                    }
+                } catch (e) {
+                    setModalMessage('Connection error while fetching loans.');
+                    console.error("Error fetching loans:", e);
+                } finally {
+                    setLoadingLoans(false);
+                }
+            };
+
+            useEffect(() => {
+                if (employeeUser) {
+                    fetchLoans();
+                    const interval = setInterval(fetchLoans, 10000); // Refresh every 10 seconds
+                    return () => clearInterval(interval);
+                }
+            }, [employeeUser]);
+
+            useEffect(() => {
+                if (selectedLoan) {
+                    setVisitTime(selectedLoan.employeeVisitTime || '');
+                    setEmployeeMessage(selectedLoan.employeeMessage || '');
+                    setVisitTimeSet(!!selectedLoan.employeeVisitTime);
+                    setMessageSet(!!selectedLoan.employeeMessage);
+                    setShowAdditionalFields(false); // Reset additional fields view
+                    setLoanerPhoto(null);
+                    setLandPhoto(null);
+                    setBuildingPhoto(null);
+                    setEmployeePhoto(null);
+                    setSignatureOfBankEmployee(null);
+                    setLoanerBankId(selectedLoan.loanerBankId || '');
+                    setLoanerPerDayIncome(selectedLoan.loanerPerDayIncome || '');
+                    setHasBusiness(selectedLoan.hasBusiness || false);
+                    setAreaVolume(selectedLoan.areaVolume || '');
+                    setCornerCoords(selectedLoan.cornerCoords || '');
+                    setValueOfLand(selectedLoan.valueOfLand || '');
+                    setValueOfBuilding(selectedLoan.valueOfBuilding || '');
+                    setLoanerNetWorth(selectedLoan.loanerNetWorth || '');
+                }
+            }, [selectedLoan]);
+
+            const handleSetVisitTime = async () => {
+                if (!selectedLoan || !visitTime) {
+                    setModalMessage('Please select a loan and set a visit time.');
+                    return;
+                }
+                try {
+                    const response = await fetch(EMPLOYEE_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'set_visit_time',
+                            loanId: selectedLoan.id,
+                            employeeVisitTime: visitTime,
+                            employeeUser
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        setModalMessage('Visit time set successfully!');
+                        setVisitTimeSet(true);
+                        // Update the selected loan in the local state
+                        setLoans(prevLoans => prevLoans.map(loan =>
+                            loan.id === selectedLoan.id ? { ...loan, employeeVisitTime: visitTime, loanStatus: 'waitingForEmployeeApproval' } : loan
+                        ));
+                        setSelectedLoan(prevLoan => ({ ...prevLoan, employeeVisitTime: visitTime, loanStatus: 'waitingForEmployeeApproval' }));
+                    } else {
+                        setModalMessage(data.message || 'Failed to set visit time.');
+                    }
+                } catch (e) {
+                    setModalMessage('Connection error while setting visit time.');
+                    console.error("Error setting visit time:", e);
+                }
+            };
+
+            const handleAddMessage = async () => {
+                if (!selectedLoan || !employeeMessage) {
+                    setModalMessage('Please select a loan and add a message.');
+                    return;
+                }
+                try {
+                    const response = await fetch(EMPLOYEE_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'add_message',
+                            loanId: selectedLoan.id,
+                            employeeMessage,
+                            employeeUser
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        setModalMessage('Message added successfully!');
+                        setMessageSet(true);
+                        // Update the selected loan in the local state
+                        setLoans(prevLoans => prevLoans.map(loan =>
+                            loan.id === selectedLoan.id ? { ...loan, employeeMessage: employeeMessage } : loan
+                        ));
+                        setSelectedLoan(prevLoan => ({ ...prevLoan, employeeMessage: employeeMessage }));
+                    } else {
+                        setModalMessage(data.message || 'Failed to add message.');
+                    }
+                } catch (e) {
+                    setModalMessage('Connection error while adding message.');
+                    console.error("Error adding message:", e);
+                }
+            };
+
+            const areAdditionalFieldsFilled = () => {
+                // Check if all required fields are filled
+                return (
+                    loanerPhoto &&
+                    landPhoto &&
+                    buildingPhoto &&
+                    employeePhoto &&
+                    signatureOfBankEmployee &&
+                    loanerBankId &&
+                    loanerPerDayIncome &&
+                    areaVolume &&
+                    cornerCoords &&
+                    valueOfLand &&
+                    valueOfBuilding &&
+                    loanerNetWorth
+                );
+            };
+
+            const handlePassLoan = async () => {
+                if (!selectedLoan) {
+                    setModalMessage('Please select a loan to pass.');
+                    return;
+                }
+                if (!areAdditionalFieldsFilled()) {
+                    setModalMessage('Please fill all additional loan details before sending.');
+                    return;
+                }
+
+                setSendingLoan(true);
+                try {
+                    const response = await fetch(EMPLOYEE_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'pass_loan',
+                            loanId: selectedLoan.id,
+                            userAccountId: selectedLoan.accountId,
+                            employeeUser,
+                            employeeVisitTime: selectedLoan.employeeVisitTime, // Include employeeVisitTime
+                            employeeMessage: selectedLoan.employeeMessage, // Include employeeMessage
+                            loanerPhoto: loanerPhoto ? loanerPhoto.name : null, // Sending file name as placeholder URL
+                            landPhoto: landPhoto ? landPhoto.name : null,
+                            buildingPhoto: buildingPhoto ? buildingPhoto.name : null,
+                            employeePhoto: employeePhoto ? employeePhoto.name : null,
+                            signatureOfBankEmployee: signatureOfBankEmployee ? signatureOfBankEmployee.name : null,
+                            loanerBankId,
+                            loanerPerDayIncome: parseFloat(loanerPerDayIncome),
+                            hasBusiness,
+                            areaVolume,
+                            cornerCoords,
+                            valueOfLand: parseFloat(valueOfLand),
+                            valueOfBuilding: parseFloat(valueOfBuilding),
+                            loanerNetWorth: parseFloat(loanerNetWorth)
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        setModalMessage('Loan sent for Admin Approval successfully!');
+                        fetchLoans(); // Refresh the loan list
+                        setSelectedLoan(null); // Clear selected loan
+                    } else {
+                        setModalMessage(data.message || 'Failed to send loan for approval.');
+                    }
+                } catch (e) {
+                    setModalMessage('Connection error while sending loan for approval.');
+                    console.error("Error passing loan:", e);
+                } finally {
+                    setSendingLoan(false);
+                }
+            };
+
 
 
 

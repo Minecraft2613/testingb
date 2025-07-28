@@ -249,7 +249,7 @@
             );
         };
 
-        const HomeView = ({ data, handleApproveLoan, handleCancelLoan, adminUser }) => {
+        const HomeView = ({ data, handleApproveLoan, handleCancelLoan, adminUser, handleForceApproveLoan, handleUpdateLoanDetails }) => {
             const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
             const [selectedLoan, setSelectedLoan] = useState(null);
 
