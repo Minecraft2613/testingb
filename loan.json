@@ -641,7 +641,7 @@
     "employeePhoto": null,
     "signatureOfBankEmployee": null,
     "employeeVisitTime": "2025-07-28T15:45",
-    "employeeMessage": null,
+    "employeeMessage": "aa",
     "adminReply": null,
     "assignedEmployee": "Banker"
   }
