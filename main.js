@@ -195,48 +195,45 @@ const parsedBalance = parseFloat(balance);
                             <h2 className="text-xl font-bold text-green-400 mb-4">Loans ({loans.length})</h2>
                             {loans.length > 0 ? (
                                 <ul className="space-y-4">
-                                    {[...new Map(loans.map(item => [item['id'], item])).values()].map((loan) => (
-                                        <li key={loan.id}
-                                            className={`p-4 rounded-md cursor-pointer ${selectedLoan?.id === loan.id ? 'bg-blue-700' : 'bg-gray-700'} hover:bg-gray-600`}
-                                            onClick={() => setSelectedLoan(loan)}>
-                                            <>
+                                    {[...new Map(loans.map(item => [item['id'], item])).values()].map((loan) => {
+                                        let statusText;
+                                        let showCancelButton = false;
+                                        let showPayButton = false;
+
+                                        if (loan.forcefullyApproved) {
+                                            statusText = 'Forcefully Approved';
+                                        } else if (loan.loanStatus === 'approved') {
+                                            statusText = 'Active Loan';
+                                            showPayButton = true;
+                                        } else if (loan.loanStatus === 'rejected') {
+                                            statusText = 'Rejected';
+                                        } else if (loan.loanStatus === 'waitingForAdminApproval') {
+                                            statusText = 'Waiting for Admin Approval';
+                                        } else {
+                                            statusText = loan.loanStatus;
+                                            showCancelButton = true;
+                                        }
+
+                                        return (
+                                            <li key={loan.id}
+                                                className={`p-4 rounded-md cursor-pointer ${selectedLoan?.id === loan.id ? 'bg-blue-700' : 'bg-gray-700'} hover:bg-gray-600`}
+                                                onClick={() => setSelectedLoan(loan)}>
                                                 <div className="flex-grow">
                                                     <p className="font-bold capitalize text-yellow-400">{loan.loanType} Loan</p>
                                                     <p className="text-gray-300">Amount: ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'} | Total Due: ${parseFloat(loan.loanAmountDue)?.toFixed(2) || '0.00'}</p>
-                                                    <p className="text-gray-300">Status: <span className={`font-semibold ${loan.loanStatus === 'approved' ? 'text-green-400' : (loan.loanStatus === 'rejected' ? 'text-red-400' : 'text-yellow-400')}`}>
-    {loan.forcefullyApproved ? 'Forcefully Approved' : 
-     (loan.loanStatus === 'approved' ? 'Active Loan' : 
-      loan.loanStatus === 'rejected' ? 'Rejected' : 
-      (loan.loanStatus === 'waitingForAdminApproval' ? 'Waiting for Admin Approval' : 
-       loan.loanStatus))}
-</span></p>
+                                                    <p className="text-gray-300">Status: <span className={`font-semibold ${loan.loanStatus === 'approved' ? 'text-green-400' : (loan.loanStatus === 'rejected' ? 'text-red-400' : 'text-yellow-400')}`}>{statusText}</span></p>
                                                 </div>
                                                 <div className="flex flex-col items-end gap-2">
-                                                    {loan.loanStatus === 'pending' && (
-
-                                                            <button onClick={() => handleCancelLoan(loan.id)} className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded" disabled={loan.loanStatus === 'approved'}>Cancel</button>
+                                                    {showCancelButton && (
+                                                        <button onClick={() => handleCancelLoan(loan.id)} className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded">Cancel</button>
                                                     )}
-                                                    {loan.loanStatus === 'approved' && (
+                                                    {showPayButton && (
                                                         <button onClick={() => handlePayLoan(loan.id)} className="text-xs bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-2 rounded">Pay Full Amount</button>
                                                     )}
                                                 </div>
-                                                <div className="mt-2 space-y-1">
-                                                    <div className="status-step">
-                                                        <span className="status-text">Visit Time Set {loan.employeeVisitTime && `: ${new Date(loan.employeeVisitTime).toLocaleString()}`}</span>
-                                                    </div>
-                                                    <div className="status-step">
-                                                        <span className="status-text">Employee Message Added {loan.employeeMessage && `: ${loan.employeeMessage}`}</span>
-                                                    </div>
-                                                    <div className="status-step">
-                                                        <span className="status-text">Employee Details Filled</span>
-                                                    </div>
-                                                    <div className="status-step">
-                                                        <span className="status-text">Waiting for Admin Approval</span>
-                                                    </div>
-                                                </div>
-                                            </>
-                                        </li>
-                                    ))}
+                                            </li>
+                                        );
+                                    })}
                                 </ul>
                             ) : (
                                 <p className="text-gray-400">No active loans.</p>
