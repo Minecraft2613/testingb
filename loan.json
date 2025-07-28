@@ -182,7 +182,7 @@
     "employeePhoto": null,
     "signatureOfBankEmployee": null,
     "employeeVisitTime": null,
-    "employeeMessage": null,
+    "employeeMessage": "a",
     "adminReply": null
   }
 ]
