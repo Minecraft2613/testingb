@@ -217,21 +217,21 @@ const parsedBalance = parseFloat(balance);
                                                     )}
                                                 </div>
                                                 <div className="mt-2 space-y-1">
-                                                    <div className="flex items-center">
-                                                        {loan.employeeVisitTime ? <span className="text-green-400">✅</span> : <span className="text-gray-500">⚪</span>}
-                                                        <span className="ml-2 text-sm text-gray-400">Visit Time Set {loan.employeeVisitTime && `: ${new Date(loan.employeeVisitTime).toLocaleString()}`}</span>
+                                                    <div className="status-step">
+                                                        <div className={`status-circle ${loan.employeeVisitTime ? 'completed' : ''}`}></div>
+                                                        <span className="status-text">Visit Time Set {loan.employeeVisitTime && `: ${new Date(loan.employeeVisitTime).toLocaleString()}`}</span>
                                                     </div>
-                                                    <div className="flex items-center">
-                                                        {loan.employeeMessage ? <span className="text-green-400">✅</span> : <span className="text-gray-500">⚪</span>}
-                                                        <span className="ml-2 text-sm text-gray-400">Employee Message Added {loan.employeeMessage && `: ${loan.employeeMessage}`}</span>
+                                                    <div className="status-step">
+                                                        <div className={`status-circle ${loan.employeeMessage ? 'completed' : ''}`}></div>
+                                                        <span className="status-text">Employee Message Added {loan.employeeMessage && `: ${loan.employeeMessage}`}</span>
                                                     </div>
-                                                    <div className="flex items-center">
-                                                        {loan.loanerPhoto && loan.landPhoto && loan.buildingPhoto && loan.employeePhoto && loan.signatureOfBankEmployee && loan.loanerBankId && loan.loanerPerDayIncome && loan.areaVolume && loan.cornerCoords && loan.valueOfLand && loan.valueOfBuilding && loan.loanerNetWorth ? <span className="text-green-400">✅</span> : <span className="text-gray-500">⚪</span>}
-                                                        <span className="ml-2 text-sm text-gray-400">Employee Details Filled</span>
+                                                    <div className="status-step">
+                                                        <div className={`status-circle ${loan.loanerPhoto && loan.landPhoto && loan.buildingPhoto && loan.employeePhoto && loan.signatureOfBankEmployee && loan.loanerBankId && loan.loanerPerDayIncome && loan.areaVolume && loan.cornerCoords && loan.valueOfLand && loan.valueOfBuilding && loan.loanerNetWorth ? 'completed' : ''}`}></div>
+                                                        <span className="status-text">Employee Details Filled</span>
                                                     </div>
-                                                    <div className="flex items-center">
-                                                        {loan.loanStatus === 'waitingForAdminApproval' || loan.loanStatus === 'approved' ? <span className="text-green-400">✅</span> : <span className="text-gray-500">⚪</span>}
-                                                        <span className="ml-2 text-sm text-gray-400">Waiting for Admin Approval</span>
+                                                    <div className="status-step">
+                                                        <div className={`status-circle ${loan.loanStatus === 'approved' ? 'completed' : (loan.loanStatus === 'rejected' ? 'rejected' : '')}`}></div>
+                                                        <span className="status-text">Waiting for Admin Approval</span>
                                                     </div>
                                                 </div>
                                             </>
@@ -1379,7 +1379,7 @@ const handleAdvanceTax = async (amount) => {
             };
 
             const handleAdminApproveLoan = async (loanId) => {
-                const loans = currentUserAccount.loans.map(loan => loan.id === loanId ? { ...loan, loanStatus: 'active' } : loan);
+                const loans = currentUserAccount.loans.map(loan => loan.id === loanId ? { ...loan, loanStatus: 'approved' } : loan);
                 const approvedLoan = loans.find(loan => loan.id === loanId);
                 const updatedAccount = { ...currentUserAccount, loans, balance: currentUserAccount.balance + approvedLoan.loanAmount, transactions: [...currentUserAccount.transactions, { type: 'credit', amount: approvedLoan.loanAmount, date: new Date().toISOString(), description: `Loan ${loanId} approved` }] };
                 const success = await updateCurrentUser(updatedAccount);
