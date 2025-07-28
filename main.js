@@ -607,9 +607,9 @@ const { useState, useEffect, useMemo, useRef } = React; // Added a comment to tr
                                 <h3 className="text-lg font-semibold text-yellow-400">Personal Loan Details</h3>
                                 <p className="text-sm text-gray-400">Please provide the coordinates for the location related to your loan purpose.</p>
                                 <div className="grid grid-cols-3 gap-2">
-                                    <input name="coord-0-x" type="number" value={loanDetails.coords[0].x} onChange={handleChange} placeholder="X" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord-0-y" type="number" value={loanDetails.coords[0].y} onChange={handleChange} placeholder="Y" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                    <input name="coord-0-z" type="number" value={loanDetails.coords[0].z} onChange={handleChange} placeholder="Z" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord-0-x" type="number" value={loanDetails.coords[0]?.x || ''} onChange={handleChange} placeholder="X" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord-0-y" type="number" value={loanDetails.coords[0]?.y || ''} onChange={handleChange} placeholder="Y" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                    <input name="coord-0-z" type="number" value={loanDetails.coords[0]?.z || ''} onChange={handleChange} placeholder="Z" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                 </div>
                                 <label className="block text-gray-300">Player Screenshot:</label>
                                 <input name="playerScreenshot" type="file" onChange={handleChange} className="w-full p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
@@ -626,9 +626,9 @@ const { useState, useEffect, useMemo, useRef } = React; // Added a comment to tr
                                 <p className="text-sm text-gray-400">Corner Coordinates (up to 10 corners)</p>
                                 {loanDetails.coords.map((coord, index) => (
                                     <div key={index} className="grid grid-cols-4 gap-2">
-                                        <input name={`coord-${index}-x`} type="number" value={coord.x} onChange={handleChange} placeholder="X" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                        <input name={`coord-${index}-y`} type="number" value={coord.y} onChange={handleChange} placeholder="Y" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
-                                        <input name={`coord-${index}-z`} type="number" value={coord.z} onChange={handleChange} placeholder="Z" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                        <input name={`coord-${index}-x`} type="number" value={coord?.x || ''} onChange={handleChange} placeholder="X" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                        <input name={`coord-${index}-y`} type="number" value={coord?.y || ''} onChange={handleChange} placeholder="Y" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
+                                        <input name={`coord-${index}-z`} type="number" value={coord?.z || ''} onChange={handleChange} placeholder="Z" className="p-3 bg-gray-700 text-gray-200 border border-gray-600 rounded-md" />
                                         {loanDetails.coords.length > 1 && (
                                             <button type="button" onClick={() => setLoanDetails(prev => ({ ...prev, coords: prev.coords.filter((_, i) => i !== index) }))} className="p-3 bg-red-600 text-white rounded-md">-</button>
                                         )}

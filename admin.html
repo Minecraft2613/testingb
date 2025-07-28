@@ -305,7 +305,7 @@
                             </div>
                         </div>
                     </div>
-                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} adminUser={adminUser} />}
+                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} handleForceApproveLoan={handleForceApproveLoan} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
                 </div>
             );
         };
@@ -544,7 +544,7 @@
             );
         };
 
-        const LoanDetailModal = ({ loan, onClose, handleApproveLoan, handleRejectLoan, handleForceApproveLoan, adminUser }) => {
+        const LoanDetailModal = ({ loan, onClose, handleApproveLoan, handleRejectLoan, handleForceApproveLoan, handleUpdateLoanDetails, adminUser }) => {
             const [showPlayerDetails, setShowPlayerDetails] = useState(false);
             const [adminReply, setAdminReply] = useState(loan.adminReply || '');
             const [employeeVisitTime, setEmployeeVisitTime] = useState(loan.employeeVisitTime || '');
