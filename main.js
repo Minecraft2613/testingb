@@ -262,7 +262,7 @@ const parsedBalance = parseFloat(balance);
                                                     <td className="p-2 text-gray-400">{(new Date(tx.date || tx.timestamp)).toLocaleDateString()}</td>
                                                     <td className="p-2 text-gray-300">{tx.type}</td>
                                                     <td className="p-2 text-gray-300">{tx.item || tx.jobName || tx.description}</td>
-                                                    <td className={`p-2 text-right font-semibold ${parseFloat(tx.amount ?? 0) < 0 ? 'text-red-400' : 'text-green-400'}`}>{parseFloat(tx.amount ?? 0).toFixed(2)}</td>
+                                                    <td className={`p-2 text-right font-semibold ${Number(tx.amount || 0) < 0 ? 'text-red-400' : 'text-green-400'}`}>{Number(tx.amount || 0).toFixed(2)}</td>
                                                     <td className="p-2 text-right text-red-400">{tx.tax?.toFixed(2) || '0.00'}</td>
                                                 </tr>
                                             ))}
