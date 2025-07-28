@@ -207,7 +207,8 @@ const parsedBalance = parseFloat(balance);
     {loan.forcefullyApproved ? 'Forcefully Approved' : 
      (loan.loanStatus === 'approved' ? 'Active Loan' : 
       loan.loanStatus === 'rejected' ? 'Rejected' : 
-      loan.loanStatus)}
+      (loan.loanStatus === 'waitingForAdminApproval' ? 'Waiting for Admin Approval' : 
+       loan.loanStatus))}
 </span></p>
                                                 </div>
                                                 <div className="flex flex-col items-end gap-2">
