@@ -163,6 +163,12 @@
         "amount": 1,
         "date": "2025-07-28T08:15:40.859Z",
         "description": "Loan LOAN1753690443467 forcefully approved by admin"
+      },
+      {
+        "type": "info",
+        "amount": 0,
+        "date": "2025-07-28T08:15:44.250Z",
+        "description": "Loan LOAN1753690443467 cancelled by admin"
       }
     ],
     "taxData": {
