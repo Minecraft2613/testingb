@@ -50,8 +50,8 @@ const { useState, useEffect, useMemo, useRef } = React; // Added a comment to tr
                     {children}
                     <div className="text-center mt-6"><p className="text-gray-400">{footerText}</p><button onClick={onFooterClick} className="text-green-400 hover:underline font-semibold mt-1 focus:outline-none">{footerButtonText}</button></div>
                 </div>
-            </div>
-        );
+            );
+        };
 
         const LoginPage = ({ setCurrentPage, handleLogin }) => {
             const [identifier, setIdentifier] = useState('');
@@ -200,18 +200,35 @@ const parsedBalance = parseFloat(balance);
                                         let showCancelButton = false;
                                         let showPayButton = false;
 
+                                        // Determine status text and button visibility based on loan.loanStatus
                                         if (loan.forcefullyApproved) {
                                             statusText = 'Forcefully Approved';
+                                            showCancelButton = false; // Forcefully approved loans should not be cancellable by user
+                                            showPayButton = true; // Assume forcefully approved means active and needs payment
                                         } else if (loan.loanStatus === 'approved') {
                                             statusText = 'Active Loan';
                                             showPayButton = true;
+                                            showCancelButton = false; // Approved loans should not be cancellable by user
                                         } else if (loan.loanStatus === 'rejected') {
                                             statusText = 'Rejected';
+                                            showCancelButton = false;
+                                            showPayButton = false;
+                                        } else if (loan.loanStatus === 'closed') {
+                                            statusText = 'Closed';
+                                            showCancelButton = false;
+                                            showPayButton = false;
                                         } else if (loan.loanStatus === 'waitingForAdminApproval') {
                                             statusText = 'Waiting for Admin Approval';
-                                        } else {
-                                            statusText = loan.loanStatus;
-                                            showCancelButton = true;
+                                            showCancelButton = true; // User can cancel while waiting for admin
+                                            showPayButton = false;
+                                        } else if (loan.loanStatus === 'pending' || loan.loanStatus === 'waitingForEmployeeApproval') {
+                                            statusText = loan.loanStatus; // Display the exact status (e.g., 'pending')
+                                            showCancelButton = true; // User can cancel while pending or waiting for employee
+                                            showPayButton = false;
+                                        } else { // Fallback for any other unexpected or undefined status
+                                            statusText = loan.loanStatus || 'Unknown Status';
+                                            showCancelButton = false; // Default to not showing cancel for unknown statuses
+                                            showPayButton = false;
                                         }
 
                                         return (
@@ -688,7 +705,7 @@ const parsedBalance = parseFloat(balance);
                             <h3 className="text-2xl font-bold mt-4">{currentUserAccount.accountId}</h3>
                             <p className="text-gray-400"><strong>Email:</strong> {currentUserAccount.email}</p>
                             <p className="text-gray-400"><strong>Bank ID:</strong> {currentUserAccount.bankId}</p>
-                            <p className="text-gray-400"><strong>Edition:</strong> {currentUserAccount.edition}</p>
+                            <p className="text-400"><strong>Edition:</strong> {currentUserAccount.edition}</p>
                             <p className="text-gray-400"><strong>Bank Name:</strong> {currentUserAccount.bankName}</p>
                         </div>
                         <div className="flex-1 space-y-6">
@@ -849,7 +866,7 @@ const parsedBalance = parseFloat(balance);
                     }
                 } catch (error) {
                     console.error("Contact form submission error:", error);
-                    showModal('Error', 'Could not connect to the contact service. Please try again later.', 'error');
+                    showModal('Error', 'Could not connect to the contact service.', 'error');
                 }
             };
 
@@ -1032,13 +1049,43 @@ const parsedBalance = parseFloat(balance);
                 const refreshCurrentUserAccount = async () => {
                     if (currentUserAccount && currentUserAccount.accountId) {
                         try {
-                            const response = await fetch(`${API_ENDPOINTS.ACCOUNTS}/accounts/${currentUserAccount.accountId}`);
-                            if (response.ok) {
-                                const data = await response.json();
-                                console.log("Data received from worker refresh:", data.account);
-                                setCurrentUserAccount(data.account);
+                            const [accountResponse, balancesResponse, shopTransactionsResponse, jobTransactionsResponse, loansResponse, messagesResponse, taxPaymentsResponse] = await Promise.all([
+                                fetch(`${API_ENDPOINTS.ACCOUNTS}/accounts/${currentUserAccount.accountId}`),
+                                fetch(API_ENDPOINTS.BALANCES),
+                                fetch(API_ENDPOINTS.SHOP_TRANSACTIONS),
+                                fetch(API_ENDPOINTS.JOB_TRANSACTIONS),
+                                fetch(API_ENDPOINTS.LOANS),
+                                fetch(API_ENDPOINTS.MESSAGES),
+                                fetch(API_ENDPOINTS.TAX_PAYMENTS)
+                            ]);
+
+                            if (accountResponse.ok) {
+                                const accountData = await accountResponse.json();
+                                const balancesData = balancesResponse.ok ? await balancesResponse.json() : [];
+                                const shopTransactionsData = shopTransactionsResponse.ok ? await shopTransactionsResponse.json() : [];
+                                const jobTransactionsData = jobTransactionsResponse.ok ? await jobTransactionsResponse.json() : [];
+                                const loansData = loansResponse.ok ? await loansResponse.json() : [];
+                                const messagesData = messagesResponse.ok ? await messagesResponse.json() : [];
+                                const taxPaymentsData = taxPaymentsResponse.ok ? await taxPaymentsResponse.json() : [];
+
+                                const userLoans = loansData.filter(loan => loan.accountId === accountData.account.accountId);
+                                const userBalances = balancesData.find(bal => bal.player === accountData.account.accountId);
+                                const userShopTransactions = shopTransactionsData.filter(tx => tx.player === accountData.account.accountId);
+                                const userJobTransactions = jobTransactionsData.filter(tx => tx.player === accountData.account.accountId);
+                                const userMessages = messagesData.filter(msg => msg.username === accountData.account.accountId);
+                                const userTaxPayments = taxPaymentsData.filter(tx => tx.player === accountData.account.accountId);
+
+                                setCurrentUserAccount({
+                                    ...accountData.account,
+                                    loans: userLoans,
+                                    minecraftBalance: userBalances ? userBalances.balance : 0,
+                                    shopTransactions: userShopTransactions,
+                                    jobTransactions: userJobTransactions,
+                                    messages: userMessages,
+                                    taxPayments: userTaxPayments
+                                });
                             } else {
-                                console.error("Failed to refresh user account:", response.statusText);
+                                console.error("Failed to refresh user account:", accountResponse.statusText);
                             }
                         } catch (error) {
                             console.error("Error refreshing user account:", error);
@@ -1267,7 +1314,7 @@ const parsedBalance = parseFloat(balance);
 
 const handleAdvanceTax = async (amount) => {
     if (currentUserAccount.balance < amount) {
-        showModal('Error', 'Insufficient balance.', 'error');
+        showModal('Error', 'Insufficient balance.', 'info');
         return;
     }
 
@@ -1341,13 +1388,9 @@ const handleAdvanceTax = async (amount) => {
                 dailyRepayment = totalDue / (duration * 7);
 
                 // Fetch all loans to check against existing daily repayment
-                const allLoansResponse = await fetch(`${API_ENDPOINTS.ACCOUNTS}/admin`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'get_all_data' })
-                });
+                const allLoansResponse = await fetch(`${API_ENDPOINTS.LOANS}`);
                 const allLoansData = await allLoansResponse.json();
-                const allLoans = allLoansData.loans || [];
+                const allLoans = allLoansData || [];
 
                 const existingDailyRepayment = allLoans.filter(loan => loan.accountId === currentUserAccount.accountId && loan.loanStatus === 'active').reduce((sum, loan) => sum + loan.dailyRepayment, 0);
 
