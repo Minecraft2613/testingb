@@ -1,5 +1,4 @@
-
-        const { useState, useEffect } = React;
+const { useState, useEffect } = React;
 
         const API_URL = 'https://bank-data.1987sakshamsingh.workers.dev/admin'; // Admin endpoint for login
         const EMPLOYEE_API_URL = 'https://bank-data.1987sakshamsingh.workers.dev/employee'; // New employee endpoints
@@ -96,12 +95,15 @@
             const fetchLoans = async () => {
                 setLoadingLoans(true);
                 try {
+                    console.log("Fetching loans for employee:", employeeUser);
                     const response = await fetch(EMPLOYEE_API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ action: 'get_loans', employeeUser })
                     });
+                    console.log("Fetch loans response status:", response.status);
                     const data = await response.json();
+                    console.log("Fetch loans response data:", data);
                     if (data.success) {
                         setLoans(data.loans);
                     } else {
