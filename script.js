@@ -1,973 +1,478 @@
 
         const { useState, useEffect } = React;
 
-        const API_URL = 'https://bank-data.1987sakshamsingh.workers.dev/admin';
-        const TAX_API_URL = 'https://bank-data.1987sakshamsingh.workers.dev';
+        const EMPLOYEE_API_URL = 'https://bank-data.1987sakshamsingh.workers.dev/employee'; // New employee endpoints
 
         const App = () => {
-            const [adminUser, setAdminUser] = useState(null);
+            const [employeeUser, setEmployeeUser] = useState(null);
             const [loading, setLoading] = useState(false);
+            const [message, setMessage] = useState('');
 
             const handleLogin = async (username, password) => {
                 setLoading(true);
+                setMessage(''); // Clear message on new login attempt
                 try {
-                    const response = await fetch(API_URL, {
+                    console.log("Attempting employee login with URL:", EMPLOYEE_API_URL);
+                    const response = await fetch(EMPLOYEE_API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'login', username, password })
+                        body: JSON.stringify({ action: 'employee_login', username, password })
                     });
                     const data = await response.json();
                     if (response.ok && data.success) {
-                        setAdminUser(username);
+                        setEmployeeUser(username);
                     } else {
-                        alert(data.message || 'Login failed');
+                        setMessage(data.message || 'Login failed');
                     }
                 } catch (e) {
-                    alert('Connection error');
+                    setMessage('Connection error');
                 } finally {
                     setLoading(false);
                 }
             };
 
-            if (loading) return <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"><div className="vip-loader"></div></div>;
+            const handleLogout = () => {
+                setEmployeeUser(null);
+                setMessage('Logged out successfully.');
+            };
 
-            return adminUser ? <AdminDashboard adminUser={adminUser} setAdminUser={setAdminUser} /> : <AdminLogin onLogin={handleLogin} />;
+            if (loading) return (
+                <div className="min-h-screen flex items-center justify-center bg-gray-900">
+                    <div className="loader"></div>
+                </div>
+            );
+
+            return employeeUser ? (
+                <EmployeeDashboard employeeUser={employeeUser} handleLogout={handleLogout} />
+            ) : (
+                <EmployeeLogin onLogin={handleLogin} message={message} />
+            );
         };
 
-        const AdminLogin = ({ onLogin }) => {
+        const EmployeeLogin = ({ onLogin, message }) => {
             const [username, setUsername] = useState('');
             const [password, setPassword] = useState('');
 
             return (
                 <div className="min-h-screen flex items-center justify-center bg-gray-900">
-                    <div className="bg-gray-800 p-8 rounded-xl-custom shadow-2xl w-full max-w-md bg-gradient-to-br-custom from-gray-800-custom to-gray-900-custom">
-                        <h2 className="text-3xl font-bold text-center text-amber-400 mb-6">VIP Admin Access</h2>
-                        <form onSubmit={e => { e.preventDefault(); onLogin(username, password); }} className="space-y-6">
-                            <input type="text" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                            <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                            <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-md transition-transform transform hover:scale-105">Enter Secure Area</button>
+                    <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+                        <h2 className="text-3xl font-bold text-center text-blue-400 mb-6">Employee Login</h2>
+                        <form onSubmit={e => { e.preventDefault(); onLogin(username, password); }} className="space-y-4">
+                            <input type="text" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-md">Login</button>
                         </form>
+                        {message && <p className="text-center text-red-400 mt-4">{message}</p>}
                     </div>
                 </div>
             );
         };
 
-        const AdminDashboard = ({ adminUser, setAdminUser }) => {
-            const [view, setView] = useState('home');
-            const [data, setData] = useState({ accounts: [], taxData: { players: {} }, loans: [], balances: [], shopTransactions: [], jobTransactions: [] });
-            const [loading, setLoading] = useState(true);
+        const EmployeeDashboard = ({ employeeUser, handleLogout }) => {
+            const [loans, setLoans] = useState([]);
+            const [loadingLoans, setLoadingLoans] = useState(true);
+            const [selectedLoan, setSelectedLoan] = useState(null);
+            const [visitTime, setVisitTime] = useState('');
+            const [employeeMessage, setEmployeeMessage] = useState('');
+            const [modalMessage, setModalMessage] = useState('');
+            const [showAdditionalFields, setShowAdditionalFields] = useState(false);
+            const [loanerPhoto, setLoanerPhoto] = useState(null); // Changed to null for file object
+            const [landPhoto, setLandPhoto] = useState(null);
+            const [buildingPhoto, setBuildingPhoto] = useState(null);
+            const [employeePhoto, setEmployeePhoto] = useState(null);
+            const [signatureOfBankEmployee, setSignatureOfBankEmployee] = useState(null);
+            const [loanerBankId, setLoanerBankId] = useState('');
+            const [loanerPerDayIncome, setLoanerPerDayIncome] = useState('');
+            const [hasBusiness, setHasBusiness] = useState(false);
+            const [areaVolume, setAreaVolume] = useState('');
+            const [cornerCoords, setCornerCoords] = useState('');
+            const [valueOfLand, setValueOfLand] = useState('');
+            const [valueOfBuilding, setValueOfBuilding] = useState('');
+            const [loanerNetWorth, setLoanerNetWorth] = useState('');
+            const [visitTimeSet, setVisitTimeSet] = useState(false);
+            const [messageSet, setMessageSet] = useState(false);
+            const [sendingLoan, setSendingLoan] = useState(false);
 
-            const fetchData = async () => {
+            const fetchLoans = async () => {
+                setLoadingLoans(true);
                 try {
-                    const [accountsRes, taxRes, loansRes, balRes, shopTranRes, jobTranRes, msgRes, taxPayRes] = await Promise.all([
-                        fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'get_all_data' }) }),
-                        fetch(`${TAX_API_URL}/tax-data`),
-                        fetch(`${TAX_API_URL}/loans`),
-                        fetch(`${TAX_API_URL}/bal.json`),
-                        fetch(`${TAX_API_URL}/shop-tran.json`),
-                        fetch(`${TAX_API_URL}/job-tran.json`),
-                        fetch(`${TAX_API_URL}/messages`),
-                        fetch(`${TAX_API_URL}/tax-pay-data`)
-                    ]);
-
-                    const [accountsData, taxData, loansData, balData, shopTranData, jobTranData, msgData, taxPayData] = await Promise.all([
-                        accountsRes.ok ? accountsRes.json() : { accounts: [] },
-                        taxRes.ok ? taxRes.json() : { players: {} },
-                        loansRes.ok ? loansRes.json() : [],
-                        balRes.ok ? balRes.json() : [],
-                        shopTranRes.ok ? shopTranRes.json() : [],
-                        jobTranRes.ok ? jobTranRes.json() : [],
-                        msgRes.ok ? msgRes.json() : [],
-                        taxPayRes.ok ? taxPayRes.json() : []
-                    ]);
-
-                    setData({
-                        accounts: accountsData.accounts || [],
-                        taxData: taxData,
-                        loans: loansData.loans || loansData || [],
-                        balances: balData,
-                        shopTransactions: shopTranData,
-                        jobTransactions: jobTranData,
-                        messages: msgData,
-                        taxPayments: taxPayData
-                    });
-                } catch (e) { console.error("Failed to fetch data", e); } 
-                finally { setLoading(false); }
-            };
-
-            useEffect(() => {
-                fetchData();
-                const interval = setInterval(fetchData, 5000);
-                return () => clearInterval(interval);
-            }, []);
-
-            const handleApproveLoan = async (accountId, loanId, adminReply) => {
-                await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'approve_loan', userAccountId: accountId, loanId, adminReply })
-                });
-                fetchData(); // Refresh data after action
-            };
-
-            const handleCancelLoan = async (accountId, loanId, adminReply) => {
-                await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'cancel_loan', userAccountId: accountId, loanId, adminReply })
-                });
-                fetchData(); // Refresh data after action
-            };
-
-            const handleForceApproveLoan = async (accountId, loanId, employeeVisitTime, employeeMessage, adminReply, adminUser) => {
-                await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'force_approve_loan', userAccountId: accountId, loanId, employeeVisitTime, employeeMessage, adminReply, adminUser })
-                });
-                fetchData(); // Refresh data after action
-            };
-
-            const handleUpdateLoanDetails = async (loanId, updatedFields) => {
-                await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'update_loan_details', loanId, updatedFields })
-                });
-                fetchData(); // Refresh data after action
-            };
-
-            const renderView = () => {
-                if (loading) return <div className="text-center p-10"><div className="vip-loader mx-auto"></div></div>;
-                
-                const handleUpdateLoanDetails = async (loanId, updatedFields) => {
-                    await fetch(API_URL, {
+                    console.log("Fetching loans for employee:", employeeUser);
+                    const response = await fetch(EMPLOYEE_API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'update_loan_details', loanId, updatedFields })
+                        body: JSON.stringify({ action: 'get_loans', employeeUser })
                     });
-                    fetchData(); // Refresh data after action
-                };
-
-                const props = { data, adminUser, handleApproveLoan, handleCancelLoan, handleForceApproveLoan, handleUpdateLoanDetails, setView };
-
-                switch(view) {
-                    case 'home': return <HomeView {...props} />;
-                    case 'loan_approval_requests': return <LoanApprovalRequestsView {...props} />;
-                    case 'loan_active': return <LoanActiveView {...props} />;
-                    case 'loan_cancelled': return <LoanCancelledView {...props} />;
-                    case 'loan_closed': return <LoanClosedView {...props} />;
-                    case 'loan_history': return <LoanHistoryView {...props} />;
-                    case 'paid_tax': return <PaidTaxView {...props} />;
-                    case 'pending_tax': return <PendingTaxView {...props} />;
-                    case 'tax_history': return <TaxHistoryView {...props} />;
-                    case 'bank_info': return <BankInfoView {...props} />;
-                    case 'player_view': return <PlayerView {...props} />;
-                    case 'messages': return <MessagesView {...props} />;
-                    case 'theme_settings': return <ThemeSettingsView {...props} />;
-                    default: return <HomeView {...props} />;
+                    console.log("Fetch loans response status:", response.status);
+                    const data = await response.json();
+                    console.log("Fetch loans response data:", data);
+                    if (data.success) {
+                        setLoans(data.loans);
+                    } else {
+                        setModalMessage(data.message || 'Failed to fetch loans.');
+                    }
+                } catch (e) {
+                    setModalMessage('Connection error while fetching loans.');
+                    console.error("Error fetching loans:", e);
+                } finally {
+                    setLoadingLoans(false);
                 }
             };
 
-            return (
-                <div className="flex">
-                    <Sidebar setView={setView} adminUser={adminUser} handleLogout={() => setAdminUser(null)} />
-                    <main className="flex-1 p-10">
-                        {renderView()}
-                    </main>
-                </div>
-            );
-        };
-
-        const Sidebar = ({ setView, adminUser, handleLogout }) => {
-            const views = [
-                { name: 'Home', view: 'home', roles: ['admin', 'admin22'] },
-                { name: 'Loan Approval Requests', view: 'loan_approval_requests', roles: ['admin', 'admin22'] },
-                { name: 'Active Loans', view: 'loan_active', roles: ['admin', 'admin22'] },
-                { name: 'Cancelled Loans', view: 'loan_cancelled', roles: ['admin', 'admin22'] },
-                { name: 'Closed Loans', view: 'loan_closed', roles: ['admin', 'admin22'] },
-                { name: 'Loan History', view: 'loan_history', roles: ['admin', 'admin22'] },
-                { name: 'Paid Tax', view: 'paid_tax', roles: ['admin', 'admin22'] },
-                { name: 'Pending Tax', view: 'pending_tax', roles: ['admin', 'admin22'] },
-                { name: 'Tax Payers History', view: 'tax_history', roles: ['admin', 'admin22'] },
-                { name: 'Bank Info', view: 'bank_info', roles: ['admin', 'admin22'] },
-                { name: 'Player View', view: 'player_view', roles: ['admin', 'admin22'] },
-                { name: 'Messages', view: 'messages', roles: ['admin', 'admin22'] },
-                { name: 'Theme Settings', view: 'theme_settings', roles: ['admin', 'admin22'] },
-            ];
-
-            const filteredViews = views.filter(v => v.roles.includes(adminUser));
-
-            return (
-                <div className="w-64 h-screen bg-gray-800 p-5 flex flex-col shadow-2xl">
-                    <h1 className="text-2xl font-bold text-amber-400 mb-10">VIP Panel</h1>
-                    <nav className="flex-grow">
-                        {filteredViews.map(v => 
-                            <button key={v.view} onClick={() => setView(v.view)} className="block w-full text-left p-3 mb-2 rounded-md hover:bg-gray-700 transition-colors">{v.name}</button>
-                        )}
-                    </nav>
-                    <button onClick={handleLogout} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-md">Logout</button>
-                </div>
-            );
-        };
-
-        const HomeView = ({ data, handleApproveLoan, handleCancelLoan, adminUser, handleForceApproveLoan, handleUpdateLoanDetails }) => {
-            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
-            const [selectedLoan, setSelectedLoan] = useState(null);
-            const [accountSearchTerm, setAccountSearchTerm] = useState('');
-            const [loanSearchTerm, setLoanSearchTerm] = useState('');
-            const [currentPage, setCurrentPage] = useState(1);
-            const accountsPerPage = 5; // Display 5 accounts per page
-
-            const openLoanDetails = (loan) => {
-                setSelectedLoan(loan);
-                setShowLoanDetailModal(true);
-            };
-
-            // Filter and paginate accounts
-            const filteredAccounts = data.accounts.filter(acc =>
-                acc.accountId.toLowerCase().includes(accountSearchTerm.toLowerCase())
-            );
-            const indexOfLastAccount = currentPage * accountsPerPage;
-            const indexOfFirstAccount = indexOfLastAccount - accountsPerPage;
-            const currentAccounts = filteredAccounts.slice(indexOfFirstAccount, indexOfLastAccount);
-            const totalAccountPages = Math.ceil(filteredAccounts.length / accountsPerPage);
-
-            // Sort loans by applicationDate (newest first) and get latest 5, then filter
-            const sortedLoans = [...data.loans].sort((a, b) => new Date(b.applicationDate) - new Date(a.applicationDate));
-            const latestFiveLoans = sortedLoans.slice(0, 5);
-            const filteredLoans = latestFiveLoans.filter(loan =>
-                loan.accountId.toLowerCase().includes(loanSearchTerm.toLowerCase())
-            );
-
-
-            return (
-                <div>
-                    <h2 className="text-3xl font-bold text-white mb-6">Dashboard</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-                            <h3 className="text-xl font-bold text-amber-400 mb-4">User Accounts</h3>
-                            <input
-                                type="text"
-                                placeholder="Search accounts..."
-                                className="w-full p-2 mb-4 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                                value={accountSearchTerm}
-                                onChange={(e) => setAccountSearchTerm(e.target.value)}
-                            />
-                            <div className="space-y-4">
-                                {currentAccounts.map(acc => {
-                                    const playerBalance = data.balances.find(bal => bal.player === acc.accountId);
-                                    return (
-                                        <div key={acc.accountId} className="bg-gray-700 p-4 rounded-md">
-                                            <p><strong>Player:</strong> {acc.accountId}</p>
-                                            <p><strong>Bank ID:</strong> {acc.bankId}</p>
-                                            <p><strong>Balance:</strong> ${playerBalance?.balance?.toFixed(2) || '0.00'}</p>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                            <div className="flex justify-between mt-4">
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                    disabled={currentPage === 1}
-                                    className="px-4 py-2 bg-amber-500 text-white rounded-md disabled:opacity-50"
-                                >
-                                    Previous
-                                </button>
-                                <span>Page {currentPage} of {totalAccountPages}</span>
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.min(totalAccountPages, prev + 1))}
-                                    disabled={currentPage === totalAccountPages}
-                                    className="px-4 py-2 bg-amber-500 text-white rounded-md disabled:opacity-50"
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        </div>
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-                            <h3 className="text-xl font-bold text-amber-400 mb-4">Latest 5 Loans</h3>
-                            <input
-                                type="text"
-                                placeholder="Search loans..."
-                                className="w-full p-2 mb-4 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                                value={loanSearchTerm}
-                                onChange={(e) => setLoanSearchTerm(e.target.value)}
-                            />
-                            <div className="space-y-4">
-                                {filteredLoans.map(loan => (
-                                    <div key={loan.id} className="flex justify-between items-center bg-gray-700 p-4 rounded-md">
-                                        <div>
-                                            <p><strong>Player:</strong> {loan.accountId}</p>
-                                            <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
-                                            <p><strong>Status:</strong> {loan.loanStatus}</p>
-                                        </div>
-                                        <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-                            <h3 className="text-xl font-bold text-amber-400 mb-4">Tax Data</h3>
-                            <div className="space-y-4">
-                                {Object.keys(data.taxData.players).map(player => (
-                                    <div key={player} className="bg-gray-700 p-4 rounded-md">
-                                        <p><strong>Player:</strong> {player}</p>
-                                        <p><strong>Tax Due:</strong> ${parseFloat(data.taxData.players[player].sessions[data.taxData.currentSession]?.taxDue)?.toFixed(2) || '0.00'}</p>
-                                        <p><strong>Tax Paid:</strong> ${parseFloat(data.taxData.players[player].sessions[data.taxData.currentSession]?.taxPaid)?.toFixed(2) || '0.00'}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} handleForceApproveLoan={handleForceApproveLoan} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
-                </div>
-            );
-        };
-
-        const LoanApprovalRequestsView = ({ data, handleApproveLoan, handleCancelLoan, handleForceApproveLoan, handleUpdateLoanDetails, adminUser }) => {
-            const pendingLoans = data.loans.filter(loan => loan.loanStatus === 'pending' || loan.loanStatus === 'waitingForEmployeeApproval');
-            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
-            const [selectedLoan, setSelectedLoan] = useState(null);
-
-            const openLoanDetails = (loan) => {
-                setSelectedLoan(loan);
-                setShowLoanDetailModal(true);
-            };
-
-            return (
-                <div>
-                    <h2 className="text-3xl font-bold text-white mb-6">Loan Approval Requests</h2>
-                    <div className="space-y-4">
-                        {pendingLoans.length > 0 ? pendingLoans.map(loan => (
-                            <div key={loan.id} className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
-                                <div>
-                                    <p><strong>Player:</strong> {loan.accountId}</p>
-                                    <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
-                                </div>
-                                <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
-                            </div>
-                        )) : <p>No pending loan requests.</p>}
-                    </div>
-                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleApproveLoan={handleApproveLoan} handleRejectLoan={handleCancelLoan} handleForceApproveLoan={handleForceApproveLoan} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
-                </div>
-            );
-        };
-
-        const LoanActiveView = ({ data, handleUpdateLoanDetails, adminUser }) => {
-            const activeLoans = data.loans.filter(loan => loan.loanStatus === 'approved');
-            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
-            const [selectedLoan, setSelectedLoan] = useState(null);
-
-            const openLoanDetails = (loan) => {
-                setSelectedLoan(loan);
-                setShowLoanDetailModal(true);
-            };
-
-            return (
-                <div>
-                    <h2 className="text-3xl font-bold text-white mb-6">Active Loans</h2>
-                    <div className="space-y-4">
-                        {activeLoans.length > 0 ? activeLoans.map(loan => (
-                            <div key={loan.id} className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
-                                <div>
-                                    <p><strong>Player:</strong> {loan.accountId}</p>
-                                    <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
-                                </div>
-                                <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
-                            </div>
-                        )) : <p>No active loans.</p>}
-                    </div>
-                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
-                </div>
-            );
-        };
-
-        const LoanCancelledView = ({ data, handleUpdateLoanDetails, adminUser }) => {
-            const cancelledLoans = data.loans.filter(loan => loan.loanStatus === 'rejected');
-            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
-            const [selectedLoan, setSelectedLoan] = useState(null);
-
-            const openLoanDetails = (loan) => {
-                setSelectedLoan(loan);
-                setShowLoanDetailModal(true);
-            };
-
-            return (
-                <div>
-                    <h2 className="text-3xl font-bold text-white mb-6">Cancelled Loans</h2>
-                    <div className="space-y-4">
-                        {cancelledLoans.length > 0 ? cancelledLoans.map(loan => (
-                            <div key={loan.id} className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
-                                <div>
-                                    <p><strong>Player:</strong> {loan.accountId}</p>
-                                    <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
-                                </div>
-                                <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
-                            </div>
-                        )) : <p>No cancelled loans.</p>}
-                    </div>
-                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
-                </div>
-            );
-        };
-
-        const LoanClosedView = ({ data, handleUpdateLoanDetails, adminUser }) => {
-            const closedLoans = data.loans.filter(loan => loan.loanStatus === 'closed');
-            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
-            const [selectedLoan, setSelectedLoan] = useState(null);
-
-            const openLoanDetails = (loan) => {
-                setSelectedLoan(loan);
-                setShowLoanDetailModal(true);
-            };
-
-            return (
-                <div>
-                    <h2 className="text-3xl font-bold text-white mb-6">Closed Loans</h2>
-                    <div className="space-y-4">
-                        {closedLoans.length > 0 ? closedLoans.map(loan => (
-                            <div key={loan.id} className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
-                                <div>
-                                    <p><strong>Player:</strong> {loan.accountId}</p>
-                                    <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
-                                </div>
-                                <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
-                            </div>
-                        )) : <p>No closed loans.</p>}
-                    </div>
-                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
-                </div>
-            );
-        };
-
-        const LoanHistoryView = ({ data, handleUpdateLoanDetails, adminUser }) => {
-            const [showLoanDetailModal, setShowLoanDetailModal] = useState(false);
-            const [selectedLoan, setSelectedLoan] = useState(null);
-            const [searchTerm, setSearchTerm] = useState('');
-
-            const openLoanDetails = (loan) => {
-                setSelectedLoan(loan);
-                setShowLoanDetailModal(true);
-            };
-
-            // Sort loans by applicationDate (newest first) and get latest 5, then filter
-            const sortedLoans = [...data.loans].sort((a, b) => new Date(b.applicationDate) - new Date(a.applicationDate));
-            const latestFiveLoans = sortedLoans.slice(0, 5);
-            const filteredLoans = latestFiveLoans.filter(loan =>
-                loan.accountId.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-
-            return (
-                <div>
-                    <h2 className="text-3xl font-bold text-white mb-6">Loan History</h2>
-                    <input
-                        type="text"
-                        placeholder="Search loans by player name..."
-                        className="w-full p-2 mb-4 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    <div className="space-y-4">
-                        {filteredLoans.map(loan => (
-                            <div key={loan.id} className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
-                                <div>
-                                    <p><strong>Player:</strong> {loan.accountId}</p>
-                                    <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
-                                    <p><strong>Status:</strong> {loan.loanStatus}</p>
-                                </div>
-                                <button onClick={() => openLoanDetails(loan)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md">View Details</button>
-                            </div>
-                        ))}
-                    </div>
-                    {showLoanDetailModal && <LoanDetailModal loan={selectedLoan} onClose={() => setShowLoanDetailModal(false)} handleUpdateLoanDetails={handleUpdateLoanDetails} adminUser={adminUser} />}
-                </div>
-            );
-        };
-
-        
-
-        
-
-        
-
-        const PaidTaxView = ({ data }) => {
-            const [paidTaxData, setPaidTaxData] = useState({});
+            useEffect(() => {
+                if (employeeUser) {
+                    fetchLoans();
+                    const interval = setInterval(fetchLoans, 10000); // Refresh every 10 seconds
+                    return () => clearInterval(interval);
+                }
+            }, [employeeUser]);
 
             useEffect(() => {
-                const fetchPaidTax = async () => {
-                    try {
-                        const response = await fetch(`${TAX_API_URL}/tax-pay-data`);
-                        if (response.ok) {
-                            const json = await response.json();
-                            setPaidTaxData(json);
-                        }
-                    } catch (e) {
-                        console.error("Failed to fetch paid tax data", e);
+                if (selectedLoan) {
+                    setVisitTime(selectedLoan.employeeVisitTime || '');
+                    setEmployeeMessage(selectedLoan.employeeMessage || '');
+                    setVisitTimeSet(!!selectedLoan.employeeVisitTime);
+                    setMessageSet(!!selectedLoan.employeeMessage);
+                    setShowAdditionalFields(false); // Reset additional fields view
+                    setLoanerPhoto(null);
+                    setLandPhoto(null);
+                    setBuildingPhoto(null);
+                    setEmployeePhoto(null);
+                    setSignatureOfBankEmployee(null);
+                    setLoanerBankId(selectedLoan.loanerBankId || '');
+                    setLoanerPerDayIncome(selectedLoan.loanerPerDayIncome || '');
+                    setHasBusiness(selectedLoan.hasBusiness || false);
+                    setAreaVolume(selectedLoan.areaVolume || '');
+                    setCornerCoords(selectedLoan.cornerCoords || '');
+                    setValueOfLand(selectedLoan.valueOfLand || '');
+                    setValueOfBuilding(selectedLoan.valueOfBuilding || '');
+                    setLoanerNetWorth(selectedLoan.loanerNetWorth || '');
+                }
+            }, [selectedLoan]);
+
+            const handleSetVisitTime = async () => {
+                if (!selectedLoan || !visitTime) {
+                    setModalMessage('Please select a loan and set a visit time.');
+                    return;
+                }
+                try {
+                    const response = await fetch(EMPLOYEE_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'set_visit_time',
+                            loanId: selectedLoan.id,
+                            employeeVisitTime: visitTime,
+                            employeeUser
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        setModalMessage('Visit time set successfully!');
+                        setVisitTimeSet(true);
+                        // Update the selected loan in the local state
+                        setLoans(prevLoans => prevLoans.map(loan =>
+                            loan.id === selectedLoan.id ? { ...loan, employeeVisitTime: visitTime, loanStatus: 'waitingForEmployeeApproval' } : loan
+                        ));
+                        setSelectedLoan(prevLoan => ({ ...prevLoan, employeeVisitTime: visitTime, loanStatus: 'waitingForEmployeeApproval' }));
+                    } else {
+                        setModalMessage(data.message || 'Failed to set visit time.');
                     }
-                };
-                fetchPaidTax();
-            }, []);
+                } catch (e) {
+                    setModalMessage('Connection error while setting visit time.');
+                    console.error("Error setting visit time:", e);
+                }
+            };
 
-            return (
-                <div>
-                    <h2 className="text-3xl font-bold text-white mb-6">Paid Tax</h2>
-                    {Object.keys(paidTaxData).length > 0 ? Object.keys(paidTaxData).map(player => (
-                        <div key={player} className="bg-gray-800 p-4 rounded-lg shadow-lg mb-4">
-                            <h3 className="text-xl font-bold text-amber-400 mb-2">{player}</h3>
-                            {paidTaxData[player].map((tx, i) => (
-                                <p key={i}>Amount: ${tx.amount?.toFixed(2) || '0.00'} on {new Date(tx.date).toLocaleDateString()} (Session: {tx.session})</p>
-                            ))}
-                        </div>
-                    )) : <p>No paid tax records.</p>}
-                </div>
-            );
-        };
-
-        const PendingTaxView = ({ data }) => {
-            const pendingTaxes = data.accounts.filter(acc => data.taxData?.players?.[acc.accountId]?.sessions?.[data.taxData.currentSession]?.taxDue > 0);
-            return (
-                <div>
-                    <h2 className="text-3xl font-bold text-white mb-6">Pending Tax</h2>
-                    <div className="space-y-4">
-                        {pendingTaxes.length > 0 ? pendingTaxes.map(acc => (
-                            <div key={acc.accountId} className="bg-gray-800 p-4 rounded-lg shadow-lg">
-                                <p><strong>Player:</strong> {acc.accountId}</p>
-                                <p><strong>Tax Due:</strong> ${data.taxData?.players?.[acc.accountId]?.sessions?.[data.taxData.currentSession]?.taxDue?.toFixed(2) || '0.00'}</p>
-                            </div>
-                        )) : <p>No pending taxes.</p>}
-                    </div>
-                </div>
-            );
-        };
-
-        const TaxHistoryView = ({ data }) => {
-            const [taxDailyData, setTaxDailyData] = useState([]);
-            const [taxPayData, setTaxPayData] = useState([]);
-
-            useEffect(() => {
-                const fetchTaxData = async () => {
-                    try {
-                        const dailyResponse = await fetch(`${TAX_API_URL}/tax-daily-data`);
-                        if (dailyResponse.ok) {
-                            const json = await dailyResponse.json();
-                            setTaxDailyData(json);
-                        }
-                        const payResponse = await fetch(`${TAX_API_URL}/tax-pay-data`);
-                        if (payResponse.ok) {
-                            const json = await payResponse.json();
-                            setTaxPayData(json);
-                        }
-                    } catch (e) {
-                        console.error("Failed to fetch tax history data", e);
+            const handleAddMessage = async () => {
+                if (!selectedLoan || !employeeMessage) {
+                    setModalMessage('Please select a loan and add a message.');
+                    return;
+                }
+                try {
+                    const response = await fetch(EMPLOYEE_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'add_message',
+                            loanId: selectedLoan.id,
+                            employeeMessage,
+                            employeeUser
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        setModalMessage('Message added successfully!');
+                        setMessageSet(true);
+                        // Update the selected loan in the local state
+                        setLoans(prevLoans => prevLoans.map(loan =>
+                            loan.id === selectedLoan.id ? { ...loan, employeeMessage: employeeMessage } : loan
+                        ));
+                        setSelectedLoan(prevLoan => ({ ...prevLoan, employeeMessage: employeeMessage }));
+                    } else {
+                        setModalMessage(data.message || 'Failed to add message.');
                     }
-                };
-                fetchTaxData();
-            }, []);
+                } catch (e) {
+                    setModalMessage('Connection error while adding message.');
+                    console.error("Error adding message:", e);
+                }
+            };
+
+            const areAdditionalFieldsFilled = () => {
+                // Check if all required fields are filled
+                return (
+                    loanerPhoto &&
+                    landPhoto &&
+                    buildingPhoto &&
+                    employeePhoto &&
+                    signatureOfBankEmployee &&
+                    loanerBankId &&
+                    loanerPerDayIncome &&
+                    areaVolume &&
+                    cornerCoords &&
+                    valueOfLand &&
+                    valueOfBuilding &&
+                    loanerNetWorth
+                );
+            };
+
+            const handlePassLoan = async () => {
+                if (!selectedLoan) {
+                    setModalMessage('Please select a loan to pass.');
+                    return;
+                }
+                if (!areAdditionalFieldsFilled()) {
+                    setModalMessage('Please fill all additional loan details before sending.');
+                    return;
+                }
+
+                setSendingLoan(true);
+                try {
+                    const response = await fetch(EMPLOYEE_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'pass_loan',
+                            loanId: selectedLoan.id,
+                            userAccountId: selectedLoan.accountId,
+                            employeeUser,
+                            employeeVisitTime: selectedLoan.employeeVisitTime, // Include employeeVisitTime
+                            employeeMessage: selectedLoan.employeeMessage, // Include employeeMessage
+                            loanerPhoto: loanerPhoto ? loanerPhoto.name : null, // Sending file name as placeholder URL
+                            landPhoto: landPhoto ? landPhoto.name : null,
+                            buildingPhoto: buildingPhoto ? buildingPhoto.name : null,
+                            employeePhoto: employeePhoto ? employeePhoto.name : null,
+                            signatureOfBankEmployee: signatureOfBankEmployee ? signatureOfBankEmployee.name : null,
+                            loanerBankId,
+                            loanerPerDayIncome: parseFloat(loanerPerDayIncome),
+                            hasBusiness,
+                            areaVolume,
+                            cornerCoords,
+                            valueOfLand: parseFloat(valueOfLand),
+                            valueOfBuilding: parseFloat(valueOfBuilding),
+                            loanerNetWorth: parseFloat(loanerNetWorth)
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        setModalMessage('Loan sent for Admin Approval successfully!');
+                        fetchLoans(); // Refresh the loan list
+                        setSelectedLoan(null); // Clear selected loan
+                    } else {
+                        setModalMessage(data.message || 'Failed to send loan for approval.');
+                    }
+                } catch (e) {
+                    setModalMessage('Connection error while sending loan for approval.');
+                    console.error("Error passing loan:", e);
+                } finally {
+                    setSendingLoan(false);
+                }
+            };
+
+
+
+
 
             return (
-                <div>
-                    <h2 className="text-3xl font-bold text-white mb-6">Tax Payers History</h2>
-                    <h3 className="text-2xl font-bold text-amber-400 mb-4">Daily Tax Charges</h3>
-                    {taxDailyData.length > 0 ? taxDailyData.map((entry, index) => (
-                        <div key={index} className="bg-gray-800 p-4 rounded-lg shadow-lg mb-4">
-                            <p><strong>Player:</strong> {entry.player}</p>
-                            <p><strong>Date:</strong> {new Date(entry.timestamp).toLocaleDateString()}</p>
-                            <p><strong>Amount:</strong> ${entry.amount?.toFixed(2) || '0.00'}</p>
-                            <p><strong>Description:</strong> {entry.description}</p>
-                        </div>
-                    )) : <p>No daily tax records.</p>}
-
-                    <h3 className="text-2xl font-bold text-amber-400 mb-4 mt-8">Tax Payments</h3>
-                    {taxPayData.length > 0 ? taxPayData.map((entry, index) => (
-                        <div key={index} className="bg-gray-800 p-4 rounded-lg shadow-lg mb-4">
-                            <p><strong>Player:</strong> {entry.player}</p>
-                            <p><strong>Date:</strong> {new Date(entry.date).toLocaleDateString()}</p>
-                            <p><strong>Amount:</strong> ${entry.amount?.toFixed(2) || '0.00'}</p>
-                            <p><strong>Session:</strong> {entry.session}</p>
-                        </div>
-                    )) : <p>No tax payment records.</p>}
-                </div>
-            );
-        };
-
-        const BankInfoView = ({ data, adminUser }) => {
-            const [searchTerm, setSearchTerm] = useState('');
-            const [currentPage, setCurrentPage] = useState(1);
-            const accountsPerPage = 5; // Display 5 accounts per page
-
-            const filteredAccounts = data.accounts.filter(acc =>
-                acc.accountId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                acc.bankId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                acc.email.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-
-            const indexOfLastAccount = currentPage * accountsPerPage;
-            const indexOfFirstAccount = indexOfLastAccount - accountsPerPage;
-            const currentAccounts = filteredAccounts.slice(indexOfFirstAccount, indexOfLastAccount);
-            const totalPages = Math.ceil(filteredAccounts.length / accountsPerPage);
-
-            return (
-                <div>
-                    <h2 className="text-3xl font-bold text-white mb-6">Player Bank Information</h2>
-                    <input
-                        type="text"
-                        placeholder="Search accounts by Player ID, Bank ID, or Email..."
-                        className="w-full p-2 mb-4 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {currentAccounts.map(acc => (
-                            <div key={acc.accountId} className="bg-gray-800 p-6 rounded-lg shadow-lg">
-                                <h4 className="font-bold text-amber-400 text-lg mb-2">{acc.accountId}</h4>
-                                <p><strong>Bank ID:</strong> {acc.bankId}</p>
-                                <p><strong>Email:</strong> {acc.email}</p>
-                                <p><strong>Password:</strong> {acc.password}</p>
-                                {adminUser === 'admin22' && <button className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-md">Edit</button>}
-                            </div>
-                        ))}
-                    </div>
-                    <div className="flex justify-between mt-4">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
-                            className="px-4 py-2 bg-amber-500 text-white rounded-md disabled:opacity-50"
-                        >
-                            Previous
-                        </button>
-                        <span>Page {currentPage} of {totalPages}</span>
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages}
-                            className="px-4 py-2 bg-amber-500 text-white rounded-md disabled:opacity-50"
-                        >
-                            Next
-                        </button>
-                    </div>
-                </div>
-            );
-        };
-        
-        const PlayerView = ({ data }) => {
-             const [selectedPlayer, setSelectedPlayer] = useState(null);
-             const [searchTerm, setSearchTerm] = useState('');
-
-            const filteredAccounts = data.accounts.filter(acc =>
-                acc.accountId.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-
-            return (
-                <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-                    <h2 className="text-2xl font-bold text-amber-400 mb-4">View as Player</h2>
-                    <input
-                        type="text"
-                        placeholder="Search player by name..."
-                        className="w-full p-2 mb-4 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    <select onChange={(e) => setSelectedPlayer(data.accounts.find(acc => acc.accountId === e.target.value))} className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 mb-4">
-                        <option value="">Select a player</option>
-                        {filteredAccounts.map(acc => <option key={acc.accountId} value={acc.accountId}>{acc.accountId}</option>)}
-                    </select>
-
-                    {selectedPlayer && (
-                        <div className="border-t-4 border-gray-700 pt-4 mt-4">
-                            <h3 className="text-xl font-bold text-white mb-4">Viewing: {selectedPlayer.accountId}</h3>
-                            <div className="space-y-6">
-                                <div className="bg-gray-700 p-4 rounded-lg"><p><strong>Bank Balance:</strong> ${data.balances.find(bal => bal.player === selectedPlayer.accountId)?.balance?.toFixed(2) || '0.00'}</p></div>
-                                <div className="bg-gray-700 p-4 rounded-lg">
-                                    <h4 className="font-bold mb-2">Loans</h4>
-                                    {(selectedPlayer.loans || []).map(loan => <div key={loan.id}>{loan.loanType}: ${loan.loanAmount?.toFixed(2) || '0.00'} ({loan.loanStatus})</div>)}
-                                </div>
-                                <div className="bg-gray-700 p-4 rounded-lg">
-                                    <h4 className="font-bold mb-2">Shop Transactions</h4>
-                                    {(data.shopTransactions.filter(tx => tx.player === selectedPlayer.accountId) || []).slice(-5).map((tx, i) => <div key={i}>{tx.type} {tx.item}: ${tx.amount?.toFixed(2) || '0.00'} (Tax: ${tx.tax?.toFixed(2) || '0.00'})</div>)}
-                                </div>
-                                <div className="bg-gray-700 p-4 rounded-lg">
-                                    <h4 className="font-bold mb-2">Job Transactions</h4>
-                                    {(data.jobTransactions.filter(tx => tx.player === selectedPlayer.accountId) || []).slice(-5).map((tx, i) => <div key={i}>{tx.jobName}: ${tx.amountEarned?.toFixed(2) || '0.00'} (Tax: ${tx.tax?.toFixed(2) || '0.00'})</div>)}
-                                </div>
-                            </div>
+                <div className="min-h-screen flex flex-col bg-gray-800 p-6">
+                    {sendingLoan && (
+                        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+                            <div className="loader"></div>
+                            <p className="text-white ml-4 text-lg">Sending for Admin Approval...</p>
                         </div>
                     )}
-                </div>
-            );
-        }
-
-        
-
-        const MessagesView = ({ data }) => {
-            const [messages, setMessages] = useState([]);
-
-            useEffect(() => {
-                const fetchMessages = async () => {
-                    try {
-                        const response = await fetch(`${TAX_API_URL}/messages`); // Corrected endpoint
-                        if (response.ok) {
-                            const json = await response.json();
-                            setMessages(json);
-                        }
-                    } catch (e) {
-                        console.error("Failed to fetch messages", e);
-                    }
-                };
-                fetchMessages();
-            }, []);
-
-            return (
-                <div>
-                    <h2 className="text-3xl font-bold text-white mb-6">Messages</h2>
-                    {messages.length > 0 ? messages.map((msg, index) => (
-                        <div key={index} className="bg-gray-800 p-4 rounded-lg shadow-lg mb-4">
-                            <p><strong>From:</strong> {msg.username} ({msg.platform})</p>
-                            <p><strong>Language:</strong> {msg.language}</p>
-                            <p><strong>Problem:</strong> {msg.problem}</p>
-                            <button className="mt-2 bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded-md">Reply</button>
+                    <header className="flex justify-between items-center mb-6 pb-4 border-b border-gray-700">
+                        <h1 className="text-4xl font-bold text-blue-400">Employee Dashboard</h1>
+                        <div className="flex items-center space-x-4">
+                            <span className="text-xl">Welcome, {employeeUser}!</span>
+                            <button onClick={handleLogout} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md">Logout</button>
                         </div>
-                    )) : <p>No new messages.</p>}
-                </div>
-            );
-        };
+                    </header>
 
-        const ThemeSettingsView = () => {
-            return (
-                <div>
-                    <h2 className="text-3xl font-bold text-white mb-6">Theme Settings</h2>
-                    <p>Theme settings options will go here.</p>
-                </div>
-            );
-        };
-
-        const LoanDetailModal = ({ loan, onClose, handleApproveLoan, handleRejectLoan, handleForceApproveLoan, handleUpdateLoanDetails, adminUser }) => {
-            const [showPlayerDetails, setShowPlayerDetails] = useState(false);
-            const [adminReply, setAdminReply] = useState(loan.adminReply || '');
-            const [employeeVisitTime, setEmployeeVisitTime] = useState(loan.employeeVisitTime || '');
-            const [employeeMessage, setEmployeeMessage] = useState(loan.employeeMessage || '');
-            const [loanerPhoto, setLoanerPhoto] = useState(loan.loanerPhoto || '');
-            const [landPhoto, setLandPhoto] = useState(loan.landPhoto || '');
-            const [buildingPhoto, setBuildingPhoto] = useState(loan.buildingPhoto || '');
-            const [employeePhoto, setEmployeePhoto] = useState(loan.employeePhoto || '');
-            const [signatureOfBankEmployee, setSignatureOfBankEmployee] = useState(loan.signatureOfBankEmployee || '');
-            const [loanerBankId, setLoanerBankId] = useState(loan.loanerBankId || '');
-            const [loanerPerDayIncome, setLoanerPerDayIncome] = useState(loan.loanerPerDayIncome || '');
-            const [hasBusiness, setHasBusiness] = useState(loan.hasBusiness || false);
-            const [areaVolume, setAreaVolume] = useState(loan.areaVolume || '');
-            const [cornerCoords, setCornerCoords] = useState(loan.cornerCoords || '');
-            const [valueOfLand, setValueOfLand] = useState(loan.valueOfLand || '');
-            const [valueOfBuilding, setValueOfBuilding] = useState(loan.valueOfBuilding || '');
-            const [loanerNetWorth, setLoanerNetWorth] = useState(loan.loanerNetWorth || '');
-
-            if (!loan) return null;
-
-            const onApprove = () => {
-                handleApproveLoan(loan.accountId, loan.id, adminReply);
-                onClose();
-            };
-
-            const onReject = () => {
-                handleRejectLoan(loan.accountId, loan.id, adminReply);
-                onClose();
-            };
-
-            const handleSubmitEmployeeFields = async () => {
-                const updatedFields = {
-                    employeeVisitTime,
-                    employeeMessage,
-                    loanerPhoto,
-                    landPhoto,
-                    buildingPhoto,
-                    employeePhoto,
-                    signatureOfBankEmployee,
-                    loanerBankId,
-                    loanerPerDayIncome,
-                    hasBusiness,
-                    areaVolume,
-                    cornerCoords,
-                    valueOfLand,
-                    valueOfBuilding,
-                    loanerNetWorth
-                };
-                await handleUpdateLoanDetails(loan.id, updatedFields);
-                fetchData(); // Refresh data after action
-                onClose();
-            };
-
-            const onForceApprove = async () => {
-                const adminUsername = prompt("Enter admin username:");
-                const adminPassword = prompt("Enter admin password:");
-                if (adminUsername === null || adminPassword === null) {
-                    // User cancelled the prompt
-                    return;
-                }
-                // You would typically send these credentials to your backend for verification
-                // For this example, we'll just proceed if they are not empty
-                if (adminUsername.trim() === '' || adminPassword.trim() === '') {
-                    alert("Admin username and password cannot be empty.");
-                    return;
-                }
-                handleForceApproveLoan(loan.accountId, loan.id, employeeVisitTime, employeeMessage, adminReply, adminUser); // Pass adminUser
-                onClose();
-            };
-
-            return (
-                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
-                    <div className="bg-gray-800 rounded-lg shadow-2xl p-6 max-w-md w-full border-t-4 border-amber-500 relative">
-                        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-white text-2xl">&times;</button>
-                        <h3 className="text-2xl font-bold text-amber-400 mb-4">Loan Details for {loan.accountId}</h3>
-                        
-                        <div className="flex justify-between items-center mb-4">
-                            <button onClick={() => setShowPlayerDetails(!showPlayerDetails)} className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-md hover:bg-blue-600">
-                                {showPlayerDetails ? 'Hide Player Form Details' : 'Show Player Form Details'}
-                            </button>
+                    {modalMessage && (
+                        <div className="bg-blue-500 text-white p-3 rounded-md mb-4 text-center">
+                            {modalMessage}
                         </div>
+                    )}
 
-                        <div className={`space-y-2 text-gray-300 ${showPlayerDetails ? 'max-h-96 overflow-y-auto' : 'max-h-48 overflow-hidden'}`}>
-                            <p><strong>Loan ID:</strong> {loan.id}</p>
-                            <p><strong>Amount:</strong> ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'}</p>
-                            <p><strong>Loan Type:</strong> {loan.loanType}</p>
-                            <p><strong>Duration:</strong> {loan.durationWeeks} weeks</p>
-                            <p><strong>Repayment:</strong> {loan.repayment}</p>
-                            <p><strong>Purpose:</strong> {loan.purpose}</p>
-                            {loan.coord1 && <p><strong>Coordinates 1:</strong> {loan.coord1}</p>}
-                            {loan.coord2 && <p><strong>Coordinates 2:</strong> {loan.coord2}</p>}
-                            {loan.job && <p><strong>Job:</strong> {loan.job}</p>}
-                            {loan.perDayIncome && <p><strong>Per Day Income:</strong> ${parseFloat(loan.perDayIncome)?.toFixed(2) || '0.00'}</p>}
-// send a tiny “tick” so index.html can refresh without reload
-fetch('/loans').then(r => r.json()).then(() => {
-  // small trick: change a dummy query-string to break cache
-  fetch('/loans?tick=' + Date.now(), { method: 'HEAD' });
-});
-                            
-                            {loan.loanerPhoto && <p><strong>Loaner Photo:</strong> <a href={loan.loanerPhoto} target="_blank" className="text-blue-400 hover:underline">View</a></p>}
-                            {loan.landPhoto && <p><strong>Land Photo:</strong> <a href={loan.landPhoto} target="_blank" className="text-blue-400 hover:underline">View</a></p>}
-                            {loan.buildingPhoto && <p><strong>Building Photo:</strong> <a href={loan.buildingPhoto} target="_blank" className="text-blue-400 hover:underline">View</a></p>}
-                            {loan.employeePhoto && <p><strong>Employee Photo:</strong> <a href={loan.employeePhoto} target="_blank" className="text-blue-400 hover:underline">View</a></p>}
-                            {loan.signatureOfBankEmployee && <p><strong>Signature:</strong> <a href={loan.signatureOfBankEmployee} target="_blank" className="text-blue-400 hover:underline">View</a></p>}
-                            {loan.loanerBankId && <p><strong>Loaner Bank ID:</strong> {loan.loanerBankId}</p>}
-                            {loan.loanerPerDayIncome && <p><strong>Loaner Per Day Income:</strong> ${parseFloat(loan.loanerPerDayIncome)?.toFixed(2) || '0.00'}</p>}
-                            {loan.hasBusiness && <p><strong>Has Business:</strong> {loan.hasBusiness ? 'Yes' : 'No'}</p>}
-                            {loan.areaVolume && <p><strong>Area/Volume:</strong> {loan.areaVolume}</p>}
-                            {loan.cornerCoords && <p><strong>Corner Coords:</strong> {loan.cornerCoords}</p>}
-                            {loan.valueOfLand && <p><strong>Value of Land:</strong> ${parseFloat(loan.valueOfLand)?.toFixed(2) || '0.00'}</p>}
-                            {loan.valueOfBuilding && <p><strong>Value of Building:</strong> ${parseFloat(loan.valueOfBuilding)?.toFixed(2) || '0.00'}</p>}
-                            {loan.loanerNetWorth && <p><strong>Loaner Net Worth:</strong> ${parseFloat(loan.loanerNetWorth)?.toFixed(2) || '0.00'}</p>}
-
-                            <div className="mt-4">
-                                <label htmlFor="employeeVisitTime" className="block text-gray-300 text-sm font-bold mb-2">Employee Visit Time:</label>
-                                {loan.employeeVisitTime && !adminUser ? <p>{new Date(loan.employeeVisitTime).toLocaleString()}</p> : <input type="datetime-local" id="employeeVisitTime" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={employeeVisitTime} onChange={(e) => setEmployeeVisitTime(e.target.value)} />}
-                            </div>
-                            <div className="mt-4">
-                                <label htmlFor="employeeMessage" className="block text-gray-300 text-sm font-bold mb-2">Employee Message:</label>
-                                {loan.employeeMessage && !adminUser ? <p>{loan.employeeMessage}</p> : <textarea id="employeeMessage" rows="3" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={employeeMessage} onChange={(e) => setEmployeeMessage(e.target.value)}></textarea>}
-                            </div>
-
-                            <p><strong>Status:</strong> <span className="capitalize">{loan.loanStatus}</span></p>
-                            <p><strong>Application Date:</strong> {new Date(loan.applicationDate).toLocaleDateString()}</p>
-                            <p><strong>Amount Due:</strong> ${parseFloat(loan.loanAmountDue)?.toFixed(2) || '0.00'}</p>
-                            <p><strong>Amount Paid:</strong> ${parseFloat(loan.loanPaid)?.toFixed(2) || '0.00'}</p>
-                            
-                            <div className="mt-4">
-                                <label htmlFor="adminReply" className="block text-gray-300 text-sm font-bold mb-2">Admin Reply:</label>
-                                <textarea id="adminReply" rows="3" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={adminReply} onChange={(e) => setAdminReply(e.target.value)}></textarea>
-                            </div>
-                            {/* Admin can fill employee fields if not already filled */}
-                            {adminUser && (
-                                <>
-                                    {!loan.loanerPhoto && (
-                                        <div>
-                                            <label htmlFor="loanerPhoto" className="block text-gray-300 text-sm font-bold mb-2">Loaner Photo URL:</label>
-                                            <input type="text" id="loanerPhoto" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={loanerPhoto} onChange={(e) => setLoanerPhoto(e.target.value)} />
-                                        </div>
-                                    )}
-                                    {!loan.landPhoto && (
-                                        <div>
-                                            <label htmlFor="landPhoto" className="block text-gray-300 text-sm font-bold mb-2">Land Photo URL:</label>
-                                            <input type="text" id="landPhoto" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={landPhoto} onChange={(e) => setLandPhoto(e.target.value)} />
-                                        </div>
-                                    )}
-                                    {!loan.buildingPhoto && (
-                                        <div>
-                                            <label htmlFor="buildingPhoto" className="block text-gray-300 text-sm font-bold mb-2">Building Photo URL:</label>
-                                            <input type="text" id="buildingPhoto" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={buildingPhoto} onChange={(e) => setBuildingPhoto(e.target.value)} />
-                                        </div>
-                                    )}
-                                    {!loan.employeePhoto && (
-                                        <div>
-                                            <label htmlFor="employeePhoto" className="block text-gray-300 text-sm font-bold mb-2">Employee Photo URL:</label>
-                                            <input type="text" id="employeePhoto" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={employeePhoto} onChange={(e) => setEmployeePhoto(e.target.value)} />
-                                        </div>
-                                    )}
-                                    {!loan.signatureOfBankEmployee && (
-                                        <div>
-                                            <label htmlFor="signatureOfBankEmployee" className="block text-gray-300 text-sm font-bold mb-2">Signature of Bank Employee URL:</label>
-                                            <input type="text" id="signatureOfBankEmployee" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={signatureOfBankEmployee} onChange={(e) => setSignatureOfBankEmployee(e.target.value)} />
-                                        </div>
-                                    )}
-                                    {!loan.loanerBankId && (
-                                        <div>
-                                            <label htmlFor="loanerBankId" className="block text-gray-300 text-sm font-bold mb-2">Loaner Bank ID:</label>
-                                            <input type="text" id="loanerBankId" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={loanerBankId} onChange={(e) => setLoanerBankId(e.target.value)} />
-                                        </div>
-                                    )}
-                                    {!loan.loanerPerDayIncome && (
-                                        <div>
-                                            <label htmlFor="loanerPerDayIncome" className="block text-gray-300 text-sm font-bold mb-2">Loaner Per Day Income:</label>
-                                            <input type="number" id="loanerPerDayIncome" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={loanerPerDayIncome} onChange={(e) => setLoanerPerDayIncome(e.target.value)} />
-                                        </div>
-                                    )}
-                                    {!loan.hasBusiness && (
-                                        <div className="flex items-center">
-                                            <input type="checkbox" id="hasBusiness" className="mr-2" checked={hasBusiness} onChange={(e) => setHasBusiness(e.target.checked)} />
-                                            <label htmlFor="hasBusiness" className="text-sm font-medium text-gray-300">Has Business</label>
-                                        </div>
-                                    )}
-                                    {!loan.areaVolume && (
-                                        <div>
-                                            <label htmlFor="areaVolume" className="block text-gray-300 text-sm font-bold mb-2">Area/Volume:</label>
-                                            <input type="text" id="areaVolume" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={areaVolume} onChange={(e) => setAreaVolume(e.target.value)} />
-                                        </div>
-                                    )}
-                                    {!loan.cornerCoords && (
-                                        <div>
-                                            <label htmlFor="cornerCoords" className="block text-gray-300 text-sm font-bold mb-2">Corner Coords:</label>
-                                            <input type="text" id="cornerCoords" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={cornerCoords} onChange={(e) => setCornerCoords(e.target.value)} />
-                                        </div>
-                                    )}
-                                    {!loan.valueOfLand && (
-                                        <div>
-                                            <label htmlFor="valueOfLand" className="block text-gray-300 text-sm font-bold mb-2">Value of Land:</label>
-                                            <input type="number" id="valueOfLand" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={valueOfLand} onChange={(e) => setValueOfLand(e.target.value)} />
-                                        </div>
-                                    )}
-                                    {!loan.valueOfBuilding && (
-                                        <div>
-                                            <label htmlFor="valueOfBuilding" className="block text-gray-300 text-sm font-bold mb-2">Value of Building:</label>
-                                            <input type="number" id="valueOfBuilding" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={valueOfBuilding} onChange={(e) => setValueOfBuilding(e.target.value)} />
-                                        </div>
-                                    )}
-                                    {!loan.loanerNetWorth && (
-                                        <div>
-                                            <label htmlFor="loanerNetWorth" className="block text-gray-300 text-sm font-bold mb-2">Loaner Net Worth:</label>
-                                            <input type="number" id="loanerNetWorth" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={loanerNetWorth} onChange={(e) => setLoanerNetWorth(e.target.value)} />
-                                        </div>
-                                    )}
-                                </>
-                            )
-                            }
-                        </div>
-                        <div className="flex justify-end mt-6 space-x-2">
-                            <button onClick={onReject} className="px-5 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200">Reject</button>
-                            {loan.loanStatus === 'waitingForAdminApproval' && (
-                                <>
-                                    <button onClick={onApprove} className="px-5 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 transition duration-200">Approve</button>
-                                </>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow">
+                        <div className="bg-gray-900 p-6 rounded-lg shadow-lg">
+                            <h2 className="text-2xl font-bold text-blue-300 mb-4">Loans for Review</h2>
+                            {loadingLoans ? (
+                                <div className="flex justify-center items-center h-32"><div className="loader"></div></div>
+                            ) : loans.length > 0 ? (
+                                <ul className="space-y-3">
+                                    {loans.map(loan => (
+                                        <li key={loan.id} 
+                                            className={`p-4 rounded-md cursor-pointer ${selectedLoan?.id === loan.id ? 'bg-blue-700' : 'bg-gray-700'} hover:bg-gray-600`}
+                                            onClick={() => setSelectedLoan(loan)}>
+                                            <p className="font-semibold">{loan.loanType} Loan for {loan.accountId}</p>
+                                            <p className="text-sm text-gray-400">Amount: ${parseFloat(loan.loanAmount)?.toFixed(2) || '0.00'} | Status: {loan.loanStatus === 'approved' ? 'Active Loan' : loan.loanStatus === 'rejected' ? 'Rejected' : loan.loanStatus}</p>
+                                            {loan.employeeVisitTime && <p className="text-sm text-gray-400">Visit: {new Date(loan.employeeVisitTime).toLocaleString()}</p>}
+                                            {loan.employeeMessage && <p className="text-sm text-gray-400">Message: {loan.employeeMessage}</p>}
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p>No loans currently awaiting employee review.</p>
                             )}
-                            {(loan.loanStatus !== 'approved' && loan.loanStatus !== 'rejected') && (
-                                <button onClick={onForceApprove} className="px-5 py-2 bg-yellow-600 text-white font-semibold rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-75 transition duration-200">Forceful Approve</button>
+                        </div>
+
+                        <div className="bg-gray-900 p-6 rounded-lg shadow-lg">
+                            <h2 className="text-2xl font-bold text-blue-300 mb-4">Loan Details & Actions</h2>
+                            {selectedLoan ? (
+                                <div className="space-y-4">
+                                    <p><strong>Loan ID:</strong> {selectedLoan.id}</p>
+                                    <p><strong>Loaner:</strong> {selectedLoan.accountId}</p>
+                                    <p><strong>Amount:</strong> ${parseFloat(selectedLoan.loanAmount)?.toFixed(2) || '0.00'}</p>
+                                    <p><strong>Status:</strong> {selectedLoan.loanStatus}</p>
+                                    <p><strong>Purpose:</strong> {selectedLoan.purpose}</p>
+                                    {selectedLoan.coord1 && <p><strong>Coords 1:</strong> {selectedLoan.coord1}</p>}
+                                    {selectedLoan.coord2 && <p><strong>Coords 2:</strong> {selectedLoan.coord2}</p>}
+                                    {selectedLoan.loanerPhoto && <p><strong>Loaner Photo:</strong> <a href={selectedLoan.loanerPhoto} target="_blank" className="text-blue-400 hover:underline">View</a></p>}
+                                    {selectedLoan.landPhoto && <p><strong>Land Photo:</strong> <a href={selectedLoan.landPhoto} target="_blank" className="text-blue-400 hover:underline">View</a></p>}
+                                    {selectedLoan.buildingPhoto && <p><strong>Building Photo:</strong> <a href={selectedLoan.buildingPhoto} target="_blank" className="text-blue-400 hover:underline">View</a></p>}
+                                    {selectedLoan.employeePhoto && <p><strong>Employee Photo:</strong> <a href={selectedLoan.employeePhoto} target="_blank" className="text-blue-400 hover:underline">View</a></p>}
+                                    {selectedLoan.signatureOfBankEmployee && <p><strong>Signature:</strong> <a href={selectedLoan.signatureOfBankEmployee} target="_blank" className="text-blue-400 hover:underline">View</a></p>}
+                                    
+                                    <hr className="border-gray-700" />
+
+                                    <h3 className="text-xl font-bold text-blue-300 mb-2">Employee Actions</h3>
+                                    <div className="space-y-3">
+                                        {selectedLoan.employeeVisitTime && <p className="text-sm text-gray-400">Note: Visit Time Set: {new Date(selectedLoan.employeeVisitTime).toLocaleString()}</p>}
+                                        {selectedLoan.employeeMessage && <p className="text-sm text-gray-400">Note: Employee Message Added: {selectedLoan.employeeMessage}</p>}
+                                        {!selectedLoan.employeeVisitTime && (
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-300">Set Visit Time:</label>
+                                                <div className="flex space-x-2">
+                                                    <input type="datetime-local" value={visitTime} onChange={e => setVisitTime(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                    <button onClick={() => setVisitTime(new Date().toISOString().slice(0, 16))} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm">Today</button>
+                                                </div>
+                                                <button onClick={handleSetVisitTime} className="mt-2 w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-md">Set Time</button>
+                                            </div>
+                                        )}
+                                        {!selectedLoan.employeeMessage && (
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-300">Add Message:</label>
+                                                <textarea value={employeeMessage} onChange={e => setEmployeeMessage(e.target.value)} rows="3" className="w-full p-2 bg-gray-700 rounded-md border border-gray-600"></textarea>
+                                                <button onClick={handleAddMessage} className="mt-2 w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-md">Add Message</button>
+                                            </div>
+                                        )}
+                                        {(selectedLoan.employeeVisitTime && selectedLoan.employeeMessage && !showAdditionalFields) && (
+                                            <button onClick={() => setShowAdditionalFields(true)} className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-md">Next</button>
+                                        )}
+                                        {showAdditionalFields && (
+                                            <div className="space-y-3 mt-3">
+                                                <h3 className="text-xl font-bold text-blue-300 mb-2">Additional Loan Details</h3>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Loaner Photo:</label>
+                                                    <input type="file" onChange={e => setLoanerPhoto(e.target.files[0])} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                    {loanerPhoto && <p className="text-sm text-gray-400">Selected: {loanerPhoto.name}</p>}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Land Photo:</label>
+                                                    <input type="file" onChange={e => setLandPhoto(e.target.files[0])} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                    {landPhoto && <p className="text-sm text-gray-400">Selected: {landPhoto.name}</p>}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Building Photo:</label>
+                                                    <input type="file" onChange={e => setBuildingPhoto(e.target.files[0])} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                    {buildingPhoto && <p className="text-sm text-gray-400">Selected: {buildingPhoto.name}</p>}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Employee Photo:</label>
+                                                    <input type="file" onChange={e => setEmployeePhoto(e.target.files[0])} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                    {employeePhoto && <p className="text-sm text-gray-400">Selected: {employeePhoto.name}</p>}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Signature of Bank Employee:</label>
+                                                    <input type="file" onChange={e => setSignatureOfBankEmployee(e.target.files[0])} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                    {signatureOfBankEmployee && <p className="text-sm text-gray-400">Selected: {signatureOfBankEmployee.name}</p>}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Loaner Bank ID:</label>
+                                                    <input type="text" value={loanerBankId} onChange={e => setLoanerBankId(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Loaner Per Day Income:</label>
+                                                    <input type="number" value={loanerPerDayIncome} onChange={e => setLoanerPerDayIncome(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <input type="checkbox" checked={hasBusiness} onChange={e => setHasBusiness(e.target.checked)} className="mr-2" />
+                                                    <label className="text-sm font-medium text-gray-300">Has Business</label>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Area/Volume:</label>
+                                                    <input type="text" value={areaVolume} onChange={e => setAreaVolume(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Corner Coords:</label>
+                                                    <input type="text" value={cornerCoords} onChange={e => setCornerCoords(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Value of Land:</label>
+                                                    <input type="number" value={valueOfLand} onChange={e => setValueOfLand(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Value of Building:</label>
+                                                    <input type="number" value={valueOfBuilding} onChange={e => setValueOfBuilding(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-300">Loaner Net Worth:</label>
+                                                    <input type="number" value={loanerNetWorth} onChange={e => setLoanerNetWorth(e.target.value)} className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                                </div>
+                                                <button onClick={handlePassLoan} disabled={sendingLoan || !areAdditionalFieldsFilled()} className={`w-full font-bold py-3 rounded-md ${sendingLoan || !areAdditionalFieldsFilled() ? 'bg-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
+                                                    {sendingLoan ? 'Sending...' : 'Send'}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <p>Select a loan from the left to view details and perform actions.</p>
                             )}
-                            <button onClick={onClose} className="px-5 py-2 bg-amber-600 text-white font-semibold rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-opacity-75 transition duration-200">Back</button>
-                            <button onClick={handleSubmitEmployeeFields} className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200">Submit Form</button>
+                        </div>
+                        <div className="bg-gray-900 p-6 rounded-lg shadow-lg">
+                            <h2 className="text-2xl font-bold text-blue-300 mb-4">Tax Calculator</h2>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300">Player Name:</label>
+                                    <input type="text" id="tax-player-name" className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300">Amount:</label>
+                                    <input type="number" id="tax-amount" className="w-full p-2 bg-gray-700 rounded-md border border-gray-600" />
+                                </div>
+                                <button onClick={() => {
+                                    const player = document.getElementById('tax-player-name').value;
+                                    const amount = document.getElementById('tax-amount').value;
+                                    if (!player || !amount) {
+                                        setModalMessage('Please enter a player name and amount.');
+                                        return;
+                                    }
+                                    const tax = parseFloat(amount) * 0.1; // Assuming a 10% tax rate
+                                    setModalMessage(`Tax for ${player} is ${tax?.toFixed(2) || '0.00'}`);
+                                }} className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-md">Calculate Tax</button>
+                            </div>
                         </div>
                     </div>
                 </div>
